@@ -3,7 +3,7 @@
 
 #LOG="/reults/output.txt"
 
-
+#kubectl is not available in this env
 
 #Need to install MCO Operator
 #Need to create Object Store
