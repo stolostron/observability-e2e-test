@@ -25,9 +25,10 @@ check_mco_crd() {
 }
 check_mco_operator() {
       echo "******** Checking if MCO Operator is running" 
-      MCOOPR=`oc get mco --no-headers=true|awk '{ print $1 }'`
-      echo "$MCOCRD"
-      if [[ "$MCOOPR" == "observability" ]]; then
+      #will yield value of 1
+      MCOOPR=`oc get deployment multicluster-observability-operator -n open-cluster-management -o custom-columns=AVL:status.availableReplicas --no-headers=true`
+      echo "$MCOOPR"
+      if [[ "$MCOOPR" == "1" ]]; then
             echo "MCO Operator is running"
       else
             echo "failure - MCO Operator is not running"  
