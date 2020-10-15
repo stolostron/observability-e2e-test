@@ -1,3 +1,30 @@
-Notes.md
-output.txt
+
+/.DS_Store
+/.project
+/build-harness
+/build-harness-extensions
+/vendor
+
+Dockerfile.tmp
+
+results/**
+!results/.gitkeep
+results.xml
+
+resources/options.yaml
+resources/install-config.yaml
+resources/clusterdeploy.yaml
+
+.build-harness
+.build-harness-bootstrap
+.vscode
+.test.sh
+
+local.rc
+.DS_Store
+
+# override build harness vendoring
+!vbh/.build-harness-vendorized
+!vbh/build-harness
+!vbh/build-harness-extensions
 
