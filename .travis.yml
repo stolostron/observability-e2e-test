@@ -57,8 +57,8 @@ jobs:
         - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; fi;
         # - make copyright-check
         - make build
-#        - make component/push
-#        - make security/scans
+        - make push
+        - make security/scans
 #    - stage: unit-test
 #      name: "Run unit tests"
 #      script:
