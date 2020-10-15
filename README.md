@@ -1,5 +1,7 @@
 # observability-e2e-test
 
+This is modeled after: https://github.com/open-cluster-management/open-cluster-management-e2e
+
 This is a container which will be called from:
 1. Canary Tests
 1. Regular Build PRs
