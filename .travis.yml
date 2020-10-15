@@ -1,9 +1,11 @@
 os:
   - linux
 
-language: shell
-
-
+language: go
+go:
+  - "1.14"
+addons:
+  chrome: stable
 services:
   - docker
 
@@ -31,14 +33,16 @@ env:
     - COMPONENT_BUILD_COMMAND=${TRAVIS_BUILD_DIR}/cicd-scripts/build.sh
     - COMPONENT_UNIT_TEST_COMMAND=${TRAVIS_BUILD_DIR}/cicd-scripts/run-unit-tests.sh
     - COMPONENT_E2E_TEST_COMMAND=${TRAVIS_BUILD_DIR}/cicd-scripts/run-e2e-tests.sh
+    - CHROMEDRIVER=81.0.4044.69
+    - CRHOMIUM_VERSION=chromium-81.0.4044.113-1.fc33.x86_64
 
     #- DEPLOYED_IN_HUB=true # For sonar
 
 
 stages:
   - build
-  - unit-test
-  - test-e2e
+#  - unit-test
+#  - test-e2e
 #  - release-ff
 #  - publish
 
@@ -52,29 +56,30 @@ jobs:
       script:
         - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; fi;
         # - make copyright-check
-        - make component/build
-        - make component/push
-        - make security/scans
-    - stage: unit-test
-      name: "Run unit tests"
-      script:
+        - make build
+#        - make component/push
+#        - make security/scans
+#    - stage: unit-test
+#      name: "Run unit tests"
+#      script:
         # Set the image tag differently for PRs
-        - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; fi;
+
+#        - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; fi;
         # Bootstrap the build harness, pull test image, and run unit tests.  
-        - make
-        - make component/pull 
-        - make component/test/unit
+#        - make
+#        - make component/pull 
+#        - make component/test/unit
         # - make sonar/go   # TODO: Need to onboard to SonarCloud
-    - stage: test-e2e
-      name: "Deploy the image to a cluster and run e2e tests"
-      if: type = pull_request
-      script:
+#    - stage: test-e2e
+#      name: "Deploy the image to a cluster and run e2e tests"
+#      if: type = pull_request
+#      script:
         #Check out a clusterpool, set up oc, deploy, run e2e tests, and return clusterpool cluster
-        - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; fi;
+#        - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; fi;
        # - make deps
-        - make component/pull 
-        - make component/test/e2e
-        - make security/scans
+#        - make component/pull 
+#        - make component/test/e2e
+#        - make security/scans
 
     
 #    - stage: release-ff
