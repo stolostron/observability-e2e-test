@@ -44,3 +44,7 @@ build:
 .PHONY: push
 push:: docker/tag docker/login
 	make docker/push
+
+.PHONY: test-unit
+test-unit:
+	@echo "Running Unit Tests.."	
