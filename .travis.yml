@@ -67,7 +67,7 @@ jobs:
         # Bootstrap the build harness, pull test image, and run unit tests.  
         - make
         #- make docker/pull 
-        - make component/test/unit
+        #- make component/test/unit
         # - make sonar/go   # TODO: Need to onboard to SonarCloud
 #    - stage: test-e2e
 #      name: "Deploy the image to a cluster and run e2e tests"
