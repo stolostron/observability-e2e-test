@@ -43,7 +43,7 @@ stages:
   - build
   - unit-test
 #  - test-e2e
-#  - release-ff
+  - release-ff
 #  - publish
 
 before_script:
