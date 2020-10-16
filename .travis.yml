@@ -31,7 +31,7 @@ env:
     - COMPONENT_DEPLOY_COMMAND=${TRAVIS_BUILD_DIR}/cicd-scripts/deploy-to-cluster.sh
     - COMPONENT_INIT_COMMAND=${TRAVIS_BUILD_DIR}/cicd-scripts/install-dependencies.sh
     - COMPONENT_BUILD_COMMAND=${TRAVIS_BUILD_DIR}/cicd-scripts/build.sh
-    - COMPONENT_UNIT_TEST_COMMAND=${TRAVIS_BUILD_DIR}/cicd-scripts/run-unit-tests.sh
+  #  - COMPONENT_UNIT_TEST_COMMAND=${TRAVIS_BUILD_DIR}/cicd-scripts/run-unit-tests.sh
     - COMPONENT_E2E_TEST_COMMAND=${TRAVIS_BUILD_DIR}/cicd-scripts/run-e2e-tests.sh
     - CHROMEDRIVER=81.0.4044.69
     - CRHOMIUM_VERSION=chromium-81.0.4044.113-1.fc33.x86_64
@@ -69,7 +69,7 @@ jobs:
         - make docker/info
         - make docker/login
         - make docker/pull 
-        - make component/test/unit
+        - make test-unit
         # - make sonar/go   # TODO: Need to onboard to SonarCloud
 #    - stage: test-e2e
 #      name: "Deploy the image to a cluster and run e2e tests"
