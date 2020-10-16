@@ -69,7 +69,7 @@ jobs:
         - make docker/info
         - make docker/login
         - make docker/pull 
-        #- make component/test/unit
+        - make component/test/unit
         # - make sonar/go   # TODO: Need to onboard to SonarCloud
 #    - stage: test-e2e
 #      name: "Deploy the image to a cluster and run e2e tests"
