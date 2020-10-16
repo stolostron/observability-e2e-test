@@ -41,7 +41,7 @@ env:
 
 stages:
   - build
-#  - unit-test
+  - unit-test
 #  - test-e2e
 #  - release-ff
 #  - publish
@@ -58,17 +58,16 @@ jobs:
         # - make copyright-check
         - make build
         - make push
-        - make security/scans
-#    - stage: unit-test
-#      name: "Run unit tests"
-#      script:
+#        - make security/scans
+    - stage: unit-test
+      name: "Run unit tests"
+      script:
         # Set the image tag differently for PRs
-
-#        - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; fi;
+        - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; fi;
         # Bootstrap the build harness, pull test image, and run unit tests.  
-#        - make
-#        - make component/pull 
-#        - make component/test/unit
+        - make
+        - make component/pull 
+        - make component/test/unit
         # - make sonar/go   # TODO: Need to onboard to SonarCloud
 #    - stage: test-e2e
 #      name: "Deploy the image to a cluster and run e2e tests"
