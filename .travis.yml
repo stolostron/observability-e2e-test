@@ -60,7 +60,7 @@ jobs:
         # - make copyright-check
         - make build
         - make push
-        - make security/scans
+      #  - make security/scans
     - stage: unit-test
       name: "Run unit tests"
       script:
