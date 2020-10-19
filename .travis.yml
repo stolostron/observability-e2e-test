@@ -37,6 +37,7 @@ env:
     - CRHOMIUM_VERSION=chromium-81.0.4044.113-1.fc33.x86_64
     # This is not recommended - but adding to see if this will work.
     - COMPONENT_NAME=observability-e2e-test
+    - COMPONENT_VERSION=0.1.0
 
     #- DEPLOYED_IN_HUB=true # For sonar
 
