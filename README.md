@@ -41,29 +41,40 @@ options:
     kubecontext: "default/api-CLUSTERNAME-demo-red-chesterfield-com:6443/kube:admin"
 ```
 
-3. oc login to your cluster in which observability is installed - and make sure that remains the current-context in kubeconfig
+3. copy `resources/env.list.template` to `resources/env.list`, and update values specific to your s3 configuration:
+
+```
+$ cp resources/env.list.template resources/env.list
+$ cat resources/env.list
+BUCKET=YOUR_S3_BUCKET
+REGION=YOUR_S3_REGION
+ACCESSKEY=YOUR_S3_ACCESSKEY
+SECRETKEY=YOUR_S3_SECRETKEY
+```
+
+4. oc login to your cluster in which observability is installed - and make sure that remains the current-context in kubeconfig
 
 ```
 $ kubectl config current-context
 open-cluster-management-observability/api-demo-dev05-red-chesterfield-com:6443/kube:admin
 ```
 
-4. run `make build`. This will create a docker image:
+5. run `make build`. This will create a docker image:
 
 ```
 $ make build
 ```
 
-5. run the following command to get docker image ID, we will use this in the next step:
+6. run the following command to get docker image ID, we will use this in the next step:
 
 ```
 $ docker_image_id=`docker images | grep observability-e2e-test | sed -n '1p' | awk '{print $3}'`
 ```
 
-6. run testing
+7. run testing
 
 ```
-$ docker run --volume ~/.kube/:/opt/.kube --volume $(pwd)/results:/results --volume $(pwd)/resources:/resources $docker_image_id
+$ docker run -v ~/.kube/:/opt/.kube -v $(pwd)/results:/results -v $(pwd)/resources:/resources --env-file $(pwd)/resources/env.list  $docker_image_id
 ```
 
 In Canary environment, this is the container that will be run - and all the volumes etc will passed on while starting the docker container using a helper script.
