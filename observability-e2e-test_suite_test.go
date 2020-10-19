@@ -136,28 +136,6 @@ func initVars() {
 
 	testOptions = testOptionsContainer.Options
 
-	// clusterdeploy.yaml is optional
-	var clusterDeployFile = "resources/clusterdeploy.yaml"
-	cd, err := ioutil.ReadFile(clusterDeployFile)
-	if err != nil {
-		klog.Warningf("warning: %v", err)
-	}
-	err = yaml.Unmarshal([]byte(cd), &clusterDeploy)
-	if err != nil {
-		klog.Errorf("clusterdeploy file error: %v", err)
-	}
-
-	// install-config.yaml is optional
-	var installConfigFile = "resources/install-config.yaml"
-	ic, err := ioutil.ReadFile(installConfigFile)
-	if err != nil {
-		klog.Warningf("warning: %v", err)
-	}
-	err = yaml.Unmarshal([]byte(ic), &installConfig)
-	if err != nil {
-		klog.Errorf("installconfig file error: %v", err)
-	}
-
 	// default Headless is `true`
 	// to disable, set Headless: false
 	// in options file
