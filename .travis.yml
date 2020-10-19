@@ -35,6 +35,8 @@ env:
     - COMPONENT_E2E_TEST_COMMAND=${TRAVIS_BUILD_DIR}/cicd-scripts/run-e2e-tests.sh
     - CHROMEDRIVER=81.0.4044.69
     - CRHOMIUM_VERSION=chromium-81.0.4044.113-1.fc33.x86_64
+    # This is not recommended - but adding to see if this will work.
+    - COMPONENT_NAME=observability-e2e-test
 
     #- DEPLOYED_IN_HUB=true # For sonar
 
@@ -58,7 +60,7 @@ jobs:
         # - make copyright-check
         - make build
         - make push
-#        - make security/scans
+        - make security/scans
     - stage: unit-test
       name: "Run unit tests"
       script:
@@ -69,7 +71,7 @@ jobs:
         - make docker/info
         - make docker/login
         - make docker/pull 
-      #  - make test-unit
+        - make test-unit
         # - make sonar/go   # TODO: Need to onboard to SonarCloud
 #    - stage: test-e2e
 #      name: "Deploy the image to a cluster and run e2e tests"
