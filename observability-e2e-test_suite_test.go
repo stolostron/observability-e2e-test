@@ -85,25 +85,16 @@ func init() {
 func TestOpenClusterManagementE2e(t *testing.T) {
 	RegisterFailHandler(Fail)
 	junitReporter := reporters.NewJUnitReporter(reportFile)
-	RunSpecsWithDefaultAndCustomReporters(t, "OpenClusterManagementE2E Suite", []Reporter{junitReporter})
+	RunSpecsWithDefaultAndCustomReporters(t, "MCO_E2E Suite", []Reporter{junitReporter})
 }
 
 var agoutiDriver *agouti.WebDriver
 
 var _ = BeforeSuite(func() {
-
 	initVars()
-
-	// Choose a WebDriver:
-	//agoutiDriver = agouti.PhantomJS()
-	// agoutiDriver = agouti.Selenium()
-	//agoutiDriver = agouti.ChromeDriver()
-
-	//Expect(agoutiDriver.Start()).To(Succeed())
 })
 
 var _ = AfterSuite(func() {
-	//Expect(agoutiDriver.Stop()).To(Succeed())
 })
 
 func initVars() {
@@ -223,21 +214,4 @@ func initVars() {
 	} else {
 		hubNamespace = "open-cluster-management"
 	}
-
-	hiveClusterName = ownerPrefix + "-aws-" + randString(4)
-	hiveGCPClusterName = ownerPrefix + "-gcp-" + randString(4)
-	hiveAzureClusterName = ownerPrefix + "-azure-" + randString(4)
-
-	//bareBaseDomainConcat := strings.SplitAfter(testOptions.HubCluster.BaseDomain, ".")
-	//bareBaseDomain = strings.Join(bareBaseDomainConcat[1:], "")
-
-	var installerConfigAWS = utils.InstallerConfigAWS{Name: hiveClusterName, BaseDnsDomain: testOptions.Connection.Keys.AWS.BaseDnsDomain, SSHKey: testOptions.Connection.SSHPublicKey, Region: testOptions.Connection.Keys.AWS.Region}
-	installConfigAWS = utils.GetInstallConfigAWS(installerConfigAWS)
-
-	var installerConfigGCP = utils.InstallerConfigGCP{Name: hiveGCPClusterName, BaseDnsDomain: testOptions.Connection.Keys.GCP.BaseDnsDomain, SSHKey: testOptions.Connection.SSHPublicKey, ProjectID: testOptions.Connection.Keys.GCP.ProjectID, Region: testOptions.Connection.Keys.GCP.Region}
-	installConfigGCP = utils.GetInstallConfigGCP(installerConfigGCP)
-
-	var installerConfigAzure = utils.InstallerConfigAzure{Name: hiveAzureClusterName, BaseDnsDomain: testOptions.Connection.Keys.Azure.BaseDnsDomain, SSHKey: testOptions.Connection.SSHPublicKey, BaseDomainRGN: testOptions.Connection.Keys.Azure.BaseDomainRGN, Region: testOptions.Connection.Keys.Azure.Region}
-	installConfigAzure = utils.GetInstallConfigAzure(installerConfigAzure)
-
 }
