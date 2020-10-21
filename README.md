@@ -3,24 +3,67 @@
 This is modeled after: https://github.com/open-cluster-management/open-cluster-management-e2e
 
 This is a container which will be called from:
+
 1. Canary Tests
-1. Regular Build PRs
+2. Regular Build PRs
 
 This will be called after Observability is installed - both Hub and Addon in real OCP clusters or Kind.
 
 The tests in this container will:
-1. Create the MCO CR . The Object store to be already in place for CR to work.
-1. Wait for the installation to complete.
-1. Then check the entire Observability suite (Hub and Addon) is working as expected including disable/enable, Grafana etc.
 
-Once this is up and running, the e2e tests in the multicluster-monitoring-operator and metrics-collector will be phased out.
+1. Create the MCO CR . The Object store to be already in place for CR to work.
+2. Wait for the installation to complete.
+3. Then check the entire Observability suite (Hub and Addon) is working as expected including disable/enable, Grafana etc.
 
 ## To do a local test using the docker test container:
-1. clone this repo
-1. copy ./resources/options.yaml.template ./resource/options.yaml , and update values specific to your environment
-1. oc login to your cluster in which observability is installed - and make sure that remains the current-context in kubeconfig
-1. run `make build`. This will create a docker image. 
-1. run `docker images|grep observability-e2e-test` to get the docker-image-id. We will use this in the next step
-1. run `docker run --volume /Users/jbanerje/.kube/:/opt/.kube --volume $(pwd)/results:/results --volume $(pwd)/resources:/resources $docker-image-id ` (replace jbanerje with your name!)
+
+1. clone this repo:
+
+```
+$ git clone git@github.com:open-cluster-management/observability-e2e-test.git
+```
+
+2. copy `resources/options.yaml.template` to `resources/options.yaml`, and update values specific to your environment:
+
+```
+$ cp resources/options.yaml.template resources/options.yaml
+$ cat resources/options.yaml
+options:
+  # headless: false
+  identityProvider: 0
+  ownerPrefix: EMAIL_SHORTNAME
+  hub:
+    name: NAME_OF_HUB
+    baseDomain: CLUSTERNAME.demo.red-chesterfield.com
+    user: kubeadmin
+    password: PASSWORD
+    # get kubecontext via: kubectl config current-context
+    kubecontext: "default/api-CLUSTERNAME-demo-red-chesterfield-com:6443/kube:admin"
+```
+
+3. oc login to your cluster in which observability is installed - and make sure that remains the current-context in kubeconfig
+
+```
+$ kubectl config current-context
+open-cluster-management-observability/api-demo-dev05-red-chesterfield-com:6443/kube:admin
+```
+
+4. run `make build`. This will create a docker image:
+
+```
+$ make build
+```
+
+5. run the following command to get docker image ID, we will use this in the next step:
+
+```
+$ docker_image_id=`docker images | grep observability-e2e-test | sed -n '1p' | awk '{print $3}'`
+```
+
+6. run testing
+
+```
+$ docker run --volume ~/.kube/:/opt/.kube --volume $(pwd)/results:/results --volume $(pwd)/resources:/resources $docker_image_id
+```
 
 In Canary environment, this is the container that will be run - and all the volumes etc will passed on while starting the docker container using a helper script.
