@@ -57,8 +57,9 @@ jobs:
     - stage: build
       name: "Build the image and run unit tests"
       script:
-        - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; 
+        - if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; 
           else  export COMPONENT_TAG_EXTENSION="-${TRAVIS_COMMIT}"; fi;
+          |  
         # - make copyright-check
         - make build
         - make push
