@@ -65,7 +65,7 @@ jobs:
                 export COMPONENT_TAG_EXTENSION="-${TRAVIS_COMMIT}"; 
           fi;
         # - make copyright-check
-        - make build
+        - make component/build
         - make component/push
       #  - make security/scans
     - stage: unit-test
