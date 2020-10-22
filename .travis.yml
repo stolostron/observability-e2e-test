@@ -66,7 +66,7 @@ jobs:
           fi;
         # - make copyright-check
         - make build
-        - make push
+        - make component/push
       #  - make security/scans
     - stage: unit-test
       name: "Run unit tests"
