@@ -86,7 +86,7 @@ var _ = Describe("testing all observability features", func() {
 					"observatorium-operator",
 					"rbac-query-proxy",
 				})
-		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*10).Should(Succeed())
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 
 		Eventually(func() error {
 			By("waiting for MCO statefulsets to be created")
@@ -102,7 +102,7 @@ var _ = Describe("testing all observability features", func() {
 					"observability-observatorium-thanos-store-shard-1",
 					"observability-observatorium-thanos-store-shard-2",
 				})
-		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*10).Should(Succeed())
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
 	It("should uninstall MCO instance sucessfully", func() {
@@ -119,7 +119,7 @@ var _ = Describe("testing all observability features", func() {
 				return err
 			}
 			return nil
-		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*10).Should(Succeed())
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 
 		Eventually(func() error {
 			By("waiting for delete MCO namespaces")
@@ -128,7 +128,6 @@ var _ = Describe("testing all observability features", func() {
 				return err
 			}
 			return nil
-		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*10).Should(Succeed())
-
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 })
