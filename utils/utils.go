@@ -23,7 +23,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured/unstructuredscheme"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -302,29 +301,14 @@ func Apply(url string, kubeconfig string, context string, yamlB []byte) error {
 			}
 
 		default:
-			var resource string
 			switch kind {
 			case "MultiClusterObservability":
 				klog.V(5).Infof("Install MultiClusterObservability: %s\n", f)
-				resource = "multiclusterobservabilities"
 			default:
 				return fmt.Errorf("Resource %s not supported", kind)
 			}
 
-			var group string
-			var version string
-			if v, ok := obj.Object["apiVersion"]; !ok {
-				return fmt.Errorf("apiVersion attribute not found in %s", f)
-			} else {
-				apiVersionArray := strings.Split(v.(string), "/")
-				if len(apiVersionArray) != 2 {
-					return fmt.Errorf("apiVersion malformed in %s", f)
-				}
-				group = apiVersionArray[0]
-				version = apiVersionArray[1]
-			}
-
-			gvr := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
+			gvr := NewMCOGVR()
 			clientDynamic := NewKubeClientDynamic(url, kubeconfig, context)
 			if ns := obj.GetNamespace(); ns != "" {
 				existingObject, errGet := clientDynamic.Resource(gvr).Namespace(ns).Get(obj.GetName(), metav1.GetOptions{})

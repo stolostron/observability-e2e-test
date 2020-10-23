@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/open-cluster-management/observability-e2e-test/utils"
@@ -13,6 +14,7 @@ import (
 
 const (
 	MCO_OPERATOR_NAMESPACE = "open-cluster-management"
+	MCO_CR_NAME            = "observability"
 	MCO_NAMESPACE          = "open-cluster-management-observability"
 	MCO_LABEL              = "name=multicluster-observability-operator"
 )
@@ -20,12 +22,23 @@ const (
 var (
 	EventuallyTimeoutMinute  time.Duration = 60 * time.Second
 	EventuallyIntervalSecond time.Duration = 1 * time.Second
+
+	hubClient kubernetes.Interface
+	dynClient dynamic.Interface
 )
 
 var _ = Describe("Observability", func() {
-	var hubClient kubernetes.Interface
 	BeforeEach(func() {
-		hubClient = utils.NewKubeClient(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext)
+		hubClient = utils.NewKubeClient(
+			testOptions.HubCluster.MasterURL,
+			testOptions.KubeConfig,
+			testOptions.HubCluster.KubeContext)
+
+		dynClient = utils.NewKubeClientDynamic(
+			testOptions.HubCluster.MasterURL,
+			testOptions.KubeConfig,
+			testOptions.HubCluster.KubeContext)
+
 	})
 
 	It("Observability: MCO Operator is created", func() {
@@ -71,36 +84,14 @@ var _ = Describe("Observability", func() {
 		mco := utils.NewMCOInstanceYaml("observability")
 		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, mco)).NotTo(HaveOccurred())
 
-		By("Waiting for MCO deployments to be created")
-		Eventually(func() error {
-			return utils.HaveDeploymentsInNamespace(testOptions.HubCluster, testOptions.KubeConfig,
-				MCO_NAMESPACE,
-				[]string{
-					"grafana",
-					"observability-observatorium-observatorium-api",
-					"observability-observatorium-thanos-query",
-					"observability-observatorium-thanos-query-frontend",
-					"observability-observatorium-thanos-receive-controller",
-					"observatorium-operator",
-					"rbac-query-proxy",
-				})
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
-
-		Eventually(func() error {
-			By("Waiting for MCO statefulsets to be created")
-			return utils.HaveStatefulSetsInNamespace(testOptions.HubCluster, testOptions.KubeConfig,
-				MCO_NAMESPACE,
-				[]string{
-					"alertmanager",
-					"observability-observatorium-thanos-compact",
-					"observability-observatorium-thanos-receive-default",
-					"observability-observatorium-thanos-rule",
-					"observability-observatorium-thanos-store-memcached",
-					"observability-observatorium-thanos-store-shard-0",
-					"observability-observatorium-thanos-store-shard-1",
-					"observability-observatorium-thanos-store-shard-2",
-				})
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+		By("Waiting for MCO ready status ")
+		Eventually(func() bool {
+			instance, err := dynClient.Resource(utils.NewMCOGVR()).Namespace(MCO_NAMESPACE).Get(MCO_CR_NAME, metav1.GetOptions{})
+			if err == nil {
+				return utils.StatusContainsTypeEqualTo(instance, "Ready")
+			}
+			return false
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 	})
 
 	It("Observability: Clean up", func() {
