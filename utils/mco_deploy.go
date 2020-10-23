@@ -41,6 +41,13 @@ func NewMCOGVR() schema.GroupVersionResource {
 		Resource: "multiclusterobservabilities"}
 }
 
+func NewMCOAddonGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    MCO_GROUP,
+		Version:  "v1beta1",
+		Resource: "observabilityaddons"}
+}
+
 func DeleteMCOInstance(url string, kubeconfig string, context string) error {
 	clientDynamic := NewKubeClientDynamic(url, kubeconfig, context)
 	return clientDynamic.Resource(NewMCOGVR()).Delete("observability", &metav1.DeleteOptions{})

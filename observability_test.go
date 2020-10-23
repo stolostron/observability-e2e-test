@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"errors"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -16,6 +17,7 @@ const (
 	MCO_OPERATOR_NAMESPACE = "open-cluster-management"
 	MCO_CR_NAME            = "observability"
 	MCO_NAMESPACE          = "open-cluster-management-observability"
+	MCO_ADDON_NAMESPACE    = "open-cluster-management-addon-observability"
 	MCO_LABEL              = "name=multicluster-observability-operator"
 )
 
@@ -104,6 +106,25 @@ var _ = Describe("Observability", func() {
 		Eventually(func() error {
 			By("Waiting for delete all MCO components")
 			var podList, _ = hubClient.CoreV1().Pods(MCO_NAMESPACE).List(metav1.ListOptions{})
+			if len(podList.Items) != 0 {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+
+		Eventually(func() error {
+			By("Waiting for delete MCO addon instance")
+			gvr := utils.NewMCOAddonGVR()
+			instance, _ := dynClient.Resource(gvr).Namespace("local-cluster").Get("observability-addon", metav1.GetOptions{})
+			if instance != nil {
+				return errors.New("Failed to delete MCO addon instance")
+			}
+			return nil
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+
+		Eventually(func() error {
+			By("Waiting for delete all MCO addon components")
+			var podList, _ = hubClient.CoreV1().Pods(MCO_ADDON_NAMESPACE).List(metav1.ListOptions{})
 			if len(podList.Items) != 0 {
 				return err
 			}
