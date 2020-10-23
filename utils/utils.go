@@ -1,14 +1,12 @@
 package utils
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strings"
-	"text/template"
 
 	"github.com/ghodss/yaml"
 	"github.com/prometheus/common/log"
@@ -25,7 +23,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured/unstructuredscheme"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -256,6 +253,37 @@ func Apply(url string, kubeconfig string, context string, yamlB []byte) error {
 				klog.Warningf("%s %s/%s already exists, updating!", obj.Kind, obj.Namespace, obj.Name)
 				_, err = clientKube.CoreV1().Secrets(obj.Namespace).Update(obj)
 			}
+		case "Service":
+			klog.V(5).Infof("Install %s: %s\n", kind, f)
+			obj := &corev1.Service{}
+			err = yaml.Unmarshal([]byte(f), obj)
+			if err != nil {
+				return err
+			}
+			existingObject, errGet := clientKube.CoreV1().Services(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
+			if errGet != nil {
+				_, err = clientKube.CoreV1().Services(obj.Namespace).Create(obj)
+			} else {
+				obj.ObjectMeta = existingObject.ObjectMeta
+				klog.Warningf("%s %s/%s already exists, updating!", obj.Kind, obj.Namespace, obj.Name)
+				_, err = clientKube.CoreV1().Services(obj.Namespace).Update(obj)
+			}
+		case "PersistentVolumeClaim":
+			klog.V(5).Infof("Install %s: %s\n", kind, f)
+			obj := &corev1.PersistentVolumeClaim{}
+			err = yaml.Unmarshal([]byte(f), obj)
+			if err != nil {
+				return err
+			}
+			existingObject, errGet := clientKube.CoreV1().PersistentVolumeClaims(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
+			if errGet != nil {
+				_, err = clientKube.CoreV1().PersistentVolumeClaims(obj.Namespace).Create(obj)
+			} else {
+				obj.ObjectMeta = existingObject.ObjectMeta
+				klog.Warningf("%s %s/%s already exists, updating!", obj.Kind, obj.Namespace, obj.Name)
+				_, err = clientKube.CoreV1().PersistentVolumeClaims(obj.Namespace).Update(obj)
+			}
+
 		case "Deployment":
 			klog.V(5).Infof("Install %s: %s\n", kind, f)
 			obj := &appsv1.Deployment{}
@@ -271,29 +299,16 @@ func Apply(url string, kubeconfig string, context string, yamlB []byte) error {
 				klog.Warningf("%s %s/%s already exists, updating!", obj.Kind, obj.Namespace, obj.Name)
 				_, err = clientKube.AppsV1().Deployments(obj.Namespace).Update(obj)
 			}
+
 		default:
-			var resource string
 			switch kind {
-			case "Klusterlet":
-				klog.V(5).Infof("Install Klusterlet: %s\n", f)
-				resource = "klusterlets"
+			case "MultiClusterObservability":
+				klog.V(5).Infof("Install MultiClusterObservability: %s\n", f)
 			default:
 				return fmt.Errorf("Resource %s not supported", kind)
 			}
-			var group string
-			var version string
-			if v, ok := obj.Object["apiVersion"]; !ok {
-				return fmt.Errorf("apiVersion attribute not found in %s", f)
-			} else {
-				apiVersionArray := strings.Split(v.(string), "/")
-				if len(apiVersionArray) != 2 {
-					return fmt.Errorf("apiVersion malformed in %s", f)
-				}
-				group = apiVersionArray[0]
-				version = apiVersionArray[1]
-			}
 
-			gvr := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
+			gvr := NewMCOGVR()
 			clientDynamic := NewKubeClientDynamic(url, kubeconfig, context)
 			if ns := obj.GetNamespace(); ns != "" {
 				existingObject, errGet := clientDynamic.Resource(gvr).Namespace(ns).Get(obj.GetName(), metav1.GetOptions{})
@@ -316,7 +331,6 @@ func Apply(url string, kubeconfig string, context string, yamlB []byte) error {
 			}
 		}
 
-		//&& !errors.IsAlreadyExists(err)
 		if err != nil {
 			return err
 		}
@@ -556,6 +570,33 @@ func HaveDeploymentsInNamespace(c Cluster, kubeconfig string, namespace string, 
 	return nil
 }
 
+func HaveStatefulSetsInNamespace(c Cluster, kubeconfig string, namespace string, expectedStatefulSetNames []string) error {
+	client := NewKubeClient(c.MasterURL, kubeconfig, c.KubeContext)
+	versionInfo, err := client.Discovery().ServerVersion()
+	if err != nil {
+		return err
+	}
+	klog.V(1).Infof("Server version info: %v", versionInfo)
+
+	statefulsets := client.AppsV1().StatefulSets(namespace)
+
+	for _, statefulsetName := range expectedStatefulSetNames {
+		klog.V(1).Infof("Check if statefulset %s exists", statefulsetName)
+		statefulset, err := statefulsets.Get(statefulsetName, metav1.GetOptions{})
+		if err != nil {
+			klog.V(1).Infof("Error while retrieving statefulset %s: %s", statefulsetName, err.Error())
+			return err
+		}
+		if statefulset.Status.Replicas != statefulset.Status.ReadyReplicas {
+			err = fmt.Errorf("Expect %d but got %d Ready replicas", statefulset.Status.Replicas, statefulset.Status.ReadyReplicas)
+			klog.Errorln(err)
+			return err
+		}
+	}
+
+	return nil
+}
+
 func GetKubeVersion(client *rest.RESTClient) version.Info {
 	kubeVersion := version.Info{}
 
@@ -591,177 +632,4 @@ func IsOpenshift(client *rest.RESTClient) bool {
 
 	klog.V(5).Infof("fail to GET openshift version, assuming not OpenShift: %s", err.Error())
 	return false
-}
-
-type InstallerConfigAWS struct {
-	Name          string
-	BaseDnsDomain string
-	SSHKey        string
-	Region        string
-}
-
-// function for filling out installconfig template, takes installConfig struct and returns string for secret creation
-func GetInstallConfigAWS(instConfig InstallerConfigAWS) string {
-	const configTemplate = `
-apiVersion: v1
-metadata:
-  name: {{.Name}}
-baseDomain: {{.BaseDnsDomain}}
-controlPlane:
-  hyperthreading: Enabled
-  name: master
-  replicas: 3
-  platform:
-    aws:
-      rootVolume:
-        iops: 4000
-        size: 500
-        type: io1
-      type: m4.xlarge
-compute:
-- hyperthreading: Enabled
-  name: worker
-  replicas: 3
-  platform:
-      aws:
-      rootVolume:
-        iops: 2000
-        size: 500
-        type: io1
-      type: m4.large
-networking:
-  clusterNetwork:
-  - cidr: 10.128.0.0/14
-    hostPrefix: 23
-  machineCIDR: 10.0.0.0/16
-  networkType: OpenShiftSDN
-  serviceNetwork:
-  - 172.30.0.0/16
-platform:
-  aws:
-    region: {{.Region}}
-pullSecret: ""
-sshKey: {{.SSHKey}}
-`
-	stdoutBuffer := new(bytes.Buffer)
-	t := template.Must(template.New("configTemplate").Parse(configTemplate))
-	err := t.Execute(stdoutBuffer, instConfig)
-	if err != nil {
-		return err.Error()
-	}
-	return stdoutBuffer.String()
-}
-
-type InstallerConfigGCP struct {
-	Name          string
-	BaseDnsDomain string
-	SSHKey        string
-	ProjectID     string
-	Region        string
-}
-
-// function for filling out installconfig template, takes installConfig struct and returns string for secret creation
-func GetInstallConfigGCP(instConfig InstallerConfigGCP) string {
-	const configTemplate = `
-apiVersion: v1
-metadata:
-  name: {{.Name}}
-baseDomain: {{.BaseDnsDomain}}
-controlPlane:
-  hyperthreading: Enabled
-  name: master
-  replicas: 3
-  platform:
-    gcp:
-      type: n1-standard-4
-compute:
-- hyperthreading: Enabled
-  name: worker
-  replicas: 3
-  platform:
-      gcp:
-        type: n1-standard-4
-networking:
-  clusterNetwork:
-  - cidr: 10.128.0.0/14
-    hostPrefix: 23
-  machineCIDR: 10.0.0.0/16
-  networkType: OpenShiftSDN
-  serviceNetwork:
-  - 172.30.0.0/16
-platform:
-  gcp:
-    projectID: {{.ProjectID}}
-    region: {{.Region}}
-pullSecret: ""
-sshKey: {{.SSHKey}}
-`
-	stdoutBuffer := new(bytes.Buffer)
-	t := template.Must(template.New("configTemplate").Parse(configTemplate))
-	err := t.Execute(stdoutBuffer, instConfig)
-	if err != nil {
-		return err.Error()
-	}
-	return stdoutBuffer.String()
-}
-
-type InstallerConfigAzure struct {
-	Name          string
-	BaseDnsDomain string
-	SSHKey        string
-	BaseDomainRGN string
-	Region        string
-}
-
-// function for filling out installconfig template, takes installConfig struct and returns string for secret creation
-func GetInstallConfigAzure(instConfig InstallerConfigAzure) string {
-	const configTemplate = `
-apiVersion: v1
-metadata:
-  name: {{.Name}}
-baseDomain: {{.BaseDnsDomain}}
-controlPlane:
-  hyperthreading: Enabled
-  name: master
-  replicas: 3
-  platform:
-    azure:
-      osDisk:
-      diskSizeGB: 128
-    type:  Standard_D4s_v3
-compute:
-- hyperthreading: Enabled
-  name: worker
-  replicas: 3
-  platform:
-    azure:
-      type:  Standard_D2s_v3
-      osDisk:
-      diskSizeGB: 128
-      zones:
-      - "1"
-      - "2"
-      - "3"
-networking:
-  clusterNetwork:
-  - cidr: 10.128.0.0/14
-    hostPrefix: 23
-  machineCIDR: 10.0.0.0/16
-  networkType: OpenShiftSDN
-  serviceNetwork:
-  - 172.30.0.0/16
-platform:
-  azure:
-    baseDomainResourceGroupName: {{.BaseDomainRGN}}
-    region: {{.Region}}
-pullSecret: "" # skip, hive will inject based on it's secrets
-sshKey: {{.SSHKey}}  
-`
-	stdoutBuffer := new(bytes.Buffer)
-	t := template.Must(template.New("configTemplate").Parse(configTemplate))
-	err := t.Execute(stdoutBuffer, instConfig)
-	if err != nil {
-		return err.Error()
-	}
-	return stdoutBuffer.String()
 }

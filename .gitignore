@@ -28,3 +28,5 @@ local.rc
 !vbh/build-harness
 !vbh/build-harness-extensions
 
+observability-e2e-test.test
+
