@@ -86,7 +86,7 @@ var _ = Describe("Observability", func() {
 
 		By("Waiting for MCO ready status ")
 		Eventually(func() bool {
-			instance, err := dynClient.Resource(utils.NewMCOGVR()).Namespace(MCO_NAMESPACE).Get(MCO_CR_NAME, metav1.GetOptions{})
+			instance, err := dynClient.Resource(utils.NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
 			if err == nil {
 				return utils.StatusContainsTypeEqualTo(instance, "Ready")
 			}
