@@ -4,12 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 
-	"github.com/ghodss/yaml"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/klog"
 )
 
 const (
@@ -18,6 +16,7 @@ const (
 	MCO_LABEL              = "name=multicluster-observability-operator"
 	MCO_PULL_SECRET_NAME   = "multiclusterhub-operator-pull-secret"
 	OBJ_SECRET_NAME        = "thanos-object-storage"
+	MCO_GROUP              = "observability.open-cluster-management.io"
 )
 
 func NewMCOInstanceYaml(name string) []byte {
@@ -35,30 +34,16 @@ spec:
 	return []byte(instance)
 }
 
-func DeleteMCOInstance(url string, kubeconfig string, context string) error {
-	instanceName := "observability"
-	yamlByte := NewMCOInstanceYaml(instanceName)
-	obj := &unstructured.Unstructured{}
-	err := yaml.Unmarshal([]byte(yamlByte), obj)
-	if err != nil {
-		return err
-	}
-	var group string
-	var version string
-	if v, ok := obj.Object["apiVersion"]; !ok {
-		return fmt.Errorf("apiVersion attribute not found in %s", yamlByte)
-	} else {
-		apiVersionArray := strings.Split(v.(string), "/")
-		if len(apiVersionArray) != 2 {
-			return fmt.Errorf("apiVersion malformed in %s", yamlByte)
-		}
-		group = apiVersionArray[0]
-		version = apiVersionArray[1]
-	}
+func NewMCOGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    MCO_GROUP,
+		Version:  "v1beta1",
+		Resource: "multiclusterobservabilities"}
+}
 
-	gvr := schema.GroupVersionResource{Group: group, Version: version, Resource: "multiclusterobservabilities"}
+func DeleteMCOInstance(url string, kubeconfig string, context string) error {
 	clientDynamic := NewKubeClientDynamic(url, kubeconfig, context)
-	return clientDynamic.Resource(gvr).Delete(instanceName, &metav1.DeleteOptions{})
+	return clientDynamic.Resource(NewMCOGVR()).Delete("observability", &metav1.DeleteOptions{})
 }
 
 func CreatePullSecret(url string, kubeconfig string, context string) error {
@@ -74,7 +59,7 @@ func CreatePullSecret(url string, kubeconfig string, context string) error {
 		Name:      name,
 		Namespace: MCO_NAMESPACE,
 	}
-
+	klog.V(1).Infof("Create MCO pull secret")
 	_, err := clientKube.CoreV1().Secrets(pullSecret.Namespace).Create(pullSecret)
 	return err
 }
@@ -85,7 +70,7 @@ kind: Namespace
 metadata:
   name: %s`,
 		MCO_NAMESPACE)
-
+	klog.V(1).Infof("Create MCO namespaces")
 	return Apply(url, kubeconfig, context, []byte(ns))
 }
 
@@ -132,22 +117,25 @@ type: Opaque`,
 		region,
 		accessKey,
 		secretKey)
-
+	klog.V(1).Infof("Create MCO object storage secret")
 	return Apply(url, kubeconfig, context, []byte(objSecret))
 }
 
 func UninstallMCO(url string, kubeconfig string, context string) error {
+	klog.V(1).Infof("Delete MCO instance")
 	deleteMCOErr := DeleteMCOInstance(url, kubeconfig, context)
 	if deleteMCOErr != nil {
 		return deleteMCOErr
 	}
 
+	klog.V(1).Infof("Delete MCO pull secret")
 	clientKube := NewKubeClient(url, kubeconfig, context)
 	deletePullSecretErr := clientKube.CoreV1().Secrets(MCO_NAMESPACE).Delete(MCO_PULL_SECRET_NAME, &metav1.DeleteOptions{})
 	if deletePullSecretErr != nil {
 		return deletePullSecretErr
 	}
 
+	klog.V(1).Infof("Delete MCO object storage secret")
 	deleteObjSecretErr := clientKube.CoreV1().Secrets(MCO_NAMESPACE).Delete(OBJ_SECRET_NAME, &metav1.DeleteOptions{})
 	if deleteObjSecretErr != nil {
 		return deleteObjSecretErr
