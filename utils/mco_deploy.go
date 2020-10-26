@@ -49,6 +49,79 @@ func NewMCOAddonGVR() schema.GroupVersionResource {
 		Resource: "observabilityaddons"}
 }
 
+func ModifyMCOAvailabilityConfig(url string, kubeconfig string, context string) error {
+	clientDynamic := NewKubeClientDynamic(url, kubeconfig, context)
+	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	if getErr != nil {
+		return getErr
+	}
+
+	spec := mco.Object["spec"].(map[string]interface{})
+	spec["availabilityConfig"] = "Basic"
+	_, updateErr := clientDynamic.Resource(NewMCOGVR()).Update(mco, metav1.UpdateOptions{})
+	if updateErr != nil {
+		return updateErr
+	}
+	return nil
+}
+
+func CheckMCOComponentsInBaiscMode(url string, kubeconfig string, context string) error {
+	client := NewKubeClient(url, kubeconfig, context)
+
+	deployments := client.AppsV1().Deployments(MCO_NAMESPACE)
+	expectedDeploymentNames := []string{
+		"grafana",
+		"observability-observatorium-observatorium-api",
+		"observability-observatorium-thanos-query",
+		"observability-observatorium-thanos-query-frontend",
+		"observability-observatorium-thanos-receive-controller",
+		"observatorium-operator",
+		"rbac-query-proxy",
+	}
+
+	for _, deploymentName := range expectedDeploymentNames {
+		deployment, err := deployments.Get(deploymentName, metav1.GetOptions{})
+		if err != nil {
+			klog.V(1).Infof("Error while retrieving deployment %s: %s", deploymentName, err.Error())
+			return err
+		}
+
+		if deployment.Status.ReadyReplicas != 1 {
+			err = fmt.Errorf("Expect 1 but got %d ready replicas", deployment.Status.ReadyReplicas)
+			klog.Errorln(err)
+			return err
+		}
+	}
+
+	statefulsets := client.AppsV1().StatefulSets(MCO_NAMESPACE)
+	expectedStatefulSetNames := []string{
+		"alertmanager",
+		"observability-observatorium-thanos-compact",
+		"observability-observatorium-thanos-receive-default",
+		"observability-observatorium-thanos-rule",
+		"observability-observatorium-thanos-store-memcached",
+		"observability-observatorium-thanos-store-shard-0",
+		"observability-observatorium-thanos-store-shard-1",
+		"observability-observatorium-thanos-store-shard-2",
+	}
+
+	for _, statefulsetName := range expectedStatefulSetNames {
+		statefulset, err := statefulsets.Get(statefulsetName, metav1.GetOptions{})
+		if err != nil {
+			klog.V(1).Infof("Error while retrieving statefulset %s: %s", statefulsetName, err.Error())
+			return err
+		}
+
+		if statefulset.Status.ReadyReplicas != 1 {
+			err = fmt.Errorf("Expect 1 but got %d ready replicas", statefulset.Status.ReadyReplicas)
+			klog.Errorln(err)
+			return err
+		}
+	}
+
+	return nil
+}
+
 func ModifyMCORetentionResolutionRaw(url string, kubeconfig string, context string) error {
 	clientDynamic := NewKubeClientDynamic(url, kubeconfig, context)
 	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})

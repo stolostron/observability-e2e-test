@@ -127,6 +127,30 @@ var _ = Describe("Observability", func() {
 		// TBD
 	})
 
+	It("Observability: Modify availabilityConfig from High to Basic", func() {
+		Eventually(func() error {
+			By("Modifying MCO availabilityConfig filed")
+			err := utils.ModifyMCOAvailabilityConfig(
+				testOptions.HubCluster.MasterURL,
+				testOptions.KubeConfig,
+				testOptions.HubCluster.KubeContext)
+			if err != nil {
+				return err
+			}
+
+			By("Checking MCO components in Basic mode")
+			err = utils.CheckMCOComponentsInBaiscMode(
+				testOptions.HubCluster.MasterURL,
+				testOptions.KubeConfig,
+				testOptions.HubCluster.KubeContext)
+
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+	})
+
 	It("Observability: disable observabilityaddon", func() {
 		Eventually(func() error {
 			By("Modifying MCO observabilityAddonSpec.enableMetrics filed")
@@ -138,7 +162,7 @@ var _ = Describe("Observability", func() {
 				return err
 			}
 
-			By("Waiting for MCO observability addon components disapear")
+			By("Waiting for MCO addon components disapear")
 			addonLabel := "component=metrics-collector"
 			var podList, _ = hubClient.CoreV1().Pods(MCO_ADDON_NAMESPACE).List(metav1.ListOptions{LabelSelector: addonLabel})
 			if len(podList.Items) != 0 {
