@@ -1,7 +1,9 @@
 package main_test
 
 import (
+	"crypto/tls"
 	"errors"
+	"net/http"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -93,7 +95,34 @@ var _ = Describe("Observability", func() {
 	})
 
 	It("Observability: Grafana console can be accessible", func() {
-		// TBD
+		Eventually(func() error {
+			config, err := utils.LoadConfig(testOptions.HubCluster.MasterURL,
+				testOptions.KubeConfig,
+				testOptions.HubCluster.KubeContext)
+			if err != nil {
+				return err
+			}
+
+			req, err := http.NewRequest("GET", "https://multicloud-console.apps."+baseDomain+"/grafana/", nil)
+			if err != nil {
+				return err
+			}
+
+			tr := &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			}
+			client := &http.Client{Transport: tr}
+			req.Header.Set("Authorization", "Bearer "+config.BearerToken)
+			resp, err := client.Do(req)
+			if err != nil {
+				return err
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				return errors.New("Failed to access grafana console")
+			}
+			return nil
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
 	It("Observability: retentionResolutionRaw is modified", func() {
