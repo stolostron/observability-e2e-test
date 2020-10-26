@@ -86,7 +86,7 @@ var _ = Describe("Observability", func() {
 		mco := utils.NewMCOInstanceYaml("observability")
 		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, mco)).NotTo(HaveOccurred())
 
-		By("Waiting for MCO ready status ")
+		By("Waiting for MCO ready status")
 		Eventually(func() bool {
 			instance, err := dynClient.Resource(utils.NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
 			if err == nil {
@@ -94,6 +94,41 @@ var _ = Describe("Observability", func() {
 			}
 			return false
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
+	})
+
+	It("Observability: Grafana console can be accessible", func() {
+		// TBD
+	})
+
+	It("Observability: retentionResolutionRaw is modified", func() {
+		Eventually(func() error {
+			By("Modifying MCO retentionResolutionRaw filed")
+			err := utils.ModifyMCORetentionResolutionRaw(
+				testOptions.HubCluster.MasterURL,
+				testOptions.KubeConfig,
+				testOptions.HubCluster.KubeContext)
+			if err != nil {
+				return err
+			}
+
+			By("Waiting for MCO retentionResolutionRaw filed to take effect")
+			compact, getError := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get("observability-observatorium-thanos-compact", metav1.GetOptions{})
+			if getError != nil {
+				return getError
+			}
+			argList := compact.Spec.Template.Spec.Containers[0].Args
+			for _, arg := range argList {
+				if arg == "--retention.resolution-raw=3d" {
+					return nil
+				}
+			}
+			return errors.New("Failed to find modified retention field")
+
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+	})
+
+	It("Observability: Managed cluster metrics shows up in Grafana console", func() {
+		// TBD
 	})
 
 	It("Observability: Clean up", func() {

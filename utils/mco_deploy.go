@@ -13,6 +13,7 @@ import (
 const (
 	MCO_OPERATOR_NAMESPACE = "open-cluster-management"
 	MCO_NAMESPACE          = "open-cluster-management-observability"
+	MCO_CR_NAME            = "observability"
 	MCO_LABEL              = "name=multicluster-observability-operator"
 	MCO_PULL_SECRET_NAME   = "multiclusterhub-operator-pull-secret"
 	OBJ_SECRET_NAME        = "thanos-object-storage"
@@ -46,6 +47,22 @@ func NewMCOAddonGVR() schema.GroupVersionResource {
 		Group:    MCO_GROUP,
 		Version:  "v1beta1",
 		Resource: "observabilityaddons"}
+}
+
+func ModifyMCORetentionResolutionRaw(url string, kubeconfig string, context string) error {
+	clientDynamic := NewKubeClientDynamic(url, kubeconfig, context)
+	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	if getErr != nil {
+		return getErr
+	}
+
+	spec := mco.Object["spec"].(map[string]interface{})
+	spec["retentionResolutionRaw"] = "3d"
+	_, updateErr := clientDynamic.Resource(NewMCOGVR()).Update(mco, metav1.UpdateOptions{})
+	if updateErr != nil {
+		return updateErr
+	}
+	return nil
 }
 
 func DeleteMCOInstance(url string, kubeconfig string, context string) error {
