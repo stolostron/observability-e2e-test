@@ -63,20 +63,16 @@ var _ = Describe("Observability", func() {
 	})
 
 	It("Observability: All required components are deployed and running", func() {
-
-		By("Creating MCO namespace")
 		Expect(utils.CreateMCONamespace(
 			testOptions.HubCluster.MasterURL,
 			testOptions.KubeConfig,
 			testOptions.HubCluster.KubeContext)).NotTo(HaveOccurred())
 
-		By("Creating MCO pull secret")
 		Expect(utils.CreatePullSecret(
 			testOptions.HubCluster.MasterURL,
 			testOptions.KubeConfig,
 			testOptions.HubCluster.KubeContext)).NotTo(HaveOccurred())
 
-		By("Creating MCO object storage secret")
 		Expect(utils.CreateObjSecret(
 			testOptions.HubCluster.MasterURL,
 			testOptions.KubeConfig,
