@@ -3,7 +3,9 @@ package main_test
 import (
 	"crypto/tls"
 	"errors"
+	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -42,7 +44,6 @@ var _ = Describe("Observability", func() {
 			testOptions.HubCluster.MasterURL,
 			testOptions.KubeConfig,
 			testOptions.HubCluster.KubeContext)
-
 	})
 
 	It("Observability: MCO Operator is created", func() {
@@ -153,7 +154,54 @@ var _ = Describe("Observability", func() {
 	})
 
 	It("Observability: Managed cluster metrics shows up in Grafana console", func() {
-		// TBD
+		Eventually(func() error {
+
+			By("Should have metric data in Grafana console")
+			config, err := utils.LoadConfig(testOptions.HubCluster.MasterURL,
+				testOptions.KubeConfig,
+				testOptions.HubCluster.KubeContext)
+			if err != nil {
+				return err
+			}
+			path := "/grafana/api/datasources/proxy/1/api/v1/"
+			queryParams := "query?query=cluster%3Acapacity_cpu_cores%3Asum"
+			req, err := http.NewRequest(
+				"GET",
+				"https://multicloud-console.apps."+baseDomain+path+queryParams,
+				nil)
+
+			if err != nil {
+				return err
+			}
+
+			tr := &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			}
+			client := &http.Client{Transport: tr}
+			req.Header.Set("Authorization", "Bearer "+config.BearerToken)
+			resp, err := client.Do(req)
+			if err != nil {
+				return err
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				return errors.New("Failed to access managed cluster metrics via grafana console")
+			}
+
+			metricResult, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				return err
+			}
+
+			if !strings.Contains(string(metricResult), `status":"success"`) {
+				return errors.New("Failed to find valid status from response")
+			}
+
+			if !strings.Contains(string(metricResult), `"__name__":"cluster:capacity_cpu_cores:sum"`) {
+				return errors.New("Failed to find metric name from response")
+			}
+			return nil
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
 	It("Observability: Modify availabilityConfig from High to Basic", func() {
@@ -197,9 +245,53 @@ var _ = Describe("Observability", func() {
 			if len(podList.Items) != 0 {
 				return errors.New("Failed to disable observability addon")
 			}
+
+			By("Should have not metric data in Grafana console")
+			config, err := utils.LoadConfig(testOptions.HubCluster.MasterURL,
+				testOptions.KubeConfig,
+				testOptions.HubCluster.KubeContext)
+			if err != nil {
+				return err
+			}
+			path := "/grafana/api/datasources/proxy/1/api/v1/"
+			queryParams := "query?query=cluster%3Acapacity_cpu_cores%3Asum"
+			req, err := http.NewRequest(
+				"GET",
+				"https://multicloud-console.apps."+baseDomain+path+queryParams,
+				nil)
+
+			if err != nil {
+				return err
+			}
+
+			tr := &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			}
+			client := &http.Client{Transport: tr}
+			req.Header.Set("Authorization", "Bearer "+config.BearerToken)
+			resp, err := client.Do(req)
+			if err != nil {
+				return err
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				return errors.New("Failed to access managed cluster metrics via grafana console")
+			}
+
+			metricResult, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				return err
+			}
+
+			if !strings.Contains(string(metricResult), `status":"success"`) {
+				return errors.New("Failed to find valid status from response")
+			}
+
+			if strings.Contains(string(metricResult), `"__name__":"cluster:capacity_cpu_cores:sum"`) {
+				return errors.New("Found metric name from response")
+			}
 			return nil
-			// TBD: no new data shown grafana console
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
 	It("Observability: Clean up", func() {
