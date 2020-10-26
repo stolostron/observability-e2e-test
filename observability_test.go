@@ -127,6 +127,28 @@ var _ = Describe("Observability", func() {
 		// TBD
 	})
 
+	It("Observability: disable observabilityaddon", func() {
+		Eventually(func() error {
+			By("Modifying MCO observabilityAddonSpec.enableMetrics filed")
+			err := utils.ModifyMCOobservabilityAddonSpec(
+				testOptions.HubCluster.MasterURL,
+				testOptions.KubeConfig,
+				testOptions.HubCluster.KubeContext)
+			if err != nil {
+				return err
+			}
+
+			By("Waiting for MCO observability addon components disapear")
+			addonLabel := "component=metrics-collector"
+			var podList, _ = hubClient.CoreV1().Pods(MCO_ADDON_NAMESPACE).List(metav1.ListOptions{LabelSelector: addonLabel})
+			if len(podList.Items) != 0 {
+				return errors.New("Failed to disable observability addon")
+			}
+			return nil
+			// TBD: no new data shown grafana console
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+	})
+
 	It("Observability: Clean up", func() {
 		By("Uninstall MCO instance")
 		err := utils.UninstallMCO(testOptions.HubCluster.MasterURL,

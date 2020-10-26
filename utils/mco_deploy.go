@@ -65,6 +65,22 @@ func ModifyMCORetentionResolutionRaw(url string, kubeconfig string, context stri
 	return nil
 }
 
+func ModifyMCOobservabilityAddonSpec(url string, kubeconfig string, context string) error {
+	clientDynamic := NewKubeClientDynamic(url, kubeconfig, context)
+	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	if getErr != nil {
+		return getErr
+	}
+
+	observabilityAddonSpec := mco.Object["spec"].(map[string]interface{})["observabilityAddonSpec"].(map[string]interface{})
+	observabilityAddonSpec["enableMetrics"] = false
+	_, updateErr := clientDynamic.Resource(NewMCOGVR()).Update(mco, metav1.UpdateOptions{})
+	if updateErr != nil {
+		return updateErr
+	}
+	return nil
+}
+
 func DeleteMCOInstance(url string, kubeconfig string, context string) error {
 	clientDynamic := NewKubeClientDynamic(url, kubeconfig, context)
 	return clientDynamic.Resource(NewMCOGVR()).Delete("observability", &metav1.DeleteOptions{})
