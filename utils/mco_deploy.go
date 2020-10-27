@@ -107,8 +107,6 @@ func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 		"observability-observatorium-thanos-rule",
 		"observability-observatorium-thanos-store-memcached",
 		"observability-observatorium-thanos-store-shard-0",
-		"observability-observatorium-thanos-store-shard-1",
-		"observability-observatorium-thanos-store-shard-2",
 	}
 
 	for _, statefulsetName := range expectedStatefulSetNames {
