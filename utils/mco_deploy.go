@@ -49,8 +49,12 @@ func NewMCOAddonGVR() schema.GroupVersionResource {
 		Resource: "observabilityaddons"}
 }
 
-func ModifyMCOAvailabilityConfig(url string, kubeconfig string, context string) error {
-	clientDynamic := NewKubeClientDynamic(url, kubeconfig, context)
+func ModifyMCOAvailabilityConfig(opt TestOptions) error {
+	clientDynamic := NewKubeClientDynamic(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+
 	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
 	if getErr != nil {
 		return getErr
@@ -65,9 +69,11 @@ func ModifyMCOAvailabilityConfig(url string, kubeconfig string, context string) 
 	return nil
 }
 
-func CheckMCOComponentsInBaiscMode(url string, kubeconfig string, context string) error {
-	client := NewKubeClient(url, kubeconfig, context)
-
+func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
+	client := NewKubeClient(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
 	deployments := client.AppsV1().Deployments(MCO_NAMESPACE)
 	expectedDeploymentNames := []string{
 		"grafana",
@@ -122,8 +128,11 @@ func CheckMCOComponentsInBaiscMode(url string, kubeconfig string, context string
 	return nil
 }
 
-func ModifyMCORetentionResolutionRaw(url string, kubeconfig string, context string) error {
-	clientDynamic := NewKubeClientDynamic(url, kubeconfig, context)
+func ModifyMCORetentionResolutionRaw(opt TestOptions) error {
+	clientDynamic := NewKubeClientDynamic(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
 	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
 	if getErr != nil {
 		return getErr
@@ -138,8 +147,11 @@ func ModifyMCORetentionResolutionRaw(url string, kubeconfig string, context stri
 	return nil
 }
 
-func ModifyMCOobservabilityAddonSpec(url string, kubeconfig string, context string) error {
-	clientDynamic := NewKubeClientDynamic(url, kubeconfig, context)
+func ModifyMCOobservabilityAddonSpec(opt TestOptions) error {
+	clientDynamic := NewKubeClientDynamic(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
 	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
 	if getErr != nil {
 		return getErr
@@ -154,13 +166,19 @@ func ModifyMCOobservabilityAddonSpec(url string, kubeconfig string, context stri
 	return nil
 }
 
-func DeleteMCOInstance(url string, kubeconfig string, context string) error {
-	clientDynamic := NewKubeClientDynamic(url, kubeconfig, context)
+func DeleteMCOInstance(opt TestOptions) error {
+	clientDynamic := NewKubeClientDynamic(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
 	return clientDynamic.Resource(NewMCOGVR()).Delete("observability", &metav1.DeleteOptions{})
 }
 
-func CreatePullSecret(url string, kubeconfig string, context string) error {
-	clientKube := NewKubeClient(url, kubeconfig, context)
+func CreatePullSecret(opt TestOptions) error {
+	clientKube := NewKubeClient(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
 	namespace := MCO_OPERATOR_NAMESPACE
 	name := "multiclusterhub-operator-pull-secret"
 	pullSecret, errGet := clientKube.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
@@ -177,17 +195,21 @@ func CreatePullSecret(url string, kubeconfig string, context string) error {
 	return err
 }
 
-func CreateMCONamespace(url string, kubeconfig string, context string) error {
+func CreateMCONamespace(opt TestOptions) error {
 	ns := fmt.Sprintf(`apiVersion: v1
 kind: Namespace
 metadata:
   name: %s`,
 		MCO_NAMESPACE)
 	klog.V(1).Infof("Create MCO namespaces")
-	return Apply(url, kubeconfig, context, []byte(ns))
+	return Apply(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext,
+		[]byte(ns))
 }
 
-func CreateObjSecret(url string, kubeconfig string, context string) error {
+func CreateObjSecret(opt TestOptions) error {
 
 	bucket := os.Getenv("BUCKET")
 	if bucket == "" {
@@ -231,18 +253,25 @@ type: Opaque`,
 		accessKey,
 		secretKey)
 	klog.V(1).Infof("Create MCO object storage secret")
-	return Apply(url, kubeconfig, context, []byte(objSecret))
+	return Apply(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext,
+		[]byte(objSecret))
 }
 
-func UninstallMCO(url string, kubeconfig string, context string) error {
+func UninstallMCO(opt TestOptions) error {
 	klog.V(1).Infof("Delete MCO instance")
-	deleteMCOErr := DeleteMCOInstance(url, kubeconfig, context)
+	deleteMCOErr := DeleteMCOInstance(opt)
 	if deleteMCOErr != nil {
 		return deleteMCOErr
 	}
 
 	klog.V(1).Infof("Delete MCO pull secret")
-	clientKube := NewKubeClient(url, kubeconfig, context)
+	clientKube := NewKubeClient(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
 	deletePullSecretErr := clientKube.CoreV1().Secrets(MCO_NAMESPACE).Delete(MCO_PULL_SECRET_NAME, &metav1.DeleteOptions{})
 	if deletePullSecretErr != nil {
 		return deletePullSecretErr

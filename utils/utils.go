@@ -108,6 +108,17 @@ func NewKubeClientAPIExtension(url, kubeconfig, context string) apiextensionscli
 // 	return clientset
 // }
 
+func FetchBearerToken(opt TestOptions) (string, error) {
+	config, err := LoadConfig(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+	if err != nil {
+		return "", err
+	}
+	return config.BearerToken, err
+}
+
 func LoadConfig(url, kubeconfig, context string) (*rest.Config, error) {
 	if kubeconfig == "" {
 		kubeconfig = os.Getenv("KUBECONFIG")

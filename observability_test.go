@@ -1,10 +1,7 @@
 package main_test
 
 import (
-	"crypto/tls"
 	"errors"
-	"io/ioutil"
-	"net/http"
 	"strings"
 	"time"
 
@@ -66,23 +63,12 @@ var _ = Describe("Observability", func() {
 	})
 
 	It("Observability: All required components are deployed and running", func() {
-		Expect(utils.CreateMCONamespace(
-			testOptions.HubCluster.MasterURL,
-			testOptions.KubeConfig,
-			testOptions.HubCluster.KubeContext)).NotTo(HaveOccurred())
-
-		Expect(utils.CreatePullSecret(
-			testOptions.HubCluster.MasterURL,
-			testOptions.KubeConfig,
-			testOptions.HubCluster.KubeContext)).NotTo(HaveOccurred())
-
-		Expect(utils.CreateObjSecret(
-			testOptions.HubCluster.MasterURL,
-			testOptions.KubeConfig,
-			testOptions.HubCluster.KubeContext)).NotTo(HaveOccurred())
+		Expect(utils.CreateMCONamespace(testOptions)).NotTo(HaveOccurred())
+		Expect(utils.CreatePullSecret(testOptions)).NotTo(HaveOccurred())
+		Expect(utils.CreateObjSecret(testOptions)).NotTo(HaveOccurred())
 
 		By("Creating MCO instance")
-		mco := utils.NewMCOInstanceYaml("observability")
+		mco := utils.NewMCOInstanceYaml(MCO_CR_NAME)
 		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, mco)).NotTo(HaveOccurred())
 
 		By("Waiting for MCO ready status")
@@ -97,48 +83,23 @@ var _ = Describe("Observability", func() {
 
 	It("Observability: Grafana console can be accessible", func() {
 		Eventually(func() error {
-			config, err := utils.LoadConfig(testOptions.HubCluster.MasterURL,
-				testOptions.KubeConfig,
-				testOptions.HubCluster.KubeContext)
+			err := utils.CheckGrafanaConsole(testOptions)
 			if err != nil {
 				return err
-			}
-
-			req, err := http.NewRequest("GET", "https://multicloud-console.apps."+baseDomain+"/grafana/", nil)
-			if err != nil {
-				return err
-			}
-
-			tr := &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			}
-			client := &http.Client{Transport: tr}
-			req.Header.Set("Authorization", "Bearer "+config.BearerToken)
-			resp, err := client.Do(req)
-			if err != nil {
-				return err
-			}
-
-			if resp.StatusCode != http.StatusOK {
-				return errors.New("Failed to access grafana console")
 			}
 			return nil
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
 	It("Observability: retentionResolutionRaw is modified", func() {
-		Eventually(func() error {
-			By("Modifying MCO retentionResolutionRaw filed")
-			err := utils.ModifyMCORetentionResolutionRaw(
-				testOptions.HubCluster.MasterURL,
-				testOptions.KubeConfig,
-				testOptions.HubCluster.KubeContext)
-			if err != nil {
-				return err
-			}
+		By("Modifying MCO retentionResolutionRaw filed")
+		err := utils.ModifyMCORetentionResolutionRaw(testOptions)
+		Expect(err).ToNot(HaveOccurred())
 
-			By("Waiting for MCO retentionResolutionRaw filed to take effect")
-			compact, getError := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get("observability-observatorium-thanos-compact", metav1.GetOptions{})
+		By("Waiting for MCO retentionResolutionRaw filed to take effect")
+		Eventually(func() error {
+			name := MCO_CR_NAME + "-observatorium-thanos-compact"
+			compact, getError := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
 			if getError != nil {
 				return getError
 			}
@@ -149,77 +110,24 @@ var _ = Describe("Observability", func() {
 				}
 			}
 			return errors.New("Failed to find modified retention field")
-
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
 	It("Observability: Managed cluster metrics shows up in Grafana console", func() {
 		Eventually(func() error {
-
-			By("Should have metric data in Grafana console")
-			config, err := utils.LoadConfig(testOptions.HubCluster.MasterURL,
-				testOptions.KubeConfig,
-				testOptions.HubCluster.KubeContext)
-			if err != nil {
-				return err
-			}
-			path := "/grafana/api/datasources/proxy/1/api/v1/"
-			queryParams := "query?query=cluster%3Acapacity_cpu_cores%3Asum"
-			req, err := http.NewRequest(
-				"GET",
-				"https://multicloud-console.apps."+baseDomain+path+queryParams,
-				nil)
-
-			if err != nil {
-				return err
-			}
-
-			tr := &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			}
-			client := &http.Client{Transport: tr}
-			req.Header.Set("Authorization", "Bearer "+config.BearerToken)
-			resp, err := client.Do(req)
-			if err != nil {
-				return err
-			}
-
-			if resp.StatusCode != http.StatusOK {
-				return errors.New("Failed to access managed cluster metrics via grafana console")
-			}
-
-			metricResult, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				return err
-			}
-
-			if !strings.Contains(string(metricResult), `status":"success"`) {
-				return errors.New("Failed to find valid status from response")
-			}
-
-			if !strings.Contains(string(metricResult), `"__name__":"cluster:capacity_cpu_cores:sum"`) {
-				return errors.New("Failed to find metric name from response")
-			}
-			return nil
+			err, _ := utils.ContainManagedClusterMetric(testOptions)
+			return err
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
 	It("Observability: Modify availabilityConfig from High to Basic", func() {
-		Eventually(func() error {
-			By("Modifying MCO availabilityConfig filed")
-			err := utils.ModifyMCOAvailabilityConfig(
-				testOptions.HubCluster.MasterURL,
-				testOptions.KubeConfig,
-				testOptions.HubCluster.KubeContext)
-			if err != nil {
-				return err
-			}
+		By("Modifying MCO availabilityConfig filed")
+		err := utils.ModifyMCOAvailabilityConfig(testOptions)
+		Expect(err).ToNot(HaveOccurred())
 
-			By("Checking MCO components in Basic mode")
-			err = utils.CheckMCOComponentsInBaiscMode(
-				testOptions.HubCluster.MasterURL,
-				testOptions.KubeConfig,
-				testOptions.HubCluster.KubeContext)
+		By("Checking MCO components in Basic mode")
+		Eventually(func() error {
+			err = utils.CheckMCOComponentsInBaiscMode(testOptions)
 
 			if err != nil {
 				return err
@@ -229,80 +137,37 @@ var _ = Describe("Observability", func() {
 	})
 
 	It("Observability: disable observabilityaddon", func() {
-		Eventually(func() error {
-			By("Modifying MCO observabilityAddonSpec.enableMetrics filed")
-			err := utils.ModifyMCOobservabilityAddonSpec(
-				testOptions.HubCluster.MasterURL,
-				testOptions.KubeConfig,
-				testOptions.HubCluster.KubeContext)
-			if err != nil {
-				return err
-			}
+		By("Modifying MCO cr to disable observabilityaddon")
+		err := utils.ModifyMCOobservabilityAddonSpec(testOptions)
+		Expect(err).ToNot(HaveOccurred())
 
-			By("Waiting for MCO addon components disapear")
+		By("Waiting for MCO addon components scales to 0")
+		Eventually(func() error {
 			addonLabel := "component=metrics-collector"
 			var podList, _ = hubClient.CoreV1().Pods(MCO_ADDON_NAMESPACE).List(metav1.ListOptions{LabelSelector: addonLabel})
 			if len(podList.Items) != 0 {
 				return errors.New("Failed to disable observability addon")
 			}
-
-			By("Should have not metric data in Grafana console")
-			config, err := utils.LoadConfig(testOptions.HubCluster.MasterURL,
-				testOptions.KubeConfig,
-				testOptions.HubCluster.KubeContext)
-			if err != nil {
-				return err
-			}
-			path := "/grafana/api/datasources/proxy/1/api/v1/"
-			queryParams := "query?query=cluster%3Acapacity_cpu_cores%3Asum"
-			req, err := http.NewRequest(
-				"GET",
-				"https://multicloud-console.apps."+baseDomain+path+queryParams,
-				nil)
-
-			if err != nil {
-				return err
-			}
-
-			tr := &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			}
-			client := &http.Client{Transport: tr}
-			req.Header.Set("Authorization", "Bearer "+config.BearerToken)
-			resp, err := client.Do(req)
-			if err != nil {
-				return err
-			}
-
-			if resp.StatusCode != http.StatusOK {
-				return errors.New("Failed to access managed cluster metrics via grafana console")
-			}
-
-			metricResult, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				return err
-			}
-
-			if !strings.Contains(string(metricResult), `status":"success"`) {
-				return errors.New("Failed to find valid status from response")
-			}
-
-			if strings.Contains(string(metricResult), `"__name__":"cluster:capacity_cpu_cores:sum"`) {
-				return errors.New("Found metric name from response")
-			}
 			return nil
+		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
+
+		By("Waiting for check no metric data in grafana console")
+		Eventually(func() error {
+			err, hasMetric := utils.ContainManagedClusterMetric(testOptions)
+			if err != nil && !hasMetric && strings.Contains(err.Error(), "Failed to find metric name from response") {
+				return nil
+			}
+			return errors.New("Found metric data in grafana console")
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
 	It("Observability: Clean up", func() {
 		By("Uninstall MCO instance")
-		err := utils.UninstallMCO(testOptions.HubCluster.MasterURL,
-			testOptions.KubeConfig,
-			testOptions.HubCluster.KubeContext)
+		err := utils.UninstallMCO(testOptions)
 		Expect(err).ToNot(HaveOccurred())
 
+		By("Waiting for delete all MCO components")
 		Eventually(func() error {
-			By("Waiting for delete all MCO components")
 			var podList, _ = hubClient.CoreV1().Pods(MCO_NAMESPACE).List(metav1.ListOptions{})
 			if len(podList.Items) != 0 {
 				return err
@@ -310,18 +175,19 @@ var _ = Describe("Observability", func() {
 			return nil
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 
+		By("Waiting for delete MCO addon instance")
 		Eventually(func() error {
-			By("Waiting for delete MCO addon instance")
 			gvr := utils.NewMCOAddonGVR()
-			instance, _ := dynClient.Resource(gvr).Namespace("local-cluster").Get("observability-addon", metav1.GetOptions{})
+			name := MCO_CR_NAME + "-addon"
+			instance, _ := dynClient.Resource(gvr).Namespace("local-cluster").Get(name, metav1.GetOptions{})
 			if instance != nil {
 				return errors.New("Failed to delete MCO addon instance")
 			}
 			return nil
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 
+		By("Waiting for delete all MCO addon components")
 		Eventually(func() error {
-			By("Waiting for delete all MCO addon components")
 			var podList, _ = hubClient.CoreV1().Pods(MCO_ADDON_NAMESPACE).List(metav1.ListOptions{})
 			if len(podList.Items) != 0 {
 				return err
@@ -329,8 +195,8 @@ var _ = Describe("Observability", func() {
 			return nil
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 
+		By("Waiting for delete MCO namespaces")
 		Eventually(func() error {
-			By("Waiting for delete MCO namespaces")
 			err := hubClient.CoreV1().Namespaces().Delete(MCO_NAMESPACE, &metav1.DeleteOptions{})
 			if err != nil {
 				return err
