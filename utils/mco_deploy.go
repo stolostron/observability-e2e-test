@@ -219,14 +219,14 @@ func CreateObjSecret(opt TestOptions) error {
 		return errors.New("failed to get s3 REGION env")
 	}
 
-	accessKey := os.Getenv("ACCESSKEY")
+	accessKey := os.Getenv("AWS_ACCESS_KEY_ID")
 	if accessKey == "" {
-		return errors.New("failed to get aws ACCESSKEY env")
+		return errors.New("failed to get aws AWS_ACCESS_KEY_ID env")
 	}
 
-	secretKey := os.Getenv("SECRETKEY")
+	secretKey := os.Getenv("AWS_ACCESS_KEY")
 	if secretKey == "" {
-		return errors.New("failed to get aws SECRETKEY env")
+		return errors.New("failed to get aws AWS_ACCESS_KEY env")
 	}
 
 	objSecret := fmt.Sprintf(`apiVersion: v1
