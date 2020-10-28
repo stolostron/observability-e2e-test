@@ -29,16 +29,10 @@ $ git clone git@github.com:open-cluster-management/observability-e2e-test.git
 $ cp resources/options.yaml.template resources/options.yaml
 $ cat resources/options.yaml
 options:
-  # headless: false
-  identityProvider: 0
-  ownerPrefix: EMAIL_SHORTNAME
   hub:
-    name: NAME_OF_HUB
-    baseDomain: CLUSTERNAME.demo.red-chesterfield.com
-    user: kubeadmin
-    password: PASSWORD
-    # get kubecontext via: kubectl config current-context
-    kubecontext: "default/api-CLUSTERNAME-demo-red-chesterfield-com:6443/kube:admin"
+    baseDomain: BASE_DOMAIN
+    user: BASE_USER
+    password: BASE_PASSWORD
 ```
 
 3. copy `resources/env.list.template` to `resources/env.list`, and update values specific to your s3 configuration:
@@ -48,8 +42,8 @@ $ cp resources/env.list.template resources/env.list
 $ cat resources/env.list
 BUCKET=YOUR_S3_BUCKET
 REGION=YOUR_S3_REGION
-ACCESSKEY=YOUR_S3_ACCESSKEY
-SECRETKEY=YOUR_S3_SECRETKEY
+AWS_ACCESS_KEY_ID=YOUR_S3_ACCESSKEY
+AWS_ACCESS_KEY=YOUR_S3_SECRETKEY
 ```
 
 4. oc login to your cluster in which observability is installed - and make sure that remains the current-context in kubeconfig
