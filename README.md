@@ -42,8 +42,8 @@ $ cp resources/env.list.template resources/env.list
 $ cat resources/env.list
 BUCKET=YOUR_S3_BUCKET
 REGION=YOUR_S3_REGION
-ACCESSKEY=YOUR_S3_ACCESSKEY
-SECRETKEY=YOUR_S3_SECRETKEY
+AWS_ACCESS_KEY_ID=YOUR_S3_ACCESSKEY
+AWS_ACCESS_KEY=YOUR_S3_SECRETKEY
 ```
 
 4. oc login to your cluster in which observability is installed - and make sure that remains the current-context in kubeconfig
