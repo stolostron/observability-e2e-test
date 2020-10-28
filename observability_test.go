@@ -120,22 +120,6 @@ var _ = Describe("Observability", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("Observability: Modify availabilityConfig from High to Basic", func() {
-		By("Modifying MCO availabilityConfig filed")
-		err := utils.ModifyMCOAvailabilityConfig(testOptions)
-		Expect(err).ToNot(HaveOccurred())
-
-		By("Checking MCO components in Basic mode")
-		Eventually(func() error {
-			err = utils.CheckMCOComponentsInBaiscMode(testOptions)
-
-			if err != nil {
-				return err
-			}
-			return nil
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
-	})
-
 	It("Observability: disable observabilityaddon", func() {
 		By("Modifying MCO cr to disable observabilityaddon")
 		err := utils.ModifyMCOobservabilityAddonSpec(testOptions)
@@ -159,6 +143,22 @@ var _ = Describe("Observability", func() {
 			}
 			return errors.New("Found metric data in grafana console")
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
+	})
+
+	It("Observability: Modify availabilityConfig from High to Basic", func() {
+		By("Modifying MCO availabilityConfig filed")
+		err := utils.ModifyMCOAvailabilityConfig(testOptions)
+		Expect(err).ToNot(HaveOccurred())
+
+		By("Checking MCO components in Basic mode")
+		Eventually(func() error {
+			err = utils.CheckMCOComponentsInBaiscMode(testOptions)
+
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
 	It("Observability: Clean up", func() {
