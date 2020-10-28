@@ -11,7 +11,6 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/prometheus/common/log"
 
-	"github.com/sclevine/agouti"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -108,6 +107,17 @@ func NewKubeClientAPIExtension(url, kubeconfig, context string) apiextensionscli
 
 // 	return clientset
 // }
+
+func FetchBearerToken(opt TestOptions) (string, error) {
+	config, err := LoadConfig(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+	if err != nil {
+		return "", err
+	}
+	return config.BearerToken, err
+}
 
 func LoadConfig(url, kubeconfig, context string) (*rest.Config, error) {
 	if kubeconfig == "" {
@@ -382,127 +392,6 @@ func GetClusters(tag string, clusters []Cluster) []*Cluster {
 		}
 	}
 	return filteredClusters
-}
-
-// SelectDropDownMenuItem will find a drop down combobox with the initial
-// text 'initialComboText', then find a child menu item with text desiredOption.
-// The combobox and menu item will be tested to "contain" each string
-// rather than for string equality. If an agouti.Selection on the page contains
-// the text, it will be "Click()"ed.
-func SelectDropDownMenuItem(page *agouti.Page, initialComboText, desiredOption string) error {
-	err := ClickSelectionByName(page.AllByClass("bx--list-box__field"), initialComboText)
-	if err != nil {
-		return err
-	}
-	//Eventually(page.FindByClass("bx--list-box__menu-item")).Should(BeFound())
-	return ClickSelectionByName(page.AllByClass("bx--list-box__menu-item"), desiredOption)
-}
-
-// CheckVisibleComboBox all items in a given bare metal cloud connection
-func CheckVisibleComboBox(page *agouti.Page, classname string, hosts []Host) error {
-	var (
-		index          int
-		err            error
-		multiselection *agouti.MultiSelection
-	)
-
-	multiselection = page.AllByClass(classname)
-	count, err := page.AllByClass(classname).Count()
-	if err != nil {
-		fmt.Print("combobox: table should not be empty")
-		return err
-	}
-	for index = 0; index < count; index++ {
-		id, err := multiselection.At(index).Attribute("id")
-		if err != nil {
-			fmt.Print("error combobox items should have id")
-			return err
-		}
-		input, err := multiselection.At(index).FindByClass("bx--checkbox").Attribute("name")
-		for i := range hosts {
-			if strings.Contains(hosts[i].Name, input) {
-				err = multiselection.At(index).Click()
-				if err != nil {
-					fmt.Print("error when clicking")
-					return err
-				}
-			}
-		}
-		klog.V(1).Infof("Found checkbox item id: %s, name: %s", id, input)
-	}
-	return nil
-}
-
-// FindMultiSelectionByPlaceholder takes a list of selections
-// and clicks the one that has a placeholder text
-// equal to the passed in parameter
-func FindMultiSelectionByPlaceholder(multiselection *agouti.MultiSelection, placeholder string) *agouti.Selection {
-	var err error
-	var count, index int
-	var text string
-	var selection *agouti.Selection
-
-	count, err = multiselection.Count()
-	for index = 0; index < count; index++ {
-		selection = multiselection.At(index)
-		text, err = selection.Attribute("placeholder")
-		if err != nil {
-			return nil
-		}
-		klog.V(1).Infof("Found placeholder text: %s", text)
-		if strings.Contains(text, placeholder) {
-			return selection
-		}
-	}
-	return nil
-}
-
-// FindByPlaceholder takes a list of selections
-// and clicks the one that has a placeholder text
-// equal to the passed in parameter
-func FindByPlaceholder(multiselection *agouti.MultiSelection, placeholder string) (*agouti.Selection, error) {
-	var err error
-	var count, index int
-	var text string
-	var selection *agouti.Selection
-
-	count, err = multiselection.Count()
-	for index = 0; index < count; index++ {
-		selection = multiselection.At(index)
-		text, err = selection.Attribute("placeholder")
-		if err != nil {
-			return nil, err
-		}
-		klog.V(1).Infof("Found placeholder text: %s", text)
-		if strings.Contains(text, placeholder) {
-			return selection, nil
-		}
-	}
-	return nil, fmt.Errorf("utils: no selection with text \"%s\" could be found within MultiSelect: %+v", placeholder, multiselection)
-}
-
-// ClickSelectionByName will iterate through each item in the MultiSelection
-// until it comes across an item that contains the `desiredOption` text and
-// then send a Click() to it.
-func ClickSelectionByName(multiselection *agouti.MultiSelection, desiredOption string) error {
-	var err error
-	var count, index int
-	var text string
-	var selection *agouti.Selection
-
-	count, _ = multiselection.Count()
-	for index = 0; index < count; index++ {
-		selection = multiselection.At(index)
-		text, err = selection.Text()
-		if err != nil {
-			return err
-		}
-		klog.V(1).Infof("Found selection text: %s", text)
-		if strings.Contains(text, desiredOption) {
-			return selection.Click()
-		}
-	}
-	return fmt.Errorf("utils: no selection with text \"%s\" could be found within MultiSelect: %+v", desiredOption, multiselection)
 }
 
 func HaveServerResources(c Cluster, kubeconfig string, expectedAPIGroups []string) error {
