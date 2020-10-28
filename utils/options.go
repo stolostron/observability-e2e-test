@@ -6,14 +6,13 @@ type TestOptionsContainer struct {
 
 // Define options available for Tests to consume
 type TestOptions struct {
-	HubCluster       Cluster         `yaml:"hub"`
-	ManagedClusters  []Cluster       `yaml:"clusters"`
-	ImageRegistry    Registry        `yaml:"imageRegistry,omitempty"`
-	KubeConfig       string          `yaml:"kubeconfig,omitempty"`
-	IdentityProvider int             `yaml:"identityProvider,omitempty"`
-	Connection       CloudConnection `yaml:"cloudConnection,omitempty"`
-	Headless         string          `yaml:"headless,omitempty"`
-	OwnerPrefix      string          `yaml:"ownerPrefix,omitempty"`
+	HubCluster      Cluster         `yaml:"hub"`
+	ManagedClusters []Cluster       `yaml:"clusters"`
+	ImageRegistry   Registry        `yaml:"imageRegistry,omitempty"`
+	KubeConfig      string          `yaml:"kubeconfig,omitempty"`
+	Connection      CloudConnection `yaml:"cloudConnection,omitempty"`
+	Headless        string          `yaml:"headless,omitempty"`
+	OwnerPrefix     string          `yaml:"ownerPrefix,omitempty"`
 }
 
 // Define the shape of clusters that may be added under management

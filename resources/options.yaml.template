@@ -1,11 +1,5 @@
 options:
-  # headless: false
-  identityProvider: 0
-  ownerPrefix: EMAIL_SHORTNAME
   hub:
-    name: NAME_OF_HUB
-    baseDomain: CLUSTERNAME.demo.red-chesterfield.com
-    user: kubeadmin
-    password: PASSWORD
-    # get kubecontext via: kubectl config current-context
-    kubecontext: "default/api-CLUSTERNAME-demo-red-chesterfield-com:6443/kube:admin"
+    baseDomain: BASE_DOMAIN
+    user: BASE_USER
+    password: BASE_PASSWORD

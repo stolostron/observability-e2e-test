@@ -181,35 +181,4 @@ func initVars() {
 	if testOptions.HubCluster.Password != "" {
 		kubeadminCredential = testOptions.HubCluster.Password
 	}
-	// identity provider can either be 0 or 1
-	// with 0 for kube:admin or `kubeadmin` and
-	// 1 for any other use, ie. user defined users
-	// default to `kubeadmin` logins, otherwise
-	// select the second option
-	testIdentityProvider = 0
-	if kubeadminUser != "kubeadmin" {
-		testIdentityProvider = 1
-	}
-
-	for i := range testOptions.ManagedClusters {
-		if testOptions.ManagedClusters[i].MasterURL == "" {
-			testOptions.ManagedClusters[i].MasterURL = fmt.Sprintf("https://api.%s:6443", testOptions.ManagedClusters[0].BaseDomain)
-		}
-	}
-
-	if testOptions.ImageRegistry.Server != "" {
-		registry = testOptions.ImageRegistry.Server
-		registryUser = testOptions.ImageRegistry.User
-		registryPassword = testOptions.ImageRegistry.Password
-	} else {
-		klog.Warningf("No `imageRegistry.server` was included in the options.yaml file. Ignoring any tests that require an ImageRegistry.")
-	}
-
-	//Allow developers and testers to use a non-default namespace for ACM deployment
-	if testOptions.HubCluster.Namespace != "" {
-		hubNamespace = testOptions.HubCluster.Namespace
-		klog.Warningf("The non-default namespace used to deploy the ACM hub will be %s.  As specified by `hub.namespace` in the options.yaml file.", hubNamespace)
-	} else {
-		hubNamespace = "open-cluster-management"
-	}
 }
