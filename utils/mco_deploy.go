@@ -224,9 +224,9 @@ func CreateObjSecret(opt TestOptions) error {
 		return errors.New("failed to get aws AWS_ACCESS_KEY_ID env")
 	}
 
-	secretKey := os.Getenv("AWS_ACCESS_KEY")
+	secretKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
 	if secretKey == "" {
-		return errors.New("failed to get aws AWS_ACCESS_KEY env")
+		return errors.New("failed to get aws AWS_SECRET_ACCESS_KEY env")
 	}
 
 	objSecret := fmt.Sprintf(`apiVersion: v1

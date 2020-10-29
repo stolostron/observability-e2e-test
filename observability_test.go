@@ -30,7 +30,7 @@ var (
 	dynClient dynamic.Interface
 )
 
-var _ = Describe("Observability", func() {
+var _ = Describe("Observability:", func() {
 	BeforeEach(func() {
 		hubClient = utils.NewKubeClient(
 			testOptions.HubCluster.MasterURL,
@@ -43,7 +43,7 @@ var _ = Describe("Observability", func() {
 			testOptions.HubCluster.KubeContext)
 	})
 
-	It("Observability: MCO Operator is created", func() {
+	It("Case 01 - MCO Operator is created", func() {
 		var podList, _ = hubClient.CoreV1().Pods(MCO_OPERATOR_NAMESPACE).List(metav1.ListOptions{LabelSelector: MCO_LABEL})
 		Expect(len(podList.Items)).To(Equal(1))
 		for _, pod := range podList.Items {
@@ -51,7 +51,7 @@ var _ = Describe("Observability", func() {
 		}
 	})
 
-	It("Observability: Required CRDs are created", func() {
+	It("Case 02 - Required CRDs are created", func() {
 		Eventually(func() error {
 			return utils.HaveCRDs(testOptions.HubCluster, testOptions.KubeConfig,
 				[]string{
@@ -62,7 +62,7 @@ var _ = Describe("Observability", func() {
 		}).Should(Succeed())
 	})
 
-	It("Observability: All required components are deployed and running", func() {
+	It("Case 03 - All required components are deployed and running", func() {
 		Expect(utils.CreateMCONamespace(testOptions)).NotTo(HaveOccurred())
 		Expect(utils.CreatePullSecret(testOptions)).NotTo(HaveOccurred())
 		Expect(utils.CreateObjSecret(testOptions)).NotTo(HaveOccurred())
@@ -81,7 +81,7 @@ var _ = Describe("Observability", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 	})
 
-	It("Observability: Grafana console can be accessible", func() {
+	It("Case 04 - Grafana console can be accessible", func() {
 		Eventually(func() error {
 			err := utils.CheckGrafanaConsole(testOptions)
 			if err != nil {
@@ -91,7 +91,7 @@ var _ = Describe("Observability", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("Observability: retentionResolutionRaw is modified", func() {
+	It("Case 05 - retentionResolutionRaw is modified", func() {
 		By("Modifying MCO retentionResolutionRaw filed")
 		err := utils.ModifyMCORetentionResolutionRaw(testOptions)
 		Expect(err).ToNot(HaveOccurred())
@@ -113,14 +113,14 @@ var _ = Describe("Observability", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("Observability: Managed cluster metrics shows up in Grafana console", func() {
+	It("Case 06 - Managed cluster metrics shows up in Grafana console", func() {
 		Eventually(func() error {
 			err, _ := utils.ContainManagedClusterMetric(testOptions)
 			return err
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("Observability: disable observabilityaddon", func() {
+	It("Case 07 - Disable observabilityaddon", func() {
 		By("Modifying MCO cr to disable observabilityaddon")
 		err := utils.ModifyMCOobservabilityAddonSpec(testOptions)
 		Expect(err).ToNot(HaveOccurred())
@@ -145,7 +145,7 @@ var _ = Describe("Observability", func() {
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("Observability: Modify availabilityConfig from High to Basic", func() {
+	It("Case 08 - Modify availabilityConfig from High to Basic", func() {
 		By("Modifying MCO availabilityConfig filed")
 		err := utils.ModifyMCOAvailabilityConfig(testOptions)
 		Expect(err).ToNot(HaveOccurred())
@@ -161,7 +161,7 @@ var _ = Describe("Observability", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("Observability: Clean up", func() {
+	It("Case 09 - Clean up", func() {
 		By("Uninstall MCO instance")
 		err := utils.UninstallMCO(testOptions)
 		Expect(err).ToNot(HaveOccurred())
