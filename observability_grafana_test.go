@@ -30,7 +30,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("should have metric data in grafana console (addon/g0) (grafana/g0)", func() {
+	It("should have metric data in grafana console (grafana/g0)", func() {
 		Eventually(func() error {
 			err, _ := utils.ContainManagedClusterMetric(testOptions)
 			return err
