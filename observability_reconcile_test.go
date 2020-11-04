@@ -64,7 +64,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("should wrok in basic mode (reconcile/g0)", func() {
+	It("should work in basic mode (reconcile/g0)", func() {
 		By("Modifying MCO availabilityConfig filed")
 		err := utils.ModifyMCOAvailabilityConfig(testOptions)
 		Expect(err).ToNot(HaveOccurred())
