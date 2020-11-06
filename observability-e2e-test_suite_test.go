@@ -275,11 +275,12 @@ func initVars() {
 		if testOptions.HubCluster.MasterURL == "" {
 			testOptions.HubCluster.MasterURL = fmt.Sprintf("https://api.%s:6443", testOptions.HubCluster.BaseDomain)
 		}
-
 	} else {
-		klog.Warningf("No `hub.baseDomain` was included in the options.yaml file. Tests will be unable to run. Aborting ...")
-		Expect(testOptions.HubCluster.BaseDomain).NotTo(BeEmpty(), "The `hub` option in options.yaml is required.")
+		Expect(baseDomain).NotTo(BeEmpty(), "The `baseDomain` is required.")
+		testOptions.HubCluster.BaseDomain = baseDomain
+		testOptions.HubCluster.MasterURL = fmt.Sprintf("https://api.%s:6443", baseDomain)
 	}
+
 	if testOptions.HubCluster.User != "" {
 		kubeadminUser = testOptions.HubCluster.User
 	}
