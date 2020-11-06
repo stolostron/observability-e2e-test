@@ -49,7 +49,7 @@ func NewMCOAddonGVR() schema.GroupVersionResource {
 		Resource: "observabilityaddons"}
 }
 
-func ModifyMCOAvailabilityConfig(opt TestOptions) error {
+func ModifyMCOAvailabilityConfig(opt TestOptions, availabilityConfig string) error {
 	clientDynamic := NewKubeClientDynamic(
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
@@ -61,7 +61,7 @@ func ModifyMCOAvailabilityConfig(opt TestOptions) error {
 	}
 
 	spec := mco.Object["spec"].(map[string]interface{})
-	spec["availabilityConfig"] = "Basic"
+	spec["availabilityConfig"] = availabilityConfig
 	_, updateErr := clientDynamic.Resource(NewMCOGVR()).Update(mco, metav1.UpdateOptions{})
 	if updateErr != nil {
 		return updateErr
