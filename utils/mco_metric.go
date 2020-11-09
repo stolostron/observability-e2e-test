@@ -8,10 +8,10 @@ import (
 	"strings"
 )
 
-func ContainManagedClusterMetric(opt TestOptions) (error, bool) {
+func ContainManagedClusterMetric(opt TestOptions, offset string) (error, bool) {
 	grafanaConsoleURL := GetGrafanaURL(opt)
 	path := "/api/datasources/proxy/1/api/v1/"
-	queryParams := "query?query=%3Anode_memory_MemAvailable_bytes%3Asum"
+	queryParams := "query?query=%3Anode_memory_MemAvailable_bytes%3Asum%20offset%20" + offset
 	req, err := http.NewRequest(
 		"GET",
 		grafanaConsoleURL+path+queryParams,
