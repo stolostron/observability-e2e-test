@@ -11,7 +11,7 @@ This will be called after Observability is installed - both Hub and Addon in rea
 
 The tests in this container will:
 
-1. Create the MCO CR . The Object store to be already in place for CR to work.
+1. Create the MCO CR. The Object store is in place for CR to work.
 2. Wait for the installation to complete.
 3. Then check the entire Observability suite (Hub and Addon) is working as expected including disable/enable, Grafana etc.
 
