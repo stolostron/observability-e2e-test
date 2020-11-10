@@ -25,6 +25,8 @@ type Cluster struct {
 	Password    string          `yaml:"password,omitempty"`
 	KubeContext string          `yaml:"kubecontext,omitempty"`
 	MasterURL   string          `yaml:"masterURL,omitempty"`
+	GrafanaURL  string          `yaml:"grafanaURL,omitempty"`
+	GrafanaHost string          `yaml:"grafanaHost,omitempty"`
 }
 
 // Define the image registry

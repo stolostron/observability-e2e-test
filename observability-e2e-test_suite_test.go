@@ -9,14 +9,14 @@ import (
 	"testing"
 	"time"
 
-	"gopkg.in/yaml.v2"
-	"k8s.io/klog"
-
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
-	"github.com/open-cluster-management/observability-e2e-test/utils"
 	"github.com/sclevine/agouti"
+	"gopkg.in/yaml.v2"
+	"k8s.io/klog"
+
+	"github.com/open-cluster-management/observability-e2e-test/utils"
 )
 
 //var bareBaseDomain string
@@ -90,9 +90,11 @@ var agoutiDriver *agouti.WebDriver
 
 var _ = BeforeSuite(func() {
 	initVars()
+	installMCO()
 })
 
 var _ = AfterSuite(func() {
+	uninstallMCO()
 })
 
 func initVars() {
@@ -170,11 +172,12 @@ func initVars() {
 		if testOptions.HubCluster.MasterURL == "" {
 			testOptions.HubCluster.MasterURL = fmt.Sprintf("https://api.%s:6443", testOptions.HubCluster.BaseDomain)
 		}
-
 	} else {
-		klog.Warningf("No `hub.baseDomain` was included in the options.yaml file. Tests will be unable to run. Aborting ...")
-		Expect(testOptions.HubCluster.BaseDomain).NotTo(BeEmpty(), "The `hub` option in options.yaml is required.")
+		Expect(baseDomain).NotTo(BeEmpty(), "The `baseDomain` is required.")
+		testOptions.HubCluster.BaseDomain = baseDomain
+		testOptions.HubCluster.MasterURL = fmt.Sprintf("https://api.%s:6443", baseDomain)
 	}
+
 	if testOptions.HubCluster.User != "" {
 		kubeadminUser = testOptions.HubCluster.User
 	}

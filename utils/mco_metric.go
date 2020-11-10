@@ -8,12 +8,13 @@ import (
 	"strings"
 )
 
-func ContainManagedClusterMetric(opt TestOptions) (error, bool) {
-	path := "/grafana/api/datasources/proxy/1/api/v1/"
-	queryParams := "query?query=cluster%3Acapacity_cpu_cores%3Asum"
+func ContainManagedClusterMetric(opt TestOptions, offset string) (error, bool) {
+	grafanaConsoleURL := GetGrafanaURL(opt)
+	path := "/api/datasources/proxy/1/api/v1/"
+	queryParams := "query?query=%3Anode_memory_MemAvailable_bytes%3Asum%20offset%20" + offset
 	req, err := http.NewRequest(
 		"GET",
-		"https://multicloud-console.apps."+opt.HubCluster.BaseDomain+path+queryParams,
+		grafanaConsoleURL+path+queryParams,
 		nil)
 	if err != nil {
 		return err, false
@@ -28,8 +29,11 @@ func ContainManagedClusterMetric(opt TestOptions) (error, bool) {
 	if err != nil {
 		return err, false
 	}
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	req.Host = opt.HubCluster.GrafanaHost
 
-	req.Header.Set("Authorization", "Bearer "+token)
 	resp, err := client.Do(req)
 	if err != nil {
 		return err, false
@@ -48,7 +52,7 @@ func ContainManagedClusterMetric(opt TestOptions) (error, bool) {
 		return errors.New("Failed to find valid status from response"), false
 	}
 
-	if !strings.Contains(string(metricResult), `"__name__":"cluster:capacity_cpu_cores:sum"`) {
+	if !strings.Contains(string(metricResult), `"__name__":":node_memory_MemAvailable_bytes:sum"`) {
 		return errors.New("Failed to find metric name from response"), false
 	}
 
