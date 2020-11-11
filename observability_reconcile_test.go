@@ -64,6 +64,26 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
+	It("should have node selector: kubernetes.io/os=linux (reconcile/g0)", func() {
+		By("Adding node selector to MCO cr")
+		selector := map[string]string{"kubernetes.io/os": "linux"}
+		err := utils.ModifyMCONodeSelector(testOptions, selector)
+		Expect(err).ToNot(HaveOccurred())
+
+		By("Checking node selector for all pods")
+		Eventually(func() error {
+			err = utils.CheckAllPodNodeSelector(testOptions)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+
+		By("Deleting node selector from MCO cr")
+		err = utils.ModifyMCONodeSelector(testOptions, map[string]string{})
+		Expect(err).ToNot(HaveOccurred())
+	})
+
 	It("should work in basic mode (reconcile/g0)", func() {
 		By("Modifying MCO availabilityConfig to enable basic mode")
 		err := utils.ModifyMCOAvailabilityConfig(testOptions, "Basic")
@@ -72,7 +92,6 @@ var _ = Describe("Observability:", func() {
 		By("Checking MCO components in Basic mode")
 		Eventually(func() error {
 			err = utils.CheckMCOComponentsInBaiscMode(testOptions)
-
 			if err != nil {
 				return err
 			}

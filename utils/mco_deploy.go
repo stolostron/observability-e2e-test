@@ -69,6 +69,41 @@ func ModifyMCOAvailabilityConfig(opt TestOptions, availabilityConfig string) err
 	return nil
 }
 
+func ModifyMCONodeSelector(opt TestOptions, nodeSelector map[string]string) error {
+	clientDynamic := NewKubeClientDynamic(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+
+	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	if getErr != nil {
+		return getErr
+	}
+
+	spec := mco.Object["spec"].(map[string]interface{})
+	spec["nodeSelector"] = nodeSelector
+	_, updateErr := clientDynamic.Resource(NewMCOGVR()).Update(mco, metav1.UpdateOptions{})
+	if updateErr != nil {
+		return updateErr
+	}
+	return nil
+}
+
+func CheckAllPodNodeSelector(opt TestOptions) error {
+	hubClient := NewKubeClient(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+	var podList, _ = hubClient.CoreV1().Pods(MCO_NAMESPACE).List(metav1.ListOptions{})
+	for _, pod := range podList.Items {
+		selecterValue, ok := pod.Spec.NodeSelector["kubernetes.io/os"]
+		if !ok || selecterValue != "linux" {
+			return errors.New("Failed to ckeck node selector for pod: " + pod.GetName())
+		}
+	}
+	return nil
+}
+
 func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 	client := NewKubeClient(
 		opt.HubCluster.MasterURL,
