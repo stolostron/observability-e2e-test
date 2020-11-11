@@ -1,7 +1,7 @@
 package main_test
 
 import (
-	"errors"
+	"fmt"
 	"os"
 
 	. "github.com/onsi/ginkgo"
@@ -45,7 +45,7 @@ func uninstallMCO() {
 		name := MCO_CR_NAME + "-addon"
 		instance, _ := dynClient.Resource(gvr).Namespace("local-cluster").Get(name, metav1.GetOptions{})
 		if instance != nil {
-			return errors.New("Failed to delete MCO addon instance")
+			return fmt.Errorf("Failed to delete MCO addon instance")
 		}
 		return nil
 	}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())

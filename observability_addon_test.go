@@ -1,7 +1,7 @@
 package main_test
 
 import (
-	"errors"
+	"fmt"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -34,7 +34,7 @@ var _ = Describe("Observability:", func() {
 			addonLabel := "component=metrics-collector"
 			var podList, _ = hubClient.CoreV1().Pods(MCO_ADDON_NAMESPACE).List(metav1.ListOptions{LabelSelector: addonLabel})
 			if len(podList.Items) != 0 {
-				return errors.New("Failed to disable observability addon")
+				return fmt.Errorf("Failed to disable observability addon")
 			}
 			return nil
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
@@ -47,7 +47,7 @@ var _ = Describe("Observability:", func() {
 			if err != nil && !hasMetric && strings.Contains(err.Error(), "Failed to find metric name from response") {
 				return nil
 			}
-			return errors.New("Found metric data in grafana console")
+			return fmt.Errorf("Check no metric data in grafana console error: %v", err)
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 
 		By("Modifying MCO cr to enalbe observabilityaddon")

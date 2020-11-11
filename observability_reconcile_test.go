@@ -1,7 +1,7 @@
 package main_test
 
 import (
-	"errors"
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -60,7 +60,7 @@ var _ = Describe("Observability:", func() {
 					return nil
 				}
 			}
-			return errors.New("Failed to find modified retention field")
+			return fmt.Errorf("Failed to find modified retention field")
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 

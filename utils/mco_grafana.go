@@ -2,8 +2,10 @@ package utils
 
 import (
 	"crypto/tls"
-	"errors"
+	"fmt"
 	"net/http"
+
+	"k8s.io/klog"
 )
 
 func GetGrafanaURL(opt TestOptions) string {
@@ -42,7 +44,8 @@ func CheckGrafanaConsole(opt TestOptions) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.New("Failed to access grafana console")
+		klog.Errorf("resp.StatusCode: %v\n", resp.StatusCode)
+		return fmt.Errorf("Failed to access grafana console")
 	}
 	return nil
 }
