@@ -26,8 +26,9 @@ func installMCO() {
 		testOptions.HubCluster.KubeContext)
 
 	By("Checking MCO operator is existed")
-	var podList, _ = hubClient.CoreV1().Pods(MCO_OPERATOR_NAMESPACE).List(metav1.ListOptions{LabelSelector: MCO_LABEL})
+	podList, err := hubClient.CoreV1().Pods(MCO_OPERATOR_NAMESPACE).List(metav1.ListOptions{LabelSelector: MCO_LABEL})
 	Expect(len(podList.Items)).To(Equal(1))
+	Expect(err).NotTo(HaveOccurred())
 	for _, pod := range podList.Items {
 		Expect(string(pod.Status.Phase)).To(Equal("Running"))
 	}

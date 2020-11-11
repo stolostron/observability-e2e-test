@@ -11,13 +11,14 @@ import (
 )
 
 const (
-	MCO_OPERATOR_NAMESPACE = "open-cluster-management"
-	MCO_NAMESPACE          = "open-cluster-management-observability"
-	MCO_CR_NAME            = "observability"
-	MCO_LABEL              = "name=multicluster-observability-operator"
-	MCO_PULL_SECRET_NAME   = "multiclusterhub-operator-pull-secret"
-	OBJ_SECRET_NAME        = "thanos-object-storage"
-	MCO_GROUP              = "observability.open-cluster-management.io"
+	MCO_OPERATOR_NAMESPACE        = "open-cluster-management"
+	MCO_CR_NAME                   = "observability"
+	MCO_COMPONENT_LABEL           = "observability.open-cluster-management.io/name=" + MCO_CR_NAME
+	OBSERVATORIUM_COMPONENT_LABEL = "app.kubernetes.io/part-of=observatorium"
+	MCO_NAMESPACE                 = "open-cluster-management-observability"
+	MCO_PULL_SECRET_NAME          = "multiclusterhub-operator-pull-secret"
+	OBJ_SECRET_NAME               = "thanos-object-storage"
+	MCO_GROUP                     = "observability.open-cluster-management.io"
 )
 
 func NewMCOInstanceYaml(name string) []byte {
@@ -94,8 +95,21 @@ func CheckAllPodNodeSelector(opt TestOptions) error {
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
-	var podList, _ = hubClient.CoreV1().Pods(MCO_NAMESPACE).List(metav1.ListOptions{})
-	for _, pod := range podList.Items {
+
+	mcoOpt := metav1.ListOptions{LabelSelector: MCO_COMPONENT_LABEL}
+	mcoPods, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).List(mcoOpt)
+	if err != nil {
+		return err
+	}
+
+	obsOpt := metav1.ListOptions{LabelSelector: OBSERVATORIUM_COMPONENT_LABEL}
+	obsPods, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).List(obsOpt)
+	if err != nil {
+		return err
+	}
+
+	podList := append(mcoPods.Items, obsPods.Items...)
+	for _, pod := range podList {
 		selecterValue, ok := pod.Spec.NodeSelector["kubernetes.io/os"]
 		if !ok || selecterValue != "linux" {
 			return errors.New("Failed to ckeck node selector for pod: " + pod.GetName())
