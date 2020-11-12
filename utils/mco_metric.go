@@ -2,10 +2,12 @@ package utils
 
 import (
 	"crypto/tls"
-	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"k8s.io/klog"
 )
 
 func ContainManagedClusterMetric(opt TestOptions, offset string) (error, bool) {
@@ -40,20 +42,22 @@ func ContainManagedClusterMetric(opt TestOptions, offset string) (error, bool) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.New("Failed to access managed cluster metrics via grafana console"), false
+		klog.Errorf("resp.StatusCode: %v\n", resp.StatusCode)
+		return fmt.Errorf("Failed to access managed cluster metrics via grafana console"), false
 	}
 
 	metricResult, err := ioutil.ReadAll(resp.Body)
+	klog.V(1).Infof("metricResult: %s\n", metricResult)
 	if err != nil {
 		return err, false
 	}
 
 	if !strings.Contains(string(metricResult), `status":"success"`) {
-		return errors.New("Failed to find valid status from response"), false
+		return fmt.Errorf("Failed to find valid status from response"), false
 	}
 
 	if !strings.Contains(string(metricResult), `"__name__":":node_memory_MemAvailable_bytes:sum"`) {
-		return errors.New("Failed to find metric name from response"), false
+		return fmt.Errorf("Failed to find metric name from response"), false
 	}
 
 	return nil, true

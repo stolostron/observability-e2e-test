@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"errors"
 	"fmt"
 	"os"
 
@@ -112,7 +111,7 @@ func CheckAllPodNodeSelector(opt TestOptions) error {
 	for _, pod := range podList {
 		selecterValue, ok := pod.Spec.NodeSelector["kubernetes.io/os"]
 		if !ok || selecterValue != "linux" {
-			return errors.New("Failed to ckeck node selector for pod: " + pod.GetName())
+			return fmt.Errorf("Failed to ckeck node selector for pod: %v" + pod.GetName())
 		}
 	}
 	return nil
@@ -137,13 +136,12 @@ func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 	for _, deploymentName := range expectedDeploymentNames {
 		deployment, err := deployments.Get(deploymentName, metav1.GetOptions{})
 		if err != nil {
-			klog.V(1).Infof("Error while retrieving deployment %s: %s", deploymentName, err.Error())
+			klog.Errorf("Error while retrieving deployment %s: %s", deploymentName, err.Error())
 			return err
 		}
 
 		if deployment.Status.ReadyReplicas != 1 {
 			err = fmt.Errorf("Expect 1 but got %d ready replicas", deployment.Status.ReadyReplicas)
-			klog.Errorln(err)
 			return err
 		}
 	}
@@ -167,7 +165,6 @@ func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 
 		if statefulset.Status.ReadyReplicas != 1 {
 			err = fmt.Errorf("Expect 1 but got %d ready replicas", statefulset.Status.ReadyReplicas)
-			klog.Errorln(err)
 			return err
 		}
 	}
@@ -260,22 +257,22 @@ func CreateObjSecret(opt TestOptions) error {
 
 	bucket := os.Getenv("BUCKET")
 	if bucket == "" {
-		return errors.New("failed to get s3 BUCKET env")
+		return fmt.Errorf("failed to get s3 BUCKET env")
 	}
 
 	region := os.Getenv("REGION")
 	if region == "" {
-		return errors.New("failed to get s3 REGION env")
+		return fmt.Errorf("failed to get s3 REGION env")
 	}
 
 	accessKey := os.Getenv("AWS_ACCESS_KEY_ID")
 	if accessKey == "" {
-		return errors.New("failed to get aws AWS_ACCESS_KEY_ID env")
+		return fmt.Errorf("failed to get aws AWS_ACCESS_KEY_ID env")
 	}
 
 	secretKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
 	if secretKey == "" {
-		return errors.New("failed to get aws AWS_SECRET_ACCESS_KEY env")
+		return fmt.Errorf("failed to get aws AWS_SECRET_ACCESS_KEY env")
 	}
 
 	objSecret := fmt.Sprintf(`apiVersion: v1
