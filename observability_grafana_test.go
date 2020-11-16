@@ -20,16 +20,6 @@ var _ = Describe("Observability:", func() {
 			testOptions.HubCluster.KubeContext)
 	})
 
-	It("should be able to access the grafana console (grafana/g0)", func() {
-		Eventually(func() error {
-			err := utils.CheckGrafanaConsole(testOptions)
-			if err != nil {
-				return err
-			}
-			return nil
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
-	})
-
 	It("should have metric data in grafana console (grafana/g0)", func() {
 		Eventually(func() error {
 			err, _ := utils.ContainManagedClusterMetric(testOptions, "5m")

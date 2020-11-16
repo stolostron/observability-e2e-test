@@ -43,7 +43,7 @@ $ export REGION=YOUR_S3_REGION
 $ export AWS_ACCESS_KEY_ID=YOUR_S3_AWS_ACCESS_KEY_ID
 $ export AWS_SECRET_ACCESS_KEY=YOUR_S3_AWS_SECRET_ACCESS_KEY
 $ export KUBECONFIG=~/.kube/config
-$ ginkgo -v -- -options=resources/options.yaml
+$ ginkgo -v -- -options=resources/options.yaml -v=3
 ```
 
 ## Running with Docker
@@ -109,6 +109,26 @@ In Canary environment, this is the container that will be run - and all the volu
 ### Options.yaml
 
 The values in the options.yaml are optional values read in by E2E. If you do not set an option, the test case that depends on the option should skip the test. The sample values in the option.yaml.template should provide enough context for you fill in with the appropriate values. Further, in the section below, each test should document their test with some detail.
+
+### Skip install and uninstall
+
+For developing and testing purposes, you can set the following env to skip the install and uninstall steps to keep your current MCO instance.
+
+- SKIP_INSTALL_STEP:  if set to `true`, the testing will skip the install step
+- SKIP_UNINSTALL_STEP:  if set to `true`, the testing will skip the uninstall step
+
+For example, run the following command will skip the install and uninstall step:
+
+```
+$ export SKIP_INSTALL_STEP=true
+$ export SKIP_UNINSTALL_STEP=true
+$ export BUCKET=YOUR_S3_BUCKET
+$ export REGION=YOUR_S3_REGION
+$ export AWS_ACCESS_KEY_ID=YOUR_S3_AWS_ACCESS_KEY_ID
+$ export AWS_SECRET_ACCESS_KEY=YOUR_S3_AWS_SECRET_ACCESS_KEY
+$ export KUBECONFIG=~/.kube/config
+$ ginkgo -v -- -options=resources/options.yaml -v=3
+```
 
 ### Focus Labels
 
