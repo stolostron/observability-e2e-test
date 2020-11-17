@@ -9,6 +9,9 @@ RUN microdnf -y install --nodocs wget unzip tar git gcc
 RUN wget --no-check-certificate -O - 'https://dl.google.com/go/go1.14.2.linux-amd64.tar.gz' | tar xz -C /usr/local/
 RUN mkdir -p /go/bin
 
+# install oc into build image
+RUN curl -fksSL https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.6.3/openshift-client-linux-4.6.3.tar.gz | tar -xvz -C /usr/local/ oc
+
 ENV PATH usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/go/bin:.
 
 # copy go tests into build image
@@ -38,6 +41,10 @@ ENV GINKGO_SKIP=""
 
 # install ginkgo into built image
 COPY --from=build /go/bin/ /usr/local/bin
+
+# copy oc into built image
+COPY --from=build /usr/local/oc /usr/local/bin/oc
+RUN oc version
 
 # copy compiled tests into built image
 RUN mkdir -p /opt/tests
