@@ -84,7 +84,7 @@ var _ = Describe("Observability:", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("should have podAntiAffinity defined: topology.kubernetes.io/zone and kubernetes.io/hostname", func() {
+	It("[P1,Sev2,observability] should have podAntiAffinity defined (reconcile/g0)", func() {
 
 		By("Checking podAntiAffinity for all pods")
 		Eventually(func() error {
