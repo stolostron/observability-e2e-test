@@ -263,6 +263,21 @@ func Apply(url string, kubeconfig string, context string, yamlB []byte) error {
 				klog.Warningf("%s %s/%s already exists, updating!", obj.Kind, obj.Namespace, obj.Name)
 				_, err = clientKube.CoreV1().Secrets(obj.Namespace).Update(obj)
 			}
+		case "ConfigMap":
+			klog.V(5).Infof("Install %s: %s\n", kind, f)
+			obj := &corev1.ConfigMap{}
+			err = yaml.Unmarshal([]byte(f), obj)
+			if err != nil {
+				return err
+			}
+			existingObject, errGet := clientKube.CoreV1().ConfigMaps(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
+			if errGet != nil {
+				_, err = clientKube.CoreV1().ConfigMaps(obj.Namespace).Create(obj)
+			} else {
+				obj.ObjectMeta = existingObject.ObjectMeta
+				klog.Warningf("%s %s/%s already exists, updating!", obj.Kind, obj.Namespace, obj.Name)
+				_, err = clientKube.CoreV1().ConfigMaps(obj.Namespace).Update(obj)
+			}
 		case "Service":
 			klog.V(5).Infof("Install %s: %s\n", kind, f)
 			obj := &corev1.Service{}

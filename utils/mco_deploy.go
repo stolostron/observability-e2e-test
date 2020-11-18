@@ -330,3 +330,27 @@ func UninstallMCO(opt TestOptions) error {
 
 	return nil
 }
+
+func CreateCustomAlertRuleYaml(exp string) []byte {
+	instance := fmt.Sprintf(`kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: thanos-ruler-custom-rules
+  namespace: open-cluster-management-observability
+data:
+    custom_rules.yaml: |
+      groups:
+      - name: node-health
+        rules:
+        - alert: NodeOutOfMemory
+          expr: %s
+          for: 1m
+          labels:
+            instance: "{{ $labels.instance }}"
+            cluster: "{{ $labels.cluster }}"
+            clusterID: "{{ $labels.clusterID }}"
+            severity: warning`,
+		exp)
+
+	return []byte(instance)
+}
