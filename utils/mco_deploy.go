@@ -112,7 +112,8 @@ func CheckAllPodNodeSelector(opt TestOptions) error {
 	for _, pod := range podList {
 		selecterValue, ok := pod.Spec.NodeSelector["kubernetes.io/os"]
 		if !ok || selecterValue != "linux" {
-			return fmt.Errorf("Failed to ckeck node selector for pod: %v" + pod.GetName())
+			klog.Errorf("Error while check pod node selector: %+v", pod)
+			return fmt.Errorf("Failed to check node selector for pod: %v", pod.GetName())
 		}
 	}
 	return nil
