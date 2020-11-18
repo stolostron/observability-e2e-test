@@ -6,23 +6,27 @@ import (
 	"k8s.io/klog"
 )
 
-func GetMetricsCollectorPodList(opt TestOptions) (error, *v1.PodList) {
+func GetPodList(opt TestOptions, isHub bool, labelSelector string) (error, *v1.PodList) {
 	clientKube := NewKubeClient(
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
-	if len(opt.ManagedClusters) > 0 {
+	if !isHub && len(opt.ManagedClusters) > 0 {
 		clientKube = NewKubeClient(
 			opt.ManagedClusters[0].MasterURL,
 			opt.ManagedClusters[0].KubeConfig,
 			opt.ManagedClusters[0].KubeContext)
 	}
-	listOption := metav1.ListOptions{
-		LabelSelector: "component=metrics-collector",
+	listOption := metav1.ListOptions{}
+	if labelSelector != "" {
+		listOption.LabelSelector = labelSelector
 	}
 	podList, err := clientKube.CoreV1().Pods(MCO_ADDON_NAMESPACE).List(listOption)
 	if err != nil {
-		klog.Errorf("Failed to get metrics collector pod list due to %v", err)
+		klog.Errorf("Failed to get pod list using labelselector %s due to %v", labelSelector, err)
+	}
+	if podList != nil && len(podList.Items) == 0 {
+		klog.V(1).Infof("No pod found for labelselector %s", labelSelector)
 	}
 	return err, podList
 }
