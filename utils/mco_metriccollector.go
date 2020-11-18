@@ -11,7 +11,12 @@ func GetMetricsCollectorPodList(opt TestOptions) (error, *v1.PodList) {
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
-
+	if len(opt.ManagedClusters) > 0 {
+		clientKube = NewKubeClient(
+			opt.ManagedClusters[0].MasterURL,
+			opt.ManagedClusters[0].KubeConfig,
+			opt.ManagedClusters[0].KubeContext)
+	}
 	listOption := metav1.ListOptions{
 		LabelSelector: "component=metrics-collector",
 	}
