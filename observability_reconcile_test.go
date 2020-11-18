@@ -84,6 +84,18 @@ var _ = Describe("Observability:", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	It("should have podAntiAffinity defined: topology.kubernetes.io/zone and kubernetes.io/hostname", func() {
+
+		By("Checking podAntiAffinity for all pods")
+		Eventually(func() error {
+			err := utils.CheckAllPodsAffinity(testOptions)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+	})
+
 	It("should work in basic mode (reconcile/g0)", func() {
 		By("Modifying MCO availabilityConfig to enable basic mode")
 		err := utils.ModifyMCOAvailabilityConfig(testOptions, "Basic")
