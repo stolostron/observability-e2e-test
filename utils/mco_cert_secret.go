@@ -19,12 +19,12 @@ func DeleteCertSecret(opt TestOptions) error {
 	klog.V(1).Infof("Delete certificate secret")
 	err := clientKube.CoreV1().Secrets(MCO_NAMESPACE).Delete(caSecretName, &metav1.DeleteOptions{})
 	if err != nil {
-		klog.V(1).Infof("Failed to delete certificate secret %s due to %v", caSecretName, err)
+		klog.Errorf("Failed to delete certificate secret %s due to %v", caSecretName, err)
 		return err
 	}
 	err = clientKube.CoreV1().Secrets(MCO_NAMESPACE).Delete(secretName, &metav1.DeleteOptions{})
 	if err != nil {
-		klog.V(1).Infof("Failed to delete certificate secret %s due to %v", secretName, err)
+		klog.Errorf("Failed to delete certificate secret %s due to %v", secretName, err)
 		return err
 	}
 	return err

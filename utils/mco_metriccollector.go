@@ -17,10 +17,7 @@ func GetMetricsCollectorPodList(opt TestOptions) (error, *v1.PodList) {
 	}
 	podList, err := clientKube.CoreV1().Pods(MCO_ADDON_NAMESPACE).List(listOption)
 	if err != nil {
-		klog.V(1).Infof("Failed to get metrics collector pod list due to %v", err)
-	}
-	for _, pod := range podList.Items {
-		klog.V(1).Infof("pod name is " + pod.Name)
+		klog.Errorf("Failed to get metrics collector pod list due to %v", err)
 	}
 	return err, podList
 }
