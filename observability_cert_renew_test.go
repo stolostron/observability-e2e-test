@@ -29,19 +29,19 @@ var _ = Describe("Observability:", func() {
 		rbacPodName := ""
 		Eventually(func() bool {
 			if collectorPodName == "" {
-				_, podList := utils.GetPodList(testOptions, false, "component=metrics-collector")
+				_, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
 				if podList != nil && len(podList.Items) > 0 {
 					collectorPodName = podList.Items[0].Name
 				}
 			}
 			if apiPodName == "" {
-				_, podList := utils.GetPodList(testOptions, true, "app.kubernetes.io/name=observatorium-api")
+				_, podList := utils.GetPodList(testOptions, true, MCO_ADDON_NAMESPACE, "app.kubernetes.io/name=observatorium-api")
 				if podList != nil && len(podList.Items) > 0 {
 					apiPodName = podList.Items[0].Name
 				}
 			}
 			if rbacPodName == "" {
-				_, podList := utils.GetPodList(testOptions, true, "app=rbac-query-proxy")
+				_, podList := utils.GetPodList(testOptions, true, MCO_ADDON_NAMESPACE, "app=rbac-query-proxy")
 				if podList != nil && len(podList.Items) > 0 {
 					rbacPodName = podList.Items[0].Name
 				}
@@ -58,7 +58,7 @@ var _ = Describe("Observability:", func() {
 
 		By(fmt.Sprintf("Waiting for old pod removed: %s", rbacPodName))
 		Eventually(func() bool {
-			err, podList := utils.GetPodList(testOptions, true, "app=rbac-query-proxy")
+			err, podList := utils.GetPodList(testOptions, true, MCO_ADDON_NAMESPACE, "app=rbac-query-proxy")
 			if err == nil {
 				for _, pod := range podList.Items {
 					if pod.Name == rbacPodName {
@@ -73,7 +73,7 @@ var _ = Describe("Observability:", func() {
 
 		By(fmt.Sprintf("Waiting for old pod removed: %s", apiPodName))
 		Eventually(func() bool {
-			err, podList := utils.GetPodList(testOptions, false, "component=metrics-collector")
+			err, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
 			if err == nil {
 				for _, pod := range podList.Items {
 					if pod.Name == apiPodName {
@@ -88,7 +88,7 @@ var _ = Describe("Observability:", func() {
 
 		By(fmt.Sprintf("Waiting for old pod removed: %s", collectorPodName))
 		Eventually(func() bool {
-			err, podList := utils.GetPodList(testOptions, false, "component=metrics-collector")
+			err, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
 			if err == nil {
 				for _, pod := range podList.Items {
 					if pod.Name == collectorPodName {
