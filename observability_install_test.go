@@ -52,11 +52,17 @@ func installMCO() {
 	Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, mco)).NotTo(HaveOccurred())
 
 	By("Waiting for MCO ready status")
+	allPodsIsReady := false
 	Eventually(func() bool {
 		instance, err := dynClient.Resource(utils.NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
 		if err == nil {
-			return utils.StatusContainsTypeEqualTo(instance, "Ready")
+			allPodsIsReady = utils.StatusContainsTypeEqualTo(instance, "Ready")
+			return allPodsIsReady
 		}
 		return false
 	}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
+
+	if !allPodsIsReady {
+		utils.PrintAllMCOPodsStatus(testOptions)
+	}
 }

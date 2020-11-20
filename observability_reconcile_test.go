@@ -27,6 +27,7 @@ var (
 
 	hubClient kubernetes.Interface
 	dynClient dynamic.Interface
+	err       error
 )
 
 var _ = Describe("Observability:", func() {
