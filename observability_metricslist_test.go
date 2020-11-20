@@ -27,7 +27,7 @@ var _ = Describe("Observability:", func() {
 
 		By("Waiting for new added metrics on grafana console")
 		Eventually(func() error {
-			err, _ := utils.ContainManagedClusterMetric(testOptions, "node_memory_Active_bytes", "1m")
+			err, _ := utils.ContainManagedClusterMetric(testOptions, "node_memory_Active_bytes", "1m", []string{`"__name__":"node_memory_Active_bytes"`})
 			return err
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 	})
@@ -39,7 +39,7 @@ var _ = Describe("Observability:", func() {
 
 		By("Waiting for new added metrics disappear on grafana console")
 		Eventually(func() error {
-			err, _ := utils.ContainManagedClusterMetric(testOptions, "node_memory_Active_bytes", "1m")
+			err, _ := utils.ContainManagedClusterMetric(testOptions, "node_memory_Active_bytes", "1m", []string{`"__name__":"node_memory_Active_bytes"`})
 			return err
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
 	})

@@ -11,7 +11,7 @@ import (
 	"k8s.io/klog"
 )
 
-func ContainManagedClusterMetric(opt TestOptions, name string, offset string) (error, bool) {
+func ContainManagedClusterMetric(opt TestOptions, name, offset string, matchedLabels []string) (error, bool) {
 	grafanaConsoleURL := GetGrafanaURL(opt)
 	path := "/api/datasources/proxy/1/api/v1/query?"
 	queryParams := url.PathEscape(fmt.Sprintf("query=%s offset %s", name, offset))
@@ -53,11 +53,18 @@ func ContainManagedClusterMetric(opt TestOptions, name string, offset string) (e
 		return err, false
 	}
 
-	if !strings.Contains(string(metricResult), `status":"success"`) {
+	if !strings.Contains(string(metricResult), `"status":"success"`) {
 		return fmt.Errorf("Failed to find valid status from response"), false
 	}
 
-	if !strings.Contains(string(metricResult), `"__name__":"`+name+`"`) {
+	contained := true
+	for _, label := range matchedLabels {
+		if !strings.Contains(string(metricResult), label) {
+			contained = false
+			break
+		}
+	}
+	if !contained {
 		return fmt.Errorf("Failed to find metric name from response"), false
 	}
 
