@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	name = "observability-metrics-custom-whitelist"
+	whitelistCMname = "observability-metrics-custom-whitelist"
 )
 
 func CreateMetricsWhitelist(opt TestOptions) error {
@@ -18,7 +18,7 @@ func CreateMetricsWhitelist(opt TestOptions) error {
 
 	metricsList := &v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      whitelistCMname,
 			Namespace: MCO_NAMESPACE,
 		},
 		Data: map[string]string{"metrics_list.yaml": `
@@ -38,6 +38,6 @@ func DeleteMetricsWhitelist(opt TestOptions) error {
 		opt.HubCluster.KubeContext)
 
 	klog.V(1).Infof("Delete metrics whitelist configmap")
-	err := clientKube.CoreV1().ConfigMaps(MCO_NAMESPACE).Delete(name, &metav1.DeleteOptions{})
+	err := clientKube.CoreV1().ConfigMaps(MCO_NAMESPACE).Delete(whitelistCMname, &metav1.DeleteOptions{})
 	return err
 }

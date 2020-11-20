@@ -15,6 +15,7 @@ const (
 	MCO_COMPONENT_LABEL           = "observability.open-cluster-management.io/name=" + MCO_CR_NAME
 	OBSERVATORIUM_COMPONENT_LABEL = "app.kubernetes.io/part-of=observatorium"
 	MCO_NAMESPACE                 = "open-cluster-management-observability"
+	MCO_ADDON_NAMESPACE           = "open-cluster-management-addon-observability"
 	MCO_PULL_SECRET_NAME          = "multiclusterhub-operator-pull-secret"
 	OBJ_SECRET_NAME               = "thanos-object-storage"
 	MCO_GROUP                     = "observability.open-cluster-management.io"
@@ -111,8 +112,40 @@ func CheckAllPodNodeSelector(opt TestOptions) error {
 	for _, pod := range podList {
 		selecterValue, ok := pod.Spec.NodeSelector["kubernetes.io/os"]
 		if !ok || selecterValue != "linux" {
-			klog.Errorf("Error while check pod node selector: %+v", pod)
 			return fmt.Errorf("Failed to check node selector for pod: %v", pod.GetName())
+		}
+	}
+	return nil
+}
+
+func CheckAllPodsAffinity(opt TestOptions) error {
+	hubClient := NewKubeClient(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+
+	mcoOpt := metav1.ListOptions{LabelSelector: MCO_COMPONENT_LABEL}
+	mcoPods, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).List(mcoOpt)
+	if err != nil {
+		return err
+	}
+
+	obsOpt := metav1.ListOptions{LabelSelector: OBSERVATORIUM_COMPONENT_LABEL}
+	obsPods, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).List(obsOpt)
+	if err != nil {
+		return err
+	}
+
+	podList := append(mcoPods.Items, obsPods.Items...)
+	for _, pod := range podList {
+		weightedPodAffinityTerms := pod.Spec.Affinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution
+		for _, weightedPodAffinityTerm := range weightedPodAffinityTerms {
+			topologyKey := weightedPodAffinityTerm.PodAffinityTerm.TopologyKey
+			if (topologyKey == "kubernetes.io/hostname" && weightedPodAffinityTerm.Weight == 30) ||
+				(topologyKey == "topology.kubernetes.io/zone" && weightedPodAffinityTerm.Weight == 70) {
+			} else {
+				return fmt.Errorf("Failed to ckeck affinity for pod: %v" + pod.GetName())
+			}
 		}
 	}
 	return nil
