@@ -160,48 +160,4 @@ var _ = Describe("Observability:", func() {
 			return nil
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
-
-	It("Case 09 - Clean up", func() {
-		By("Uninstall MCO instance")
-		err := utils.UninstallMCO(testOptions)
-		Expect(err).ToNot(HaveOccurred())
-
-		By("Waiting for delete all MCO components")
-		Eventually(func() error {
-			var podList, _ = hubClient.CoreV1().Pods(MCO_NAMESPACE).List(metav1.ListOptions{})
-			if len(podList.Items) != 0 {
-				return err
-			}
-			return nil
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
-
-		By("Waiting for delete MCO addon instance")
-		Eventually(func() error {
-			gvr := utils.NewMCOAddonGVR()
-			name := MCO_CR_NAME + "-addon"
-			instance, _ := dynClient.Resource(gvr).Namespace("local-cluster").Get(name, metav1.GetOptions{})
-			if instance != nil {
-				return errors.New("Failed to delete MCO addon instance")
-			}
-			return nil
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
-
-		By("Waiting for delete all MCO addon components")
-		Eventually(func() error {
-			var podList, _ = hubClient.CoreV1().Pods(MCO_ADDON_NAMESPACE).List(metav1.ListOptions{})
-			if len(podList.Items) != 0 {
-				return err
-			}
-			return nil
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
-
-		By("Waiting for delete MCO namespaces")
-		Eventually(func() error {
-			err := hubClient.CoreV1().Namespaces().Delete(MCO_NAMESPACE, &metav1.DeleteOptions{})
-			if err != nil {
-				return err
-			}
-			return nil
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
-	})
 })
