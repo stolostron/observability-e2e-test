@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog"
@@ -90,7 +91,7 @@ func ModifyMCONodeSelector(opt TestOptions, nodeSelector map[string]string) erro
 	return nil
 }
 
-func CheckAllPodNodeSelector(opt TestOptions) error {
+func GetAllMCOPods(opt TestOptions) ([]corev1.Pod, error) {
 	hubClient := NewKubeClient(
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
@@ -99,16 +100,46 @@ func CheckAllPodNodeSelector(opt TestOptions) error {
 	mcoOpt := metav1.ListOptions{LabelSelector: MCO_COMPONENT_LABEL}
 	mcoPods, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).List(mcoOpt)
 	if err != nil {
-		return err
+		return []corev1.Pod{}, err
 	}
 
 	obsOpt := metav1.ListOptions{LabelSelector: OBSERVATORIUM_COMPONENT_LABEL}
 	obsPods, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).List(obsOpt)
 	if err != nil {
+		return []corev1.Pod{}, err
+	}
+
+	return append(mcoPods.Items, obsPods.Items...), nil
+}
+
+func PrintAllMCOPodsStatus(opt TestOptions) {
+	podList, err := GetAllMCOPods(opt)
+	if err != nil {
+		klog.Errorf("Failed to get all MCO pods")
+	}
+
+	for _, pod := range podList {
+		isReady := false
+		for _, cond := range pod.Status.Conditions {
+			if cond.Type == "Ready" {
+				klog.V(1).Infof("Pod <%s> is <Ready> on <%s> status\n", pod.Name, pod.Status.Phase)
+				isReady = true
+				break
+			}
+		}
+
+		if !isReady {
+			klog.V(1).Infof("Pod <%s> is not <Ready> on <%s> status\n", pod.Name, pod.Status.Phase)
+		}
+	}
+}
+
+func CheckAllPodNodeSelector(opt TestOptions) error {
+	podList, err := GetAllMCOPods(opt)
+	if err != nil {
 		return err
 	}
 
-	podList := append(mcoPods.Items, obsPods.Items...)
 	for _, pod := range podList {
 		selecterValue, ok := pod.Spec.NodeSelector["kubernetes.io/os"]
 		if !ok || selecterValue != "linux" {
@@ -119,24 +150,11 @@ func CheckAllPodNodeSelector(opt TestOptions) error {
 }
 
 func CheckAllPodsAffinity(opt TestOptions) error {
-	hubClient := NewKubeClient(
-		opt.HubCluster.MasterURL,
-		opt.KubeConfig,
-		opt.HubCluster.KubeContext)
-
-	mcoOpt := metav1.ListOptions{LabelSelector: MCO_COMPONENT_LABEL}
-	mcoPods, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).List(mcoOpt)
+	podList, err := GetAllMCOPods(opt)
 	if err != nil {
 		return err
 	}
 
-	obsOpt := metav1.ListOptions{LabelSelector: OBSERVATORIUM_COMPONENT_LABEL}
-	obsPods, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).List(obsOpt)
-	if err != nil {
-		return err
-	}
-
-	podList := append(mcoPods.Items, obsPods.Items...)
 	for _, pod := range podList {
 		weightedPodAffinityTerms := pod.Spec.Affinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution
 		for _, weightedPodAffinityTerm := range weightedPodAffinityTerms {
