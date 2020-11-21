@@ -34,6 +34,19 @@ options:
     user: BASE_USER
     password: BASE_PASSWORD
 ```
+(optional)If there is an imported cluster in the test environment, need to add the cluster info into options.yaml
+```
+$ cat resources/options.yaml
+options:
+  hub:
+    baseDomain: BASE_DOMAIN
+    user: BASE_USER
+    password: BASE_PASSWORD
+  clusters:
+  - name: IMPORT_CLUSTER_NAME
+    baseDomain: IMPORT_CLUSTER_BASE_DOMAIN
+    kubecontext: IMPORT_CLUSTER_KUBE_CONTEXT 
+```
 
 3. run testing:
 
@@ -44,6 +57,10 @@ $ export AWS_ACCESS_KEY_ID=YOUR_S3_AWS_ACCESS_KEY_ID
 $ export AWS_SECRET_ACCESS_KEY=YOUR_S3_AWS_SECRET_ACCESS_KEY
 $ export KUBECONFIG=~/.kube/config
 $ ginkgo -v -- -options=resources/options.yaml -v=3
+```
+(optional)If there is an imported cluster in the test environment, need to set more environment
+```
+$ export KUBECONFIG=~/.kube/import-cluster-config
 ```
 
 ## Running with Docker
@@ -64,6 +81,19 @@ options:
     baseDomain: BASE_DOMAIN
     user: BASE_USER
     password: BASE_PASSWORD
+```
+(optional)If there is an imported cluster in the test environment, need to add the cluster info into options.yaml
+```
+$ cat resources/options.yaml
+options:
+  hub:
+    baseDomain: BASE_DOMAIN
+    user: BASE_USER
+    password: BASE_PASSWORD
+  clusters:
+  - name: IMPORT_CLUSTER_NAME
+    baseDomain: IMPORT_CLUSTER_BASE_DOMAIN
+    kubecontext: IMPORT_CLUSTER_KUBE_CONTEXT 
 ```
 
 3. copy `resources/env.list.template` to `resources/env.list`, and update values specific to your s3 configuration:
@@ -94,6 +124,12 @@ $ make build
 
 ```
 $ docker_image_id=`docker images | grep observability-e2e-test | sed -n '1p' | awk '{print $3}'`
+```
+
+7. (optional)If there is an imported cluster in the test environment, need to copy its' kubeconfig file into as ~/.kube/ as import-kubeconfig
+
+```
+$ cp {IMPORT_CLUSTER_KUBE_CONFIG_PATH} ~/.kube/import-kubeconfig
 ```
 
 7. run testing:
