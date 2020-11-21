@@ -184,4 +184,15 @@ func initVars() {
 	if testOptions.HubCluster.Password != "" {
 		kubeadminCredential = testOptions.HubCluster.Password
 	}
+
+	if testOptions.ManagedClusters != nil && len(testOptions.ManagedClusters) > 0 {
+		for i, mc := range testOptions.ManagedClusters {
+			if mc.MasterURL == "" {
+				testOptions.ManagedClusters[i].MasterURL = fmt.Sprintf("https://api.%s:6443", mc.BaseDomain)
+			}
+			if mc.KubeConfig == "" {
+				testOptions.ManagedClusters[i].KubeConfig = os.Getenv("IMPORT_KUBECONFIG")
+			}
+		}
+	}
 }

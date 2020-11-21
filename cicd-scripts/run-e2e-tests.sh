@@ -11,6 +11,7 @@ fi
 go get -u github.com/onsi/ginkgo/ginkgo
 
 export KUBECONFIG=$HOME/.kube/kind-config-hub
+export IMPORT_KUBECONFIG=$HOME/.kube/kind-config-spoke
 export SKIP_INSTALL_STEP=true
 
 cd ${WORKDIR}
@@ -24,7 +25,6 @@ printf "\n    grafanaHost: grafana-test" >> resources/options.yaml
 printf "\n  clusters:" >> resources/options.yaml
 printf "\n    - name: spoke" >> resources/options.yaml
 printf "\n      masterURL: https://127.0.0.1:32807" >> resources/options.yaml
-printf "\n      kubeconfig: $HOME/.kube/kind-config-spoke" >> resources/options.yaml
 
 ginkgo -v -- -options=resources/options.yaml -v=3
 
