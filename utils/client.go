@@ -11,7 +11,9 @@ func getKubeClient(opt TestOptions, isHub bool) kubernetes.Interface {
 		clientKube = NewKubeClient(
 			opt.ManagedClusters[0].MasterURL,
 			opt.ManagedClusters[0].KubeConfig,
-			opt.ManagedClusters[0].KubeContext)
+			"")
+		// use the default context as workaround
+		//			opt.ManagedClusters[0].KubeContext)
 	}
 	return clientKube
 }
