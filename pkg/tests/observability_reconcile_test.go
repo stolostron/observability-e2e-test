@@ -19,6 +19,7 @@ const (
 	MCO_NAMESPACE          = "open-cluster-management-observability"
 	MCO_ADDON_NAMESPACE    = "open-cluster-management-addon-observability"
 	MCO_LABEL              = "name=multicluster-observability-operator"
+	MCO_LABEL_OWNER        = "owner=multicluster-observability-operator"
 )
 
 var (
@@ -114,5 +115,14 @@ var _ = Describe("Observability:", func() {
 		By("Modifying MCO availabilityConfig to enable high mode")
 		err = utils.ModifyMCOAvailabilityConfig(testOptions, "High")
 		Expect(err).ToNot(HaveOccurred())
+
+		By("Checking MCO components in High mode")
+		Eventually(func() error {
+			err = utils.CheckMCOComponentsInHighMode(testOptions)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 })

@@ -65,4 +65,13 @@ func installMCO() {
 	if !allPodsIsReady {
 		utils.PrintAllMCOPodsStatus(testOptions)
 	}
+
+	By("Checking metrics default values on managed cluster")
+	mco_res, err := dynClient.Resource(utils.NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+	observabilityAddonSpec := mco_res.Object["spec"].(map[string]interface{})["observabilityAddonSpec"].(map[string]interface{})
+	Expect(observabilityAddonSpec["enableMetrics"]).To(Equal(true))
+	Expect(observabilityAddonSpec["interval"]).To(Equal(int64(60)))
 }

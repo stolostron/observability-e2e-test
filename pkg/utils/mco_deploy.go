@@ -21,6 +21,8 @@ const (
 	MCO_PULL_SECRET_NAME          = "multiclusterhub-operator-pull-secret"
 	OBJ_SECRET_NAME               = "thanos-object-storage"
 	MCO_GROUP                     = "observability.open-cluster-management.io"
+	OCM_WORK_GROUP                = "work.open-cluster-management.io"
+	OCM_CLUSTER_GROUP             = "cluster.open-cluster-management.io"
 )
 
 func NewMCOInstanceYaml(name string) []byte {
@@ -50,6 +52,20 @@ func NewMCOAddonGVR() schema.GroupVersionResource {
 		Group:    MCO_GROUP,
 		Version:  "v1beta1",
 		Resource: "observabilityaddons"}
+}
+
+func NewOCMManifestworksGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    OCM_WORK_GROUP,
+		Version:  "v1",
+		Resource: "manifestworks"}
+}
+
+func NewOCMManagedClustersGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    OCM_CLUSTER_GROUP,
+		Version:  "v1",
+		Resource: "managedclusters"}
 }
 
 func ModifyMCOAvailabilityConfig(opt TestOptions, availabilityConfig string) error {
@@ -225,6 +241,60 @@ func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 	return nil
 }
 
+func CheckMCOComponentsInHighMode(opt TestOptions) error {
+	client := NewKubeClient(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+	deployments := client.AppsV1().Deployments(MCO_NAMESPACE)
+	expectedDeploymentNames := []string{
+		"grafana",
+		"observability-observatorium-observatorium-api",
+		"observability-observatorium-thanos-query",
+		"observability-observatorium-thanos-query-frontend",
+		"rbac-query-proxy",
+	}
+
+	for _, deploymentName := range expectedDeploymentNames {
+		deployment, err := deployments.Get(deploymentName, metav1.GetOptions{})
+		if err != nil {
+			klog.Errorf("Error while retrieving deployment %s: %s", deploymentName, err.Error())
+			return err
+		}
+
+		if deployment.Status.ReadyReplicas != 2 {
+			err = fmt.Errorf("Expect 2 but got %d ready replicas", deployment.Status.ReadyReplicas)
+			return err
+		}
+	}
+
+	statefulsets := client.AppsV1().StatefulSets(MCO_NAMESPACE)
+	expectedStatefulSetNames := []string{
+		"alertmanager",
+		"observability-observatorium-thanos-compact",
+		"observability-observatorium-thanos-receive-default",
+		"observability-observatorium-thanos-rule",
+		"observability-observatorium-thanos-store-memcached",
+		// TODO: https://github.com/open-cluster-management/backlog/issues/6532
+		// "observability-observatorium-thanos-store-shard-0",
+	}
+
+	for _, statefulsetName := range expectedStatefulSetNames {
+		statefulset, err := statefulsets.Get(statefulsetName, metav1.GetOptions{})
+		if err != nil {
+			klog.V(1).Infof("Error while retrieving statefulset %s: %s", statefulsetName, err.Error())
+			return err
+		}
+
+		if statefulset.Status.ReadyReplicas != 3 {
+			err = fmt.Errorf("Expect 3 but got %d ready replicas", statefulset.Status.ReadyReplicas)
+			return err
+		}
+	}
+
+	return nil
+}
+
 func ModifyMCORetentionResolutionRaw(opt TestOptions) error {
 	clientDynamic := NewKubeClientDynamic(
 		opt.HubCluster.MasterURL,
@@ -244,7 +314,7 @@ func ModifyMCORetentionResolutionRaw(opt TestOptions) error {
 	return nil
 }
 
-func ModifyMCOAddonSpec(opt TestOptions, enable bool) error {
+func ModifyMCOAddonSpecMetrics(opt TestOptions, enable bool) error {
 	clientDynamic := NewKubeClientDynamic(
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
@@ -263,6 +333,24 @@ func ModifyMCOAddonSpec(opt TestOptions, enable bool) error {
 	return nil
 }
 
+func ModifyMCOAddonSpecInterval(opt TestOptions, interval int64) error {
+	clientDynamic := NewKubeClientDynamic(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	if getErr != nil {
+		return getErr
+	}
+
+	observabilityAddonSpec := mco.Object["spec"].(map[string]interface{})["observabilityAddonSpec"].(map[string]interface{})
+	observabilityAddonSpec["interval"] = interval
+	_, updateErr := clientDynamic.Resource(NewMCOGVR()).Update(mco, metav1.UpdateOptions{})
+	if updateErr != nil {
+		return updateErr
+	}
+	return nil
+}
 func DeleteMCOInstance(opt TestOptions) error {
 	clientDynamic := NewKubeClientDynamic(
 		opt.HubCluster.MasterURL,

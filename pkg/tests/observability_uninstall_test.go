@@ -41,14 +41,20 @@ func uninstallMCO() {
 
 	By("Waiting for delete MCO addon instance")
 	Eventually(func() error {
-		gvr := utils.NewMCOAddonGVR()
 		name := MCO_CR_NAME + "-addon"
-		instance, _ := dynClient.Resource(gvr).Namespace("local-cluster").Get(name, metav1.GetOptions{})
+		instance, _ := dynClient.Resource(utils.NewMCOAddonGVR()).Namespace("local-cluster").Get(name, metav1.GetOptions{})
 		if instance != nil {
 			return fmt.Errorf("Failed to delete MCO addon instance")
 		}
 		return nil
 	}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+
+	By("Waiting for delete manifestwork")
+	Eventually(func() error {
+		name := "endpoint-observability-work"
+		_, err := dynClient.Resource(utils.NewOCMManifestworksGVR()).Namespace("local-cluster").Get(name, metav1.GetOptions{})
+		return err
+	}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(MatchError(`manifestworks.work.open-cluster-management.io "endpoint-observability-work" not found`))
 
 	By("Waiting for delete all MCO addon components")
 	Eventually(func() error {
