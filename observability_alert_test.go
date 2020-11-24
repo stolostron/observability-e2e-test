@@ -1,12 +1,18 @@
 package main_test
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"os"
 
 	"gopkg.in/yaml.v2"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/slack-go/slack"
+
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,14 +25,14 @@ func NewThanosConfigMap(name, namespace string) *corev1.ConfigMap {
 	instance := fmt.Sprintf(`apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: hello%s
-  namespace: open-cluster-management-observability%s
+  name: %s
+  namespace: %s
 data:
   custom_rules.yaml: |
     groups:
       - name: cluster-health
         rules:
-        - alert: ClusterCPUHealth
+        - alert: ObservTest-ClusterCPUHealth
           annotations:
             summary: Fires when CPU Utilization on a Cluster gets too high.
             description: "The Cluster has a high CPU usage: {{ $value }} core for {{ $labels.cluster }} {{ $labels.clusterID }}."  
@@ -66,9 +72,9 @@ route:
         alertname: Watchdog 
       receiver: default-receiver
   group_by: ['alertname', 'cluster']
-  group_wait: 10s
-  group_interval: 10s
-  repeat_interval: 30m
+  group_wait: 5s
+  group_interval: 5s
+  repeat_interval: 2m
 receivers:
   - name: default-receiver
     slack_configs:
@@ -132,53 +138,67 @@ var _ = Describe("Observability:", func() {
 			testOptions.HubCluster.KubeContext)
 	})
 
-	expectedStatefulSet := [...]string{"alertmanager", "observability-observatorium-thanos-rule"}
-	expectedConfigMap := [...]string{"thanos-ruler-default-rules", "thanos-ruler-custom-rules"}
-	expectedSecret := "alertmanager-config"
+	statefulset := [...]string{"alertmanager", "observability-observatorium-thanos-rule"}
+	configmap := [...]string{"thanos-ruler-default-rules", "thanos-ruler-custom-rules"}
+	secret := "alertmanager-config"
 
-	It("should have the expected stateful sets (alert/g0)", func() {
-		By("Checking if STS: Alertmanager and observability-observatorium-thanos-rule is existed")
-
-		for _, resource := range expectedStatefulSet {
-			sts, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(resource, metav1.GetOptions{})
+	It("should have the expected statefulsets (alert/g0)", func() {
+		By("Checking if STS: Alertmanager and observability-observatorium-thanos-rule exist")
+		for _, name := range statefulset {
+			sts, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
-
-			By("Having MCO installed, the statefulset: " + sts.GetName() + " should have 3 replicas")
-			Expect(sts.Status.Replicas).To(Equal(int32(3)))
+			Expect(len(sts.Spec.Template.Spec.Volumes)).Should(BeNumerically(">", 0))
 
 			if sts.GetName() == "alertmanager" {
 				By("The statefulset: " + sts.GetName() + " should have the appropriate secret mounted")
-				Expect(len(sts.Spec.Template.Spec.Volumes)).Should(BeNumerically(">", 0))
 				Expect(sts.Spec.Template.Spec.Volumes[0].Secret.SecretName).To(Equal("alertmanager-config"))
 			}
 
 			if sts.GetName() == "observability-observatorium-thanos-rule" {
 				By("The statefulset: " + sts.GetName() + " should have the appropriate configmap mounted")
-				Expect(len(sts.Spec.Template.Spec.Volumes)).Should(BeNumerically(">", 0))
 				Expect(sts.Spec.Template.Spec.Volumes[0].ConfigMap.Name).To(Equal("thanos-ruler-default-rules"))
 			}
 		}
 	})
 
+	It("should have a replicaset of 3 for the expected statefulsets (alert/g0)", func() {
+		By("Having MCO installed, the statefulsets should have 3 replicas")
+		for _, name := range statefulset {
+			sts, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{}) // Get the statefulsets
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Checking that the " + name + " statefulset has 3 replicas")
+			Expect(sts.Status.Replicas).To(Equal(int32(3)))
+		}
+	})
+
 	It("should have the expected configmap (alert/g0)", func() {
 		By("Checking if CM: thanos-ruler-default-rules is existed")
-		cm, err := hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Get(expectedConfigMap[0], metav1.GetOptions{})
+		cm, err := hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Get(configmap[0], metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
+
 		Expect(cm.ResourceVersion).ShouldNot(BeEmpty())
+		klog.V(3).Infof("Configmap %s does exist", configmap[0])
 	})
 
 	It("should not have the CM: thanos-ruler-custom-rules (alert/g0)", func() {
 		By("Checking if CM: thanos-ruler-custom-rules not existed")
-		cm, _ := hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Get(expectedConfigMap[1], metav1.GetOptions{})
-		Expect(cm.ResourceVersion).Should(BeEmpty())
-		klog.V(3).Infof("Configmap %s does not exist", expectedConfigMap[1])
+		_, err := hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Get(configmap[1], metav1.GetOptions{})
+
+		if err == nil {
+			err = fmt.Errorf("%s exist within the namespace env", configmap[1])
+			Expect(err).NotTo(HaveOccurred())
+		}
+
+		Expect(err).To(HaveOccurred())
+		klog.V(3).Infof("Configmap %s does not exist", configmap[1])
 	})
 
 	It("should create the CM: thanos-ruler-custom-rules (alert/g0)", func() {
 		By("Creating CM: thanos-ruler-custom-rules")
-		obj := NewThanosConfigMap(expectedConfigMap[1], MCO_NAMESPACE)
+		obj := NewThanosConfigMap(configmap[1], MCO_NAMESPACE)
 
-		klog.V(3).Infof("Creating Configmap %s", expectedConfigMap[1])
+		klog.V(3).Info("Created Configmap thanos-ruler-custom-rules")
 		cm, err := hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Create(obj)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -186,40 +206,143 @@ var _ = Describe("Observability:", func() {
 		Expect(cm.Data).ShouldNot(BeEmpty())
 
 		By("Checking to see if Configmap was actually created")
-		cm, err = hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Get(expectedConfigMap[1], metav1.GetOptions{})
+		cm, err = hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Get(configmap[1], metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		klog.V(3).Info("Successfully got configmap...")
-	})
-
-	It("should expect custom config to be deleted (alert/g0)", func() {
-		By("Deleting the CM: thanos-ruler-custom-rules")
-		err := hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Delete(expectedConfigMap[1], &metav1.DeleteOptions{})
-		Expect(err).NotTo(HaveOccurred())
-
-		By("Trying to get the CM: thanos-ruler-custom-rules we can verify if the configmap is indeed deleted")
-		_, err = hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Get(expectedConfigMap[1], metav1.GetOptions{})
-		Expect(err).To(HaveOccurred())
+		klog.V(3).Info("Successfully created and got configmap: thanos-ruler-custom-rules")
 	})
 
 	It("should have the expected secret (alert/g0)", func() {
 		By("Checking if SECRETS: alertmanager-config is existed")
-		secret, err := hubClient.CoreV1().Secrets(MCO_NAMESPACE).Get(expectedSecret, metav1.GetOptions{})
+		secret, err := hubClient.CoreV1().Secrets(MCO_NAMESPACE).Get(secret, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(secret.GetName()).To(Equal("alertmanager-config"))
-		klog.V(3).Infof("Successfully got secret... %s", secret.GetName())
+		klog.V(3).Infof("Successfully got secret: %s", secret.GetName())
 	})
 
 	It("should modify the SECRET: alertmanager-config (alert/g0)", func() {
 		By("Editing the secret, we should be able to add the third partying tools integrations")
-		scrt, err := hubClient.CoreV1().Secrets(MCO_NAMESPACE).Get(expectedSecret, metav1.GetOptions{})
+		scrt, err := hubClient.CoreV1().Secrets(MCO_NAMESPACE).Get(secret, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		// We need to store the older version, so we can revert back to that data.
 		obj := &corev1.Secret{}
 		obj.ObjectMeta = scrt.ObjectMeta
 		obj.Data = ModifyAlertManagerSecret(obj)
 
 		_, err = hubClient.CoreV1().Secrets(MCO_NAMESPACE).Update(obj)
 		Expect(err).NotTo(HaveOccurred())
+		klog.V(3).Infof("Successfully modified the secret: %s", scrt.GetName())
+	})
+
+	It("should verify that the alerts are created (alert/g0)", func() {
+		By("Checking that alertmanager and thanos-rule pods are running")
+		podList, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).List(metav1.ListOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		for _, pod := range podList.Items {
+			if strings.Contains(pod.GetName(), "alertmanager") || strings.Contains(pod.GetName(), "thanos-rule") {
+				Eventually(func() error {
+					p, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).Get(pod.GetName(), metav1.GetOptions{})
+					Expect(err).NotTo(HaveOccurred())
+
+					if string(p.Status.Phase) != "Running" {
+						klog.V(3).Infof("%s is (%s)", p.GetName(), string(p.Status.Phase))
+						return fmt.Errorf("%s is waiting to run", p.GetName())
+					}
+
+					Expect(string(p.Status.Phase)).To(Equal("Running"))
+					klog.V(3).Infof("%s is (%s)", p.GetName(), string(p.Status.Phase))
+					return nil
+				}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+			}
+		}
+
+		By("Checking the logs within the thanos-rule pods")
+		for _, pod := range podList.Items {
+			if strings.Contains(pod.GetName(), "thanos-rule") {
+				req := hubClient.CoreV1().Pods(MCO_NAMESPACE).GetLogs(pod.GetName(), &corev1.PodLogOptions{})
+				Expect(req).ShouldNot(BeNil())
+
+				podLogs, err := req.Stream()
+				Expect(err).NotTo(HaveOccurred())
+				defer podLogs.Close()
+
+				buf := new(bytes.Buffer)
+				_, err = io.Copy(buf, podLogs)
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Viewing " + pod.GetName() + " logs to see if the alert has failed")
+				klog.V(3).Infof("Logs %s\n", buf.String())
+				Expect(strings.Contains(buf.String(), "component=rules group=cluster-health msg=\"Evaluating rule failed\"")).ShouldNot(BeTrue())
+			}
+		}
+
+		By("Exporting slack bot oauth token, we can view the channel that will hold the alert notifications")
+		if os.Getenv("SLACK_BOT_OUATH_TOKEN") != "" && os.Getenv("SLACK_BOT_ID") != "" && os.Getenv("SLACK_CHANNEL_ID") != "" {
+			slackAPI := slack.New(os.Getenv("SLACK_BOT_OUATH_TOKEN"))
+
+			bot, err := slackAPI.GetBotInfo(os.Getenv("SLACK_BOT_ID"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(bot.Name).Should(Equal("TestingObserv"))
+			klog.V(3).Infof("Found slack bot: %s", bot.Name)
+
+			channel, err := slackAPI.GetConversationInfo(os.Getenv("SLACK_CHANNEL_ID"), false)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(channel.Name).Should(Equal("team-observability-test"))
+			klog.V(3).Infof("Found slack channel for testing: %s", channel.Name)
+
+			history, err := slackAPI.GetConversationHistory(&slack.GetConversationHistoryParameters{ChannelID: os.Getenv("SLACK_CHANNEL_ID"), Limit: 5})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(history.Ok).Should(Equal(true))
+
+			Expect(len(history.Messages)).Should(BeNumerically(">", 0))
+			klog.V(3).Infof("Found slack messages")
+			for _, msg := range history.Messages {
+				klog.Info(msg.Attachments[0].Text)
+			}
+
+			timestamp := history.Messages[0].Timestamp
+
+			var (
+				retry = 0
+				max   = 100
+			)
+
+			Eventually(func() error {
+				history, err := slackAPI.GetConversationHistory(&slack.GetConversationHistoryParameters{ChannelID: os.Getenv("SLACK_CHANNEL_ID"), Limit: 2})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(history.Ok).Should(Equal(true))
+
+				klog.V(5).Infof("Latest alert (%s): "+history.Messages[0].Attachments[0].Text, history.Messages[0].Timestamp)
+
+				if retry == max {
+					err := fmt.Errorf("Max retry limit has been reached... failing test.")
+					klog.V(3).Infof("Max retry limit has been reached... failing test.")
+					Expect(err).NotTo(HaveOccurred())
+				}
+
+				if timestamp == history.Messages[0].Timestamp || !strings.Contains(history.Messages[0].Attachments[0].Title, "ObservTest-ClusterCPUHealth") {
+					klog.V(3).Infof("Waiting for new alert.. Retrying (%d/%d)", retry, max)
+					retry += 1
+					return fmt.Errorf("No new slack alerts has been created.")
+				}
+
+				return nil
+			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+		} else {
+			err := fmt.Errorf(`Error: Missing a required exported variable
+				SLACK_BOT_OUATH_TOKEN: %s
+				SLACK_BOT_ID: %s
+				SLACK_CHANNEL_ID: %s`,
+				os.Getenv("SLACK_BOT_OUATH_TOKEN"), os.Getenv("SLACK_BOT_ID"), os.Getenv("SLACK_CHANNEL_ID"),
+			)
+			Expect(err).NotTo(HaveOccurred())
+		}
+	})
+
+	It("should delete the created configmap (alert/g0)", func() {
+		err := hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Delete(configmap[1], &metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		klog.V(3).Infof("Successfully deleted CM: thanos-ruler-custom-rules")
 	})
 })
