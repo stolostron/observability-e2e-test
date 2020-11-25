@@ -19,7 +19,7 @@ func getSampleDashboardConfigmap() *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      dashboardName,
-			Namespace: MCO_ADDON_NAMESPACE,
+			Namespace: MCO_NAMESPACE,
 			Labels: map[string]string{
 				"grafana-custom-dashboard": "true",
 			},
@@ -63,7 +63,7 @@ var _ = Describe("Observability:", func() {
 
 	It("should have no custom dashboard in grafana after related configmap removed(dashboard/g0)", func() {
 		By("Deleting custom dashboard configmap")
-		err = utils.DeleteConfigMap(testOptions, true, dashboardName, MCO_ADDON_NAMESPACE)
+		err = utils.DeleteConfigMap(testOptions, true, dashboardName, MCO_NAMESPACE)
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func() bool {
 			_, result := utils.ContainDashboard(testOptions, dashboardTitile)
