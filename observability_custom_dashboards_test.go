@@ -26,7 +26,7 @@ func getSampleDashboardConfigmap() *corev1.ConfigMap {
 		},
 		Data: map[string]string{"data": `
 {
-	"id": e2e,
+	"id": "e2e",
 	"uid": null,
 	"title": "Sample Dashboard for E2E",
 	"tags": [ "test" ],

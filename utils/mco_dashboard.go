@@ -13,7 +13,7 @@ import (
 
 func ContainDashboard(opt TestOptions, title string) (error, bool) {
 	grafanaConsoleURL := GetGrafanaURL(opt)
-	path := "/api/search?query="
+	path := "/api/search?"
 	queryParams := url.PathEscape(fmt.Sprintf("query=%s", title))
 	req, err := http.NewRequest(
 		"GET",
