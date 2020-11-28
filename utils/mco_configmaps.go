@@ -6,14 +6,20 @@ import (
 	"k8s.io/klog"
 )
 
+func CreateConfigMap(opt TestOptions, isHub bool, cm *corev1.ConfigMap) error {
+	clientKube := getKubeClient(opt, isHub)
+	_, err := clientKube.CoreV1().ConfigMaps(cm.ObjectMeta.Namespace).Create(cm)
+	return err
+}
+
 func GetConfigMap(opt TestOptions, isHub bool, name string,
 	namespace string) (error, *corev1.ConfigMap) {
 	clientKube := getKubeClient(opt, isHub)
-	dep, err := clientKube.CoreV1().ConfigMaps(namespace).Get(name, metav1.GetOptions{})
+	cm, err := clientKube.CoreV1().ConfigMaps(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		klog.Errorf("Failed to get configmap %s in namespace %s due to %v", name, namespace, err)
 	}
-	return err, dep
+	return err, cm
 }
 
 func DeleteConfigMap(opt TestOptions, isHub bool, name string, namespace string) error {
