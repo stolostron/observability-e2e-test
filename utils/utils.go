@@ -49,7 +49,7 @@ func NewUnversionedRestClient(url, kubeconfig, context string) *rest.RESTClient 
 }
 
 func NewKubeClient(url, kubeconfig, context string) kubernetes.Interface {
-	klog.V(5).Infof("Create kubeclient for url %s using kubeconfig path %s\n", url, kubeconfig)
+	klog.V(1).Infof("Create kubeclient for url %s using kubeconfig path %s\n", url, kubeconfig)
 	config, err := LoadConfig(url, kubeconfig, context)
 	if err != nil {
 		panic(err)
@@ -262,6 +262,21 @@ func Apply(url string, kubeconfig string, context string, yamlB []byte) error {
 				obj.ObjectMeta = existingObject.ObjectMeta
 				klog.Warningf("%s %s/%s already exists, updating!", obj.Kind, obj.Namespace, obj.Name)
 				_, err = clientKube.CoreV1().Secrets(obj.Namespace).Update(obj)
+			}
+		case "ConfigMap":
+			klog.V(5).Infof("Install %s: %s\n", kind, f)
+			obj := &corev1.ConfigMap{}
+			err = yaml.Unmarshal([]byte(f), obj)
+			if err != nil {
+				return err
+			}
+			existingObject, errGet := clientKube.CoreV1().ConfigMaps(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
+			if errGet != nil {
+				_, err = clientKube.CoreV1().ConfigMaps(obj.Namespace).Create(obj)
+			} else {
+				obj.ObjectMeta = existingObject.ObjectMeta
+				klog.Warningf("%s %s/%s already exists, updating!", obj.Kind, obj.Namespace, obj.Name)
+				_, err = clientKube.CoreV1().ConfigMaps(obj.Namespace).Update(obj)
 			}
 		case "Service":
 			klog.V(5).Infof("Install %s: %s\n", kind, f)

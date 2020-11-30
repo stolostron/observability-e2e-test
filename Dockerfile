@@ -31,6 +31,7 @@ USER root
 
 # expose env vars for runtime
 ENV KUBECONFIG "/opt/.kube/config"
+ENV IMPORT_KUBECONFIG "/opt/.kube/import-kubeconfig"
 ENV OPTIONS "/resources/options.yaml"
 ENV REPORT_FILE "/results/results.xml"
 ENV GINKGO_DEFAULT_FLAGS "-slowSpecThreshold=120 -timeout 7200s"
@@ -38,6 +39,7 @@ ENV GINKGO_NODES "1"
 ENV GINKGO_FLAGS=""
 ENV GINKGO_FOCUS=""
 ENV GINKGO_SKIP=""
+ENV SKIP_UNINSTALL_STEP="true"
 
 # install ginkgo into built image
 COPY --from=build /go/bin/ /usr/local/bin

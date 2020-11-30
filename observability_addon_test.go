@@ -43,7 +43,7 @@ var _ = Describe("Observability:", func() {
 	It("should have not metric data (addon/g0)", func() {
 		By("Waiting for check no metric data in grafana console")
 		Eventually(func() error {
-			err, hasMetric := utils.ContainManagedClusterMetric(testOptions, "90s")
+			err, hasMetric := utils.ContainManagedClusterMetric(testOptions, "node_memory_MemAvailable_bytes", "90s", []string{`"__name__":"node_memory_MemAvailable_bytes"`})
 			if err != nil && !hasMetric && strings.Contains(err.Error(), "Failed to find metric name from response") {
 				return nil
 			}

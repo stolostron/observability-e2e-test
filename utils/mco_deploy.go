@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/klog"
@@ -15,6 +16,7 @@ const (
 	MCO_COMPONENT_LABEL           = "observability.open-cluster-management.io/name=" + MCO_CR_NAME
 	OBSERVATORIUM_COMPONENT_LABEL = "app.kubernetes.io/part-of=observatorium"
 	MCO_NAMESPACE                 = "open-cluster-management-observability"
+	MCO_ADDON_NAMESPACE           = "open-cluster-management-addon-observability"
 	MCO_PULL_SECRET_NAME          = "multiclusterhub-operator-pull-secret"
 	OBJ_SECRET_NAME               = "thanos-object-storage"
 	MCO_GROUP                     = "observability.open-cluster-management.io"
@@ -89,7 +91,7 @@ func ModifyMCONodeSelector(opt TestOptions, nodeSelector map[string]string) erro
 	return nil
 }
 
-func CheckAllPodNodeSelector(opt TestOptions) error {
+func GetAllMCOPods(opt TestOptions) ([]corev1.Pod, error) {
 	hubClient := NewKubeClient(
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
@@ -98,20 +100,70 @@ func CheckAllPodNodeSelector(opt TestOptions) error {
 	mcoOpt := metav1.ListOptions{LabelSelector: MCO_COMPONENT_LABEL}
 	mcoPods, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).List(mcoOpt)
 	if err != nil {
-		return err
+		return []corev1.Pod{}, err
 	}
 
 	obsOpt := metav1.ListOptions{LabelSelector: OBSERVATORIUM_COMPONENT_LABEL}
 	obsPods, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).List(obsOpt)
 	if err != nil {
+		return []corev1.Pod{}, err
+	}
+
+	return append(mcoPods.Items, obsPods.Items...), nil
+}
+
+func PrintAllMCOPodsStatus(opt TestOptions) {
+	podList, err := GetAllMCOPods(opt)
+	if err != nil {
+		klog.Errorf("Failed to get all MCO pods")
+	}
+
+	for _, pod := range podList {
+		isReady := false
+		for _, cond := range pod.Status.Conditions {
+			if cond.Type == "Ready" {
+				klog.V(1).Infof("Pod <%s> is <Ready> on <%s> status\n", pod.Name, pod.Status.Phase)
+				isReady = true
+				break
+			}
+		}
+
+		if !isReady {
+			klog.V(1).Infof("Pod <%s> is not <Ready> on <%s> status\n", pod.Name, pod.Status.Phase)
+		}
+	}
+}
+
+func CheckAllPodNodeSelector(opt TestOptions) error {
+	podList, err := GetAllMCOPods(opt)
+	if err != nil {
 		return err
 	}
 
-	podList := append(mcoPods.Items, obsPods.Items...)
 	for _, pod := range podList {
 		selecterValue, ok := pod.Spec.NodeSelector["kubernetes.io/os"]
 		if !ok || selecterValue != "linux" {
-			return fmt.Errorf("Failed to ckeck node selector for pod: %v" + pod.GetName())
+			return fmt.Errorf("Failed to check node selector for pod: %v", pod.GetName())
+		}
+	}
+	return nil
+}
+
+func CheckAllPodsAffinity(opt TestOptions) error {
+	podList, err := GetAllMCOPods(opt)
+	if err != nil {
+		return err
+	}
+
+	for _, pod := range podList {
+		weightedPodAffinityTerms := pod.Spec.Affinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution
+		for _, weightedPodAffinityTerm := range weightedPodAffinityTerms {
+			topologyKey := weightedPodAffinityTerm.PodAffinityTerm.TopologyKey
+			if (topologyKey == "kubernetes.io/hostname" && weightedPodAffinityTerm.Weight == 30) ||
+				(topologyKey == "topology.kubernetes.io/zone" && weightedPodAffinityTerm.Weight == 70) {
+			} else {
+				return fmt.Errorf("Failed to ckeck affinity for pod: %v" + pod.GetName())
+			}
 		}
 	}
 	return nil
@@ -328,4 +380,28 @@ func UninstallMCO(opt TestOptions) error {
 	}
 
 	return nil
+}
+
+func CreateCustomAlertRuleYaml(exp string) []byte {
+	instance := fmt.Sprintf(`kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: thanos-ruler-custom-rules
+  namespace: open-cluster-management-observability
+data:
+    custom_rules.yaml: |
+      groups:
+      - name: node-health
+        rules:
+        - alert: NodeOutOfMemory
+          expr: %s
+          for: 1m
+          labels:
+            instance: "{{ $labels.instance }}"
+            cluster: "{{ $labels.cluster }}"
+            clusterID: "{{ $labels.clusterID }}"
+            severity: warning`,
+		exp)
+
+	return []byte(instance)
 }

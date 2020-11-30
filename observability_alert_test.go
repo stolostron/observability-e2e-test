@@ -102,29 +102,6 @@ receivers:
 	return data
 }
 
-func RevertBackToDefaultAlertManagerConfig() map[string][]byte {
-	instance := fmt.Sprintf(`global:
-  resolve_timeout: 5m
-receivers:
-  - name: "null"
-route:
-  receiver: "null"
-  routes:
-    - match:
-        alertname: Watchdog
-      receiver: "null"
-  "group_by": ['namespace']
-  "group_interval": "5m"
-  "group_wait": "30s"
-  "repeat_interval": "12h"
-`)
-
-	data := make(map[string][]byte)
-	data["alertmanager.yaml"] = []byte(instance)
-
-	return data
-}
-
 var _ = Describe("Observability:", func() {
 	BeforeEach(func() {
 		hubClient = utils.NewKubeClient(
@@ -137,10 +114,34 @@ var _ = Describe("Observability:", func() {
 			testOptions.KubeConfig,
 			testOptions.HubCluster.KubeContext)
 	})
-
+  
 	statefulset := [...]string{"alertmanager", "observability-observatorium-thanos-rule"}
 	configmap := [...]string{"thanos-ruler-default-rules", "thanos-ruler-custom-rules"}
 	secret := "alertmanager-config"
+  
+  It("[P1,Sev1,observability]should have custom alert generated (alert/g0)", func() {
+		By("Creating custom alert rules")
+		cm := utils.CreateCustomAlertRuleYaml("instance:node_memory_utilisation:ratio * 100 > 0")
+		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, cm)).NotTo(HaveOccurred())
+
+		By("Checking alert generated")
+		Eventually(func() error {
+			err, _ := utils.ContainManagedClusterMetric(testOptions, `ALERTS{alertname="NodeOutOfMemory"}`, "2m", []string{`"__name__":"ALERTS"`, `"alertname":"NodeOutOfMemory"`})
+			return err
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+	})
+
+	It("[P1,Sev1,observability]should have custom alert updated (alert/g0)", func() {
+		By("Updating custom alert rules")
+		cm := utils.CreateCustomAlertRuleYaml("instance:node_memory_utilisation:ratio * 100 < 0")
+		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, cm)).NotTo(HaveOccurred())
+
+		By("Checking alert generated")
+		Eventually(func() error {
+			err, _ := utils.ContainManagedClusterMetric(testOptions, `ALERTS{alertname="NodeOutOfMemory"}`, "1m", []string{`"__name__":"ALERTS"`, `"alertname":"NodeOutOfMemory"`})
+			return err
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
+	})
 
 	It("should have the expected statefulsets (alert/g0)", func() {
 		By("Checking if STS: Alertmanager and observability-observatorium-thanos-rule exist")
@@ -344,5 +345,4 @@ var _ = Describe("Observability:", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		klog.V(3).Infof("Successfully deleted CM: thanos-ruler-custom-rules")
-	})
 })
