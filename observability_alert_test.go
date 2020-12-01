@@ -2,7 +2,6 @@ package main_test
 
 import (
 	"fmt"
-	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -137,67 +136,57 @@ var _ = Describe("Observability:", func() {
 			}
 		}
 
-		By("Exporting slack bot oauth token, we can view the channel that will hold the alert notifications")
-		if os.Getenv("SLACK_BOT_OUATH_TOKEN") != "" && os.Getenv("SLACK_BOT_ID") != "" && os.Getenv("SLACK_CHANNEL_ID") != "" {
-			slackAPI := slack.New(os.Getenv("SLACK_BOT_OUATH_TOKEN"))
+		By("Viewing the channel that will hold the alert notifications")
+		slackAPI := slack.New("xoxb-2253118358-1363717104599-GwMY2cdUV5Z1OZRu23egTuyf")
 
-			bot, err := slackAPI.GetBotInfo(os.Getenv("SLACK_BOT_ID"))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(bot.Name).Should(Equal("TestingObserv"))
-			klog.V(3).Infof("Found slack bot: %s", bot.Name)
+		bot, err := slackAPI.GetBotInfo("B01F7TM3692")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(bot.Name).Should(Equal("TestingObserv"))
+		klog.V(3).Infof("Found slack bot: %s", bot.Name)
 
-			channel, err := slackAPI.GetConversationInfo(os.Getenv("SLACK_CHANNEL_ID"), false)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(channel.Name).Should(Equal("team-observability-test"))
-			klog.V(3).Infof("Found slack channel for testing: %s", channel.Name)
+		channel, err := slackAPI.GetConversationInfo("C01B4EK1JH1", false)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(channel.Name).Should(Equal("team-observability-test"))
+		klog.V(3).Infof("Found slack channel for testing: %s", channel.Name)
 
-			history, err := slackAPI.GetConversationHistory(&slack.GetConversationHistoryParameters{ChannelID: os.Getenv("SLACK_CHANNEL_ID"), Limit: 3})
+		history, err := slackAPI.GetConversationHistory(&slack.GetConversationHistoryParameters{ChannelID: "C01B4EK1JH1", Limit: 3})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(history.Ok).Should(Equal(true))
+
+		Expect(len(history.Messages)).Should(BeNumerically(">", 0))
+		klog.V(3).Infof("Found slack messages")
+		for _, msg := range history.Messages {
+			klog.Info(msg.Attachments[0].Text)
+		}
+
+		timestamp := history.Messages[0].Timestamp
+
+		var (
+			retry = 0
+			max   = 100
+		)
+
+		Eventually(func() error {
+			history, err := slackAPI.GetConversationHistory(&slack.GetConversationHistoryParameters{ChannelID: "C01B4EK1JH1", Limit: 2})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(history.Ok).Should(Equal(true))
 
-			Expect(len(history.Messages)).Should(BeNumerically(">", 0))
-			klog.V(3).Infof("Found slack messages")
-			for _, msg := range history.Messages {
-				klog.Info(msg.Attachments[0].Text)
+			klog.V(5).Infof("Latest alert (%s): "+history.Messages[0].Attachments[0].Text, history.Messages[0].Timestamp)
+
+			if retry == max {
+				err := fmt.Errorf("Max retry limit has been reached... failing test.")
+				klog.V(3).Infof("Max retry limit has been reached... failing test.")
+				Expect(err).NotTo(HaveOccurred())
 			}
 
-			timestamp := history.Messages[0].Timestamp
+			if timestamp == history.Messages[0].Timestamp || !strings.Contains(history.Messages[0].Attachments[0].Title, "NodeOutOfMemory") {
+				klog.V(3).Infof("Waiting for new alert.. Retrying (%d/%d)", retry, max)
+				retry += 1
+				return fmt.Errorf("No new slack alerts has been created.")
+			}
 
-			var (
-				retry = 0
-				max   = 100
-			)
-
-			Eventually(func() error {
-				history, err := slackAPI.GetConversationHistory(&slack.GetConversationHistoryParameters{ChannelID: os.Getenv("SLACK_CHANNEL_ID"), Limit: 2})
-				Expect(err).NotTo(HaveOccurred())
-				Expect(history.Ok).Should(Equal(true))
-
-				klog.V(5).Infof("Latest alert (%s): "+history.Messages[0].Attachments[0].Text, history.Messages[0].Timestamp)
-
-				if retry == max {
-					err := fmt.Errorf("Max retry limit has been reached... failing test.")
-					klog.V(3).Infof("Max retry limit has been reached... failing test.")
-					Expect(err).NotTo(HaveOccurred())
-				}
-
-				if timestamp == history.Messages[0].Timestamp || !strings.Contains(history.Messages[0].Attachments[0].Title, "NodeOutOfMemory") {
-					klog.V(3).Infof("Waiting for new alert.. Retrying (%d/%d)", retry, max)
-					retry += 1
-					return fmt.Errorf("No new slack alerts has been created.")
-				}
-
-				return nil
-			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
-		} else {
-			err := fmt.Errorf(`Error: Missing a required exported variable
-				SLACK_BOT_OUATH_TOKEN: %s
-				SLACK_BOT_ID: %s
-				SLACK_CHANNEL_ID: %s`,
-				os.Getenv("SLACK_BOT_OUATH_TOKEN"), os.Getenv("SLACK_BOT_ID"), os.Getenv("SLACK_CHANNEL_ID"),
-			)
-			Expect(err).NotTo(HaveOccurred())
-		}
+			return nil
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
 	It("should delete the created configmap (alert/g0)", func() {
