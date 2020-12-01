@@ -10,7 +10,6 @@ import (
 
 	"strings"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 
@@ -120,16 +119,10 @@ var _ = Describe("Observability:", func() {
 
 	It("should modify the SECRET: alertmanager-config (alert/g0)", func() {
 		By("Editing the secret, we should be able to add the third partying tools integrations")
-		scrt, err := hubClient.CoreV1().Secrets(MCO_NAMESPACE).Get(secret, metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		secret := utils.CreateCustomAlertConfigYaml(testOptions.HubCluster.BaseDomain)
 
-		obj := &corev1.Secret{}
-		obj.ObjectMeta = scrt.ObjectMeta
-		obj.Data = utils.ModifyCustomAlertConfigYaml(testOptions.HubCluster.BaseDomain)
-
-		_, err = hubClient.CoreV1().Secrets(MCO_NAMESPACE).Update(obj)
-		Expect(err).NotTo(HaveOccurred())
-		klog.V(3).Infof("Successfully modified the secret: %s", scrt.GetName())
+		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, secret)).NotTo(HaveOccurred())
+		klog.V(3).Infof("Successfully modified the secret: alertmanager-config")
 	})
 
 	It("should verify that the alerts are created (alert/g0)", func() {

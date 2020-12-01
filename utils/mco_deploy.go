@@ -1,6 +1,7 @@
 package utils
 
 import (
+	b64 "encoding/base64"
 	"fmt"
 	"os"
 
@@ -402,6 +403,54 @@ data:
             clusterID: "{{ $labels.clusterID }}"
             severity: warning`,
 		exp)
+
+	return []byte(instance)
+}
+
+func CreateCustomAlertConfigYaml(baseDomain string) []byte {
+	global := fmt.Sprintf(`global:
+  resolve_timeout: 5m
+route:
+  receiver: default-receiver
+  routes:
+    - match:
+        alertname: Watchdog
+      receiver: default-receiver
+  group_by: ['alertname', 'cluster']
+  group_wait: 5s
+  group_interval: 5s
+  repeat_interval: 2m
+receivers:
+  - name: default-receiver
+    slack_configs:
+    - api_url: https://hooks.slack.com/services/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
+      channel: team-observability-test
+      footer: |
+        {{ .CommonLabels.cluster }}
+      mrkdwn_in:
+        - text
+      title: '[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }} ({{ .CommonLabels.severity }})'
+      text: |-
+        {{ range .Alerts }}
+          *Alerts:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Details:*
+          {{ range .Labels.SortedPairs }} • *{{ .Name }}:* {{ .Value }}
+          {{ end }}
+        {{ end }}
+      title_link: https://multicloud-console.apps.%s/grafana/explore?orgId=1&left=["now-1h","now","Observatorium",{"expr":"ALERTS{alertname=\"{{ .CommonLabels.alertname }}\"}","context":"explore"},{"mode":"Metrics"},{"ui":[true,true,true,"none"]}]
+`, baseDomain)
+	encodedGlobal := b64.StdEncoding.EncodeToString([]byte(global))
+
+	instance := fmt.Sprintf(`kind: Secret
+apiVersion: v1
+metadata:
+  name: alertmanager-config
+  namespace: open-cluster-management-observability
+data:
+  alertmanager.yaml: >-
+    %s
+`, encodedGlobal)
 
 	return []byte(instance)
 }
