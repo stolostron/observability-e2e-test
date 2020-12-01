@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	dashboardName   = "sample-dashboard"
-	dashboardTitile = "Sample Dashboard for E2E"
+	dashboardName        = "sample-dashboard"
+	dashboardTitle       = "Sample Dashboard for E2E"
+	updateDashboardTitle = "Update Sample Dashboard for E2E"
 )
 
 func getSampleDashboardConfigmap() *corev1.ConfigMap {
@@ -29,6 +30,29 @@ func getSampleDashboardConfigmap() *corev1.ConfigMap {
 	"id": "e2e",
 	"uid": null,
 	"title": "Sample Dashboard for E2E",
+	"tags": [ "test" ],
+	"timezone": "browser",
+	"schemaVersion": 16,
+	"version": 1
+	}
+`},
+	}
+}
+
+func getUpdateSampleDashboardConfigmap() *corev1.ConfigMap {
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      dashboardName,
+			Namespace: MCO_NAMESPACE,
+			Labels: map[string]string{
+				"grafana-custom-dashboard": "true",
+			},
+		},
+		Data: map[string]string{"data": `
+{
+	"id": "e2e",
+	"uid": null,
+	"title": "Update Sample Dashboard for E2E",
 	"tags": [ "test" ],
 	"timezone": "browser",
 	"schemaVersion": 16,
@@ -56,7 +80,21 @@ var _ = Describe("Observability:", func() {
 		err = utils.CreateConfigMap(testOptions, true, getSampleDashboardConfigmap())
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func() bool {
-			_, result := utils.ContainDashboard(testOptions, dashboardTitile)
+			_, result := utils.ContainDashboard(testOptions, dashboardTitle)
+			return result
+		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(BeTrue())
+	})
+
+	It("should have update custom dashboard after configmap updated (dashboard/g0)", func() {
+		By("Updating custom dashboard configmap")
+		err = utils.CreateConfigMap(testOptions, true, getUpdateSampleDashboardConfigmap())
+		Expect(err).ToNot(HaveOccurred())
+		Eventually(func() bool {
+			_, result := utils.ContainDashboard(testOptions, dashboardTitle)
+			return result
+		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(BeFalse())
+		Eventually(func() bool {
+			_, result := utils.ContainDashboard(testOptions, updateDashboardTitle)
 			return result
 		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(BeTrue())
 	})
@@ -66,7 +104,7 @@ var _ = Describe("Observability:", func() {
 		err = utils.DeleteConfigMap(testOptions, true, dashboardName, MCO_NAMESPACE)
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func() bool {
-			_, result := utils.ContainDashboard(testOptions, dashboardTitile)
+			_, result := utils.ContainDashboard(testOptions, updateDashboardTitle)
 			return result
 		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(BeFalse())
 	})
