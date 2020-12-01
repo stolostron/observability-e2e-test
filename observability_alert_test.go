@@ -51,17 +51,6 @@ var _ = Describe("Observability:", func() {
 		}
 	})
 
-	It("should have a replicaset of 3 for the expected statefulsets (alert/g0)", func() {
-		By("Having MCO installed, the statefulsets should have 3 replicas")
-		for _, name := range statefulset {
-			sts, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Checking that the " + name + " statefulset has 3 replicas")
-			Expect(sts.Status.Replicas).To(Equal(int32(3)))
-		}
-	})
-
 	It("should have the expected configmap (alert/g0)", func() {
 		By("Checking if CM: thanos-ruler-default-rules is existed")
 		cm, err := hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Get(configmap[0], metav1.GetOptions{})
