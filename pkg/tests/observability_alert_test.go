@@ -84,13 +84,13 @@ var _ = Describe("Observability:", func() {
 
 	It("[P1,Sev1,observability]should have custom alert generated (alert/g0)", func() {
 		By("Creating custom alert rules")
-		yamlB, _ := kustomize.Render(RenderOptions{Source: "observability-gitops/alerts/custom_rules_valid"})
+		yamlB, _ := kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/alerts/custom_rules_valid"})
 		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
 
-		var labelValue string
-		labels, err := kustomize.GetLabels(buf)
-		for labelName := range labels.(map[interface{}]interface{}) {
-			labelValue = labels.(map[interface{}]interface{})[labelName]
+		var labelName, labelValue string
+		labels, _ := kustomize.GetLabels(yamlB)
+		for labelName = range labels.(map[string]interface{}) {
+			labelValue = labels.(map[string]interface{})[labelName].(string)
 		}
 
 		By("Checking alert generated")
@@ -111,13 +111,13 @@ var _ = Describe("Observability:", func() {
 
 	It("[P1,Sev1,observability]should have custom alert updated (alert/g0)", func() {
 		By("Updating custom alert rules")
-		yamlB, _ := kustomize.Render(RenderOptions{Source: "observability-gitops/alerts/custom_rules_invalid"})
+		yamlB, _ := kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/alerts/custom_rules_invalid"})
 		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
 
-		var labelValue string
-		labels, err := kustomize.GetLabels(buf)
-		for labelName := range labels.(map[interface{}]interface{}) {
-			labelValue = labels.(map[interface{}]interface{})[labelName]
+		var labelName, labelValue string
+		labels, _ := kustomize.GetLabels(yamlB)
+		for labelName = range labels.(map[string]interface{}) {
+			labelValue = labels.(map[string]interface{})[labelName].(string)
 		}
 
 		By("Checking alert generated")

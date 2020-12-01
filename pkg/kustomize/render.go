@@ -1,48 +1,22 @@
 package kustomize
 
 import (
-	"bytes"
-
-	"gopkg.in/yaml.v2"
-	"sigs.k8s.io/kustomize/v3/k8sdeps/kunstruct"
-	transformimpl "sigs.k8s.io/kustomize/v3/k8sdeps/transformer"
-	"sigs.k8s.io/kustomize/v3/k8sdeps/validator"
-	"sigs.k8s.io/kustomize/v3/pkg/fs"
-	"sigs.k8s.io/kustomize/v3/pkg/loader"
-	"sigs.k8s.io/kustomize/v3/pkg/plugins"
-	"sigs.k8s.io/kustomize/v3/pkg/resmap"
-	"sigs.k8s.io/kustomize/v3/pkg/resource"
-	"sigs.k8s.io/kustomize/v3/pkg/target"
+	"sigs.k8s.io/kustomize/api/filesys"
+	"sigs.k8s.io/kustomize/api/krusty"
+	"sigs.k8s.io/yaml"
 )
 
-// RenderOptions ...
-type RenderOptions struct {
-	Source string
-	//	Out    io.Writer
+// Options ...
+type Options struct {
+	KustomizationPath string
+	OutputPath        string
 }
 
 // Render is used to render the kustomization
-func Render(o RenderOptions) ([]byte, error) {
-	fSys := fs.MakeFsOnDisk()
-	uf := kunstruct.NewKunstructuredFactoryImpl()
-	ptf := transformimpl.NewFactoryImpl()
-	rf := resmap.NewFactory(resource.NewFactory(uf), ptf)
-	v := validator.NewKustValidator()
-	pluginCfg := plugins.DefaultPluginConfig()
-
-	pl := plugins.NewLoader(pluginCfg, rf)
-
-	loadRestrictor := loader.RestrictionRootOnly
-	ldr, err := loader.NewLoader(loadRestrictor, v, o.Source, fSys)
-	if err != nil {
-		return nil, err
-	}
-	defer ldr.Cleanup()
-	kt, err := target.NewKustTarget(ldr, rf, ptf, pl)
-	if err != nil {
-		return nil, err
-	}
-	m, err := kt.MakeCustomizedResMap()
+func Render(o Options) ([]byte, error) {
+	fSys := filesys.MakeFsOnDisk()
+	k := krusty.MakeKustomizer(fSys, krusty.MakeDefaultOptions())
+	m, err := k.Run(o.KustomizationPath)
 	if err != nil {
 		return nil, err
 	}
@@ -51,9 +25,7 @@ func Render(o RenderOptions) ([]byte, error) {
 
 // GetLabels return labels
 func GetLabels(yamlB []byte) (interface{}, error) {
-	dec := yaml.NewDecoder(bytes.NewReader(yamlB))
 	data := map[string]interface{}{}
-	err := dec.Decode(data)
-
-	return data["metadata"].(map[interface{}]interface{})["labels"], err
+	err := yaml.Unmarshal(yamlB, &data)
+	return data["metadata"].(map[string]interface{})["labels"], err
 }

@@ -13,15 +13,20 @@ import (
 
 func TestRender(t *testing.T) {
 	// Test
-	buf, err := Render(RenderOptions{
-		Source: "tests",
+	buf, err := Render(Options{
+		KustomizationPath: "tests",
 	})
 	require.NoError(t, err, "Render()")
 	rendered := rendered(t, buf)
 	names := containedNames(rendered)
 	assert.Equal(t, []string{"thanos-ruler-custom-rules"}, names, "rendered names")
 
-	str = string(buf)
+	labels, _ := GetLabels(buf)
+	for labelName := range labels.(map[string]interface{}) {
+		assert.Equal(t, "alertname", labelName, "metadata label")
+	}
+
+	str := string(buf)
 	pkgLabelPos := strings.Index(str, "alertname: NodeOutOfMemory\n")
 	assert.True(t, pkgLabelPos > 0, "alertname: NodeOutOfMemory label should be contained")
 
