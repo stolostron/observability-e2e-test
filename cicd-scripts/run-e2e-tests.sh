@@ -16,6 +16,8 @@ export SKIP_INSTALL_STEP=true
 
 cd ${WORKDIR}
 
+git clone https://github.com/open-cluster-management/observability-gitops.git
+
 printf "options:" >> resources/options.yaml
 printf "\n  hub:" >> resources/options.yaml
 printf "\n    baseDomain: placeholder" >> resources/options.yaml

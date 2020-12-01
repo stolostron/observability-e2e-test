@@ -1,4 +1,4 @@
-package main_test
+package tests
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/open-cluster-management/observability-e2e-test/utils"
+	"github.com/open-cluster-management/observability-e2e-test/pkg/utils"
 )
 
 const (

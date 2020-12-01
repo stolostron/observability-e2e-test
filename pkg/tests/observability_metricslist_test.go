@@ -1,10 +1,10 @@
-package main_test
+package tests
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/open-cluster-management/observability-e2e-test/utils"
+	"github.com/open-cluster-management/observability-e2e-test/pkg/utils"
 )
 
 var _ = Describe("Observability:", func() {

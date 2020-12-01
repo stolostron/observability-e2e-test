@@ -50,7 +50,7 @@ RUN oc version
 
 # copy compiled tests into built image
 RUN mkdir -p /opt/tests
-COPY --from=build /go/src/github.com/open-cluster-management/observability-e2e-test/observability-e2e-test.test /opt/tests
+COPY --from=build /go/src/github.com/open-cluster-management/observability-e2e-test/pkg/tests/observability-e2e-test.test /opt/tests
 
 VOLUME /results
 WORKDIR "/opt/tests/"
