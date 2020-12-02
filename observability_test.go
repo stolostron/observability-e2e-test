@@ -71,14 +71,16 @@ var _ = Describe("Observability:", func() {
 		mco := utils.NewMCOInstanceYaml(MCO_CR_NAME)
 		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, mco)).NotTo(HaveOccurred())
 
-		By("Waiting for MCO ready status")
-		Eventually(func() bool {
-			instance, err := dynClient.Resource(utils.NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
-			if err == nil {
-				return utils.StatusContainsTypeEqualTo(instance, "Ready")
-			}
-			return false
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
+		By("Waiting for MCO components ready status")
+		var err error
+		Eventually(func() error {
+			err = utils.CheckMCOComponentsReady(testOptions)
+			return err
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+
+		if err != nil {
+			utils.PrintAllMCOPodsStatus(testOptions)
+		}
 	})
 
 	It("Case 04 - Grafana console can be accessible", func() {

@@ -69,6 +69,74 @@ func ModifyMCOAvailabilityConfig(opt TestOptions) error {
 	return nil
 }
 
+func PrintAllMCOPodsStatus(opt TestOptions) {
+	hubClient := NewKubeClient(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+
+	mcoPods, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).List(metav1.ListOptions{})
+	if err != nil {
+		klog.Errorf("Failed to get all MCO pods")
+	}
+
+	for _, pod := range mcoPods.Items {
+		isReady := false
+		for _, cond := range pod.Status.Conditions {
+			if cond.Type == "Ready" {
+				klog.V(1).Infof("Pod <%s> is <Ready> on <%s> status\n", pod.Name, pod.Status.Phase)
+				isReady = true
+				break
+			}
+		}
+
+		if !isReady {
+			klog.V(1).Infof("Pod <%s> is not <Ready> on <%s> status\n", pod.Name, pod.Status.Phase)
+		}
+	}
+}
+
+func CheckMCOComponentsReady(opt TestOptions) error {
+	deployments := []string{
+		"grafana",
+		MCO_CR_NAME + "-observatorium-observatorium-api",
+		MCO_CR_NAME + "-observatorium-thanos-query",
+		MCO_CR_NAME + "-observatorium-thanos-query-frontend",
+		MCO_CR_NAME + "-observatorium-thanos-receive-controller",
+		"observatorium-operator",
+		"rbac-query-proxy",
+	}
+
+	deploymentsErr := HaveDeploymentsInNamespace(
+		opt.HubCluster,
+		opt.KubeConfig,
+		MCO_NAMESPACE,
+		deployments)
+
+	statefulsets := []string{
+		"alertmanager",
+		MCO_CR_NAME + "-observatorium-thanos-compact",
+		MCO_CR_NAME + "-observatorium-thanos-receive-default",
+		MCO_CR_NAME + "-observatorium-thanos-rule",
+		MCO_CR_NAME + "-observatorium-thanos-store-memcached",
+		MCO_CR_NAME + "-observatorium-thanos-store-shard-0",
+		MCO_CR_NAME + "-observatorium-thanos-store-shard-1",
+		MCO_CR_NAME + "-observatorium-thanos-store-shard-2",
+	}
+
+	statefulsetsErr := HaveStatefulSetsInNamespace(
+		opt.HubCluster,
+		opt.KubeConfig,
+		MCO_NAMESPACE,
+		statefulsets)
+
+	if deploymentsErr != nil || statefulsetsErr != nil {
+		return errors.New("Failed to check MCO components ready")
+	}
+
+	return nil
+}
+
 func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 	client := NewKubeClient(
 		opt.HubCluster.MasterURL,
@@ -77,10 +145,10 @@ func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 	deployments := client.AppsV1().Deployments(MCO_NAMESPACE)
 	expectedDeploymentNames := []string{
 		"grafana",
-		"observability-observatorium-observatorium-api",
-		"observability-observatorium-thanos-query",
-		"observability-observatorium-thanos-query-frontend",
-		"observability-observatorium-thanos-receive-controller",
+		MCO_CR_NAME + "-observatorium-observatorium-api",
+		MCO_CR_NAME + "-observatorium-thanos-query",
+		MCO_CR_NAME + "-observatorium-thanos-query-frontend",
+		MCO_CR_NAME + "-observatorium-thanos-receive-controller",
 		"observatorium-operator",
 		"rbac-query-proxy",
 	}
@@ -102,11 +170,11 @@ func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 	statefulsets := client.AppsV1().StatefulSets(MCO_NAMESPACE)
 	expectedStatefulSetNames := []string{
 		"alertmanager",
-		"observability-observatorium-thanos-compact",
-		"observability-observatorium-thanos-receive-default",
-		"observability-observatorium-thanos-rule",
-		"observability-observatorium-thanos-store-memcached",
-		"observability-observatorium-thanos-store-shard-0",
+		MCO_CR_NAME + "-observatorium-thanos-compact",
+		MCO_CR_NAME + "-observatorium-thanos-receive-default",
+		MCO_CR_NAME + "-observatorium-thanos-rule",
+		MCO_CR_NAME + "-observatorium-thanos-store-memcached",
+		MCO_CR_NAME + "-observatorium-thanos-store-shard-0",
 	}
 
 	for _, statefulsetName := range expectedStatefulSetNames {
@@ -169,7 +237,7 @@ func DeleteMCOInstance(opt TestOptions) error {
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
-	return clientDynamic.Resource(NewMCOGVR()).Delete("observability", &metav1.DeleteOptions{})
+	return clientDynamic.Resource(NewMCOGVR()).Delete(MCO_CR_NAME, &metav1.DeleteOptions{})
 }
 
 func CreatePullSecret(opt TestOptions) error {
