@@ -131,6 +131,7 @@ func CheckMCOComponentsReady(opt TestOptions) error {
 		statefulsets)
 
 	if deploymentsErr != nil || statefulsetsErr != nil {
+		PrintAllMCOPodsStatus(opt)
 		return errors.New("Failed to check MCO components ready")
 	}
 

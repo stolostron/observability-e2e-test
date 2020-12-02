@@ -72,15 +72,9 @@ var _ = Describe("Observability:", func() {
 		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, mco)).NotTo(HaveOccurred())
 
 		By("Waiting for MCO components ready status")
-		var err error
 		Eventually(func() error {
-			err = utils.CheckMCOComponentsReady(testOptions)
-			return err
+			return utils.CheckMCOComponentsReady(testOptions)
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
-
-		if err != nil {
-			utils.PrintAllMCOPodsStatus(testOptions)
-		}
 	})
 
 	It("Case 04 - Grafana console can be accessible", func() {
