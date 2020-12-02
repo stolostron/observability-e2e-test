@@ -72,6 +72,15 @@ var _ = Describe("Observability:", func() {
 		klog.V(3).Infof("Configmap %s does not exist", configmap[1])
 	})
 
+	It("should have the expected secret (alert/g0)", func() {
+		By("Checking if SECRETS: alertmanager-config is existed")
+		secret, err := hubClient.CoreV1().Secrets(MCO_NAMESPACE).Get(secret, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(secret.GetName()).To(Equal("alertmanager-config"))
+		klog.V(3).Infof("Successfully got secret: %s", secret.GetName())
+	})
+
 	It("[P1,Sev1,observability]should have custom alert generated (alert/g0)", func() {
 		By("Creating custom alert rules")
 		cm := utils.CreateCustomAlertRuleYaml("instance:node_memory_utilisation:ratio * 100 > 0")
@@ -84,6 +93,14 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
+	It("should modify the SECRET: alertmanager-config (alert/g0)", func() {
+		By("Editing the secret, we should be able to add the third partying tools integrations")
+		secret := utils.CreateCustomAlertConfigYaml(testOptions.HubCluster.BaseDomain)
+
+		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, secret)).NotTo(HaveOccurred())
+		klog.V(3).Infof("Successfully modified the secret: alertmanager-config")
+	})
+
 	It("[P1,Sev1,observability]should have custom alert updated (alert/g0)", func() {
 		By("Updating custom alert rules")
 		cm := utils.CreateCustomAlertRuleYaml("instance:node_memory_utilisation:ratio * 100 < 0")
@@ -94,23 +111,6 @@ var _ = Describe("Observability:", func() {
 			err, _ := utils.ContainManagedClusterMetric(testOptions, `ALERTS{alertname="NodeOutOfMemory"}`, "1m", []string{`"__name__":"ALERTS"`, `"alertname":"NodeOutOfMemory"`})
 			return err
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
-	})
-
-	It("should have the expected secret (alert/g0)", func() {
-		By("Checking if SECRETS: alertmanager-config is existed")
-		secret, err := hubClient.CoreV1().Secrets(MCO_NAMESPACE).Get(secret, metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
-
-		Expect(secret.GetName()).To(Equal("alertmanager-config"))
-		klog.V(3).Infof("Successfully got secret: %s", secret.GetName())
-	})
-
-	It("should modify the SECRET: alertmanager-config (alert/g0)", func() {
-		By("Editing the secret, we should be able to add the third partying tools integrations")
-		secret := utils.CreateCustomAlertConfigYaml(testOptions.HubCluster.BaseDomain)
-
-		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, secret)).NotTo(HaveOccurred())
-		klog.V(3).Infof("Successfully modified the secret: alertmanager-config")
 	})
 
 	It("should verify that the alerts are created (alert/g0)", func() {
@@ -163,7 +163,7 @@ var _ = Describe("Observability:", func() {
 
 		var (
 			retry = 0
-			max   = 100
+			max   = 50
 		)
 
 		Eventually(func() error {
