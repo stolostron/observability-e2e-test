@@ -2,13 +2,29 @@ package utils
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
 
 func CreateConfigMap(opt TestOptions, isHub bool, cm *corev1.ConfigMap) error {
 	clientKube := getKubeClient(opt, isHub)
-	_, err := clientKube.CoreV1().ConfigMaps(cm.ObjectMeta.Namespace).Create(cm)
+	found, err := clientKube.CoreV1().ConfigMaps(cm.ObjectMeta.Namespace).Get(cm.ObjectMeta.Name, metav1.GetOptions{})
+	if err != nil && errors.IsNotFound(err) {
+		_, err := clientKube.CoreV1().ConfigMaps(cm.ObjectMeta.Namespace).Create(cm)
+		if err == nil {
+			klog.V(1).Infof("configmap %s created", cm.ObjectMeta.Name)
+		}
+		return err
+	}
+	if err != nil {
+		return err
+	}
+	cm.ObjectMeta.ResourceVersion = found.ObjectMeta.ResourceVersion
+	_, err = clientKube.CoreV1().ConfigMaps(cm.ObjectMeta.Namespace).Update(cm)
+	if err == nil {
+		klog.V(1).Infof("configmap %s updated", cm.ObjectMeta.Name)
+	}
 	return err
 }
 
