@@ -149,7 +149,7 @@ var _ = Describe("Observability:", func() {
 		Expect(channel.Name).Should(Equal("team-observability-test"))
 		klog.V(3).Infof("Found slack channel for testing: %s", channel.Name)
 
-		history, err := slackAPI.GetConversationHistory(&slack.GetConversationHistoryParameters{ChannelID: "C01B4EK1JH1", Limit: 3})
+		history, err := slackAPI.GetConversationHistory(&slack.GetConversationHistoryParameters{ChannelID: "C01B4EK1JH1", Limit: 5})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(history.Ok).Should(Equal(true))
 
@@ -159,19 +159,16 @@ var _ = Describe("Observability:", func() {
 			klog.Info(msg.Attachments[0].Text)
 		}
 
-		timestamp := history.Messages[0].Timestamp
-
 		var (
-			retry = 0
-			max   = 50
+			retry         = 0
+			max           = 50
+			alertNotFound = true
 		)
 
 		Eventually(func() error {
-			history, err := slackAPI.GetConversationHistory(&slack.GetConversationHistoryParameters{ChannelID: "C01B4EK1JH1", Limit: 2})
+			history, err := slackAPI.GetConversationHistory(&slack.GetConversationHistoryParameters{ChannelID: "C01B4EK1JH1", Limit: 5})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(history.Ok).Should(Equal(true))
-
-			klog.V(5).Infof("Latest alert (%s): "+history.Messages[0].Attachments[0].Text, history.Messages[0].Timestamp)
 
 			if retry == max {
 				err := fmt.Errorf("Max retry limit has been reached... failing test.")
@@ -179,7 +176,15 @@ var _ = Describe("Observability:", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			if timestamp == history.Messages[0].Timestamp || !strings.Contains(history.Messages[0].Attachments[0].Title, "NodeOutOfMemory") {
+			for _, alert := range history.Messages {
+				if strings.Contains(alert.Attachments[0].TitleLink, baseDomain) {
+					klog.V(3).Infof("Viewing alert (%s): "+alert.Attachments[0].Text, alert.Timestamp)
+					Expect(alert.Attachments[0].Title).Should(Equal("[FIRING] NodeOutOfMemory (warning)"))
+					alertNotFound = false
+				}
+			}
+
+			if alertNotFound {
 				klog.V(3).Infof("Waiting for new alert.. Retrying (%d/%d)", retry, max)
 				retry += 1
 				return fmt.Errorf("No new slack alerts has been created.")
