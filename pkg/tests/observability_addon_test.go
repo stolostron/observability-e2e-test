@@ -1,4 +1,4 @@
-package main_test
+package tests
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/open-cluster-management/observability-e2e-test/utils"
+	"github.com/open-cluster-management/observability-e2e-test/pkg/utils"
 )
 
 var _ = Describe("Observability:", func() {

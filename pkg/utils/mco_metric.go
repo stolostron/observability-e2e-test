@@ -15,6 +15,7 @@ func ContainManagedClusterMetric(opt TestOptions, name, offset string, matchedLa
 	grafanaConsoleURL := GetGrafanaURL(opt)
 	path := "/api/datasources/proxy/1/api/v1/query?"
 	queryParams := url.PathEscape(fmt.Sprintf("query=%s offset %s", name, offset))
+	klog.V(1).Infof("request url is: %s\n", grafanaConsoleURL+path+queryParams)
 	req, err := http.NewRequest(
 		"GET",
 		grafanaConsoleURL+path+queryParams,

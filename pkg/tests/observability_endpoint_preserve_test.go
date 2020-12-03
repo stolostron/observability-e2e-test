@@ -1,4 +1,4 @@
-package main_test
+package tests
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -8,7 +8,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 
-	"github.com/open-cluster-management/observability-e2e-test/utils"
+	"github.com/open-cluster-management/observability-e2e-test/pkg/utils"
 )
 
 var _ = Describe("Observability:", func() {

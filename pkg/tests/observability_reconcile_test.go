@@ -1,4 +1,4 @@
-package main_test
+package tests
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/open-cluster-management/observability-e2e-test/utils"
+	"github.com/open-cluster-management/observability-e2e-test/pkg/utils"
 )
 
 const (
