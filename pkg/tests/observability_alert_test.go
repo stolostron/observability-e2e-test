@@ -1,4 +1,4 @@
-package main_test
+package tests
 
 import (
 	"fmt"
@@ -12,7 +12,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 
-	"github.com/open-cluster-management/observability-e2e-test/utils"
+	"github.com/open-cluster-management/observability-e2e-test/pkg/kustomize"
+	"github.com/open-cluster-management/observability-e2e-test/pkg/utils"
 )
 
 var _ = Describe("Observability:", func() {
@@ -83,12 +84,19 @@ var _ = Describe("Observability:", func() {
 
 	It("[P1,Sev1,observability]should have custom alert generated (alert/g0)", func() {
 		By("Creating custom alert rules")
-		cm := utils.CreateCustomAlertRuleYaml("instance:node_memory_utilisation:ratio * 100 > 0")
-		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, cm)).NotTo(HaveOccurred())
+		yamlB, _ := kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/alerts/custom_rules_valid"})
+		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
+
+		var labelName, labelValue string
+		labels, _ := kustomize.GetLabels(yamlB)
+		for labelName = range labels.(map[string]interface{}) {
+			labelValue = labels.(map[string]interface{})[labelName].(string)
+		}
 
 		By("Checking alert generated")
 		Eventually(func() error {
-			err, _ := utils.ContainManagedClusterMetric(testOptions, `ALERTS{alertname="NodeOutOfMemory"}`, "2m", []string{`"__name__":"ALERTS"`, `"alertname":"NodeOutOfMemory"`})
+			err, _ := utils.ContainManagedClusterMetric(testOptions, `ALERTS{`+labelName+`="`+labelValue+`"}`, "2m",
+				[]string{`"__name__":"ALERTS"`, `"` + labelName + `":"` + labelValue + `"`})
 			return err
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
@@ -103,12 +111,19 @@ var _ = Describe("Observability:", func() {
 
 	It("[P1,Sev1,observability]should have custom alert updated (alert/g0)", func() {
 		By("Updating custom alert rules")
-		cm := utils.CreateCustomAlertRuleYaml("instance:node_memory_utilisation:ratio * 100 < 0")
-		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, cm)).NotTo(HaveOccurred())
+		yamlB, _ := kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/alerts/custom_rules_invalid"})
+		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
+
+		var labelName, labelValue string
+		labels, _ := kustomize.GetLabels(yamlB)
+		for labelName = range labels.(map[string]interface{}) {
+			labelValue = labels.(map[string]interface{})[labelName].(string)
+		}
 
 		By("Checking alert generated")
 		Eventually(func() error {
-			err, _ := utils.ContainManagedClusterMetric(testOptions, `ALERTS{alertname="NodeOutOfMemory"}`, "1m", []string{`"__name__":"ALERTS"`, `"alertname":"NodeOutOfMemory"`})
+			err, _ := utils.ContainManagedClusterMetric(testOptions, `ALERTS{`+labelName+`="`+labelValue+`"}`, "1m",
+				[]string{`"__name__":"ALERTS"`, `"` + labelName + `":"` + labelValue + `"`})
 			return err
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
 	})
