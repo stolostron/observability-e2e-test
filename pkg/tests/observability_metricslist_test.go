@@ -28,7 +28,7 @@ var _ = Describe("Observability:", func() {
 
 	It("[P1,Sev1,observability] should have metrics which defined in custom metrics whitelist (metricslist/g0)", func() {
 		By("Adding custom metrics whitelist configmap")
-		yamlB, _ := kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/whitelist"})
+		yamlB, _ := kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/metrics/whitelist"})
 		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
 
 		By("Waiting for new added metrics on grafana console")
