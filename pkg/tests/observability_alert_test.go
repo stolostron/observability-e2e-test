@@ -164,7 +164,7 @@ var _ = Describe("Observability:", func() {
 		Expect(channel.Name).Should(Equal("team-observability-test"))
 		klog.V(3).Infof("Found slack channel for testing: %s", channel.Name)
 
-		history, err := slackAPI.GetConversationHistory(&slack.GetConversationHistoryParameters{ChannelID: "C01B4EK1JH1", Limit: 5})
+		history, err := slackAPI.GetConversationHistory(&slack.GetConversationHistoryParameters{ChannelID: "C01B4EK1JH1", Limit: 10})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(history.Ok).Should(Equal(true))
 
@@ -174,22 +174,12 @@ var _ = Describe("Observability:", func() {
 			klog.Info(msg.Attachments[0].Text)
 		}
 
-		var (
-			retry         = 0
-			max           = 50
-			alertNotFound = true
-		)
+		alertNotFound := true
 
 		Eventually(func() error {
-			history, err := slackAPI.GetConversationHistory(&slack.GetConversationHistoryParameters{ChannelID: "C01B4EK1JH1", Limit: 5})
+			history, err := slackAPI.GetConversationHistory(&slack.GetConversationHistoryParameters{ChannelID: "C01B4EK1JH1", Limit: 10})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(history.Ok).Should(Equal(true))
-
-			if retry == max {
-				err := fmt.Errorf("Max retry limit has been reached... failing test.")
-				klog.V(3).Infof("Max retry limit has been reached... failing test.")
-				Expect(err).NotTo(HaveOccurred())
-			}
 
 			for _, alert := range history.Messages {
 				if strings.Contains(alert.Attachments[0].TitleLink, baseDomain) {
@@ -200,8 +190,7 @@ var _ = Describe("Observability:", func() {
 			}
 
 			if alertNotFound {
-				klog.V(3).Infof("Waiting for new alert.. Retrying (%d/%d)", retry, max)
-				retry += 1
+				klog.V(3).Infoln("Waiting for targeted alert..")
 				return fmt.Errorf("No new slack alerts has been created.")
 			}
 
