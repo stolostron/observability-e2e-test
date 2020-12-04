@@ -4,9 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+	"github.com/open-cluster-management/observability-e2e-test/pkg/kustomize"
 	"github.com/open-cluster-management/observability-e2e-test/pkg/utils"
 )
 
@@ -15,52 +13,6 @@ const (
 	dashboardTitle       = "Sample Dashboard for E2E"
 	updateDashboardTitle = "Update Sample Dashboard for E2E"
 )
-
-func getSampleDashboardConfigmap() *corev1.ConfigMap {
-	return &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      dashboardName,
-			Namespace: MCO_NAMESPACE,
-			Labels: map[string]string{
-				"grafana-custom-dashboard": "true",
-			},
-		},
-		Data: map[string]string{"data": `
-{
-	"id": "e2e",
-	"uid": null,
-	"title": "Sample Dashboard for E2E",
-	"tags": [ "test" ],
-	"timezone": "browser",
-	"schemaVersion": 16,
-	"version": 1
-	}
-`},
-	}
-}
-
-func getUpdateSampleDashboardConfigmap() *corev1.ConfigMap {
-	return &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      dashboardName,
-			Namespace: MCO_NAMESPACE,
-			Labels: map[string]string{
-				"grafana-custom-dashboard": "true",
-			},
-		},
-		Data: map[string]string{"data": `
-{
-	"id": "e2e",
-	"uid": null,
-	"title": "Update Sample Dashboard for E2E",
-	"tags": [ "test" ],
-	"timezone": "browser",
-	"schemaVersion": 16,
-	"version": 1
-	}
-`},
-	}
-}
 
 var _ = Describe("Observability:", func() {
 	BeforeEach(func() {
@@ -77,8 +29,8 @@ var _ = Describe("Observability:", func() {
 
 	It("should have custom dashboard which defined in configmap (dashboard/g0)", func() {
 		By("Creating custom dashboard configmap")
-		err = utils.CreateConfigMap(testOptions, true, getSampleDashboardConfigmap())
-		Expect(err).ToNot(HaveOccurred())
+		yamlB, _ := kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/dashboards/sample_custom_dashboard"})
+		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
 		Eventually(func() bool {
 			_, result := utils.ContainDashboard(testOptions, dashboardTitle)
 			return result
@@ -87,8 +39,8 @@ var _ = Describe("Observability:", func() {
 
 	It("should have update custom dashboard after configmap updated (dashboard/g0)", func() {
 		By("Updating custom dashboard configmap")
-		err = utils.CreateConfigMap(testOptions, true, getUpdateSampleDashboardConfigmap())
-		Expect(err).ToNot(HaveOccurred())
+		yamlB, _ := kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/dashboards/update_sample_custom_dashboard"})
+		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
 		Eventually(func() bool {
 			_, result := utils.ContainDashboard(testOptions, dashboardTitle)
 			return result

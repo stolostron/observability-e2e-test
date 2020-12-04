@@ -3,8 +3,14 @@ package tests
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/open-cluster-management/observability-e2e-test/pkg/kustomize"
 	"github.com/open-cluster-management/observability-e2e-test/pkg/utils"
+)
+
+const (
+	whitelistCMname = "observability-metrics-custom-whitelist"
 )
 
 var _ = Describe("Observability:", func() {
@@ -22,8 +28,8 @@ var _ = Describe("Observability:", func() {
 
 	It("[P1,Sev1,observability] should have metrics which defined in custom metrics whitelist (metricslist/g0)", func() {
 		By("Adding custom metrics whitelist configmap")
-		err := utils.CreateMetricsWhitelist(testOptions)
-		Expect(err).ToNot(HaveOccurred())
+		yamlB, _ := kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/metrics/whitelist"})
+		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
 
 		By("Waiting for new added metrics on grafana console")
 		Eventually(func() error {
@@ -34,7 +40,7 @@ var _ = Describe("Observability:", func() {
 
 	It("[P1,Sev1,observability] should have no metrics after custom metrics whitelist deleted (metricslist/g0)", func() {
 		By("Deleting custom metrics whitelist configmap")
-		err := utils.DeleteMetricsWhitelist(testOptions)
+		err := hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Delete(whitelistCMname, &metav1.DeleteOptions{})
 		Expect(err).ToNot(HaveOccurred())
 
 		By("Waiting for new added metrics disappear on grafana console")
