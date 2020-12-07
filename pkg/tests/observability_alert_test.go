@@ -32,7 +32,7 @@ var _ = Describe("Observability:", func() {
 	configmap := [...]string{"thanos-ruler-default-rules", "thanos-ruler-custom-rules"}
 	secret := "alertmanager-config"
 
-	It("should have the expected statefulsets (alert/g0)", func() {
+	It("[P1,Sev1,observability]should have the expected statefulsets (alert/g0)", func() {
 		By("Checking if STS: Alertmanager and observability-observatorium-thanos-rule exist")
 		for _, name := range statefulset {
 			sts, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
@@ -51,7 +51,7 @@ var _ = Describe("Observability:", func() {
 		}
 	})
 
-	It("should have the expected configmap (alert/g0)", func() {
+	It("[P2,Sev2,observability]should have the expected configmap (alert/g0)", func() {
 		By("Checking if CM: thanos-ruler-default-rules is existed")
 		cm, err := hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Get(configmap[0], metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -60,7 +60,7 @@ var _ = Describe("Observability:", func() {
 		klog.V(3).Infof("Configmap %s does exist", configmap[0])
 	})
 
-	It("should not have the CM: thanos-ruler-custom-rules (alert/g0)", func() {
+	It("[P3,Sev3,observability]should not have the CM: thanos-ruler-custom-rules (alert/g0)", func() {
 		By("Checking if CM: thanos-ruler-custom-rules not existed")
 		_, err := hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Get(configmap[1], metav1.GetOptions{})
 
@@ -73,7 +73,7 @@ var _ = Describe("Observability:", func() {
 		klog.V(3).Infof("Configmap %s does not exist", configmap[1])
 	})
 
-	It("should have the expected secret (alert/g0)", func() {
+	It("[P2,Sev2,observability]should have the expected secret (alert/g0)", func() {
 		By("Checking if SECRETS: alertmanager-config is existed")
 		secret, err := hubClient.CoreV1().Secrets(MCO_NAMESPACE).Get(secret, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -101,7 +101,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("should modify the SECRET: alertmanager-config (alert/g0)", func() {
+	It("[P1,Sev1,observability]should modify the SECRET: alertmanager-config (alert/g0)", func() {
 		By("Editing the secret, we should be able to add the third partying tools integrations")
 		secret := utils.CreateCustomAlertConfigYaml(testOptions.HubCluster.BaseDomain)
 
@@ -128,7 +128,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
 	})
 
-	It("should verify that the alerts are created (alert/g0)", func() {
+	It("[P1,Sev1,observability]should verify that the alerts are created (alert/g0)", func() {
 		By("Checking that alertmanager and thanos-rule pods are running")
 		podList, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).List(metav1.ListOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -191,14 +191,14 @@ var _ = Describe("Observability:", func() {
 
 			if alertNotFound {
 				klog.V(3).Infoln("Waiting for targeted alert..")
-				return fmt.Errorf("No new slack alerts has been created.")
+				return fmt.Errorf("no new slack alerts has been created")
 			}
 
 			return nil
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("should delete the created configmap (alert/g0)", func() {
+	It("[P2,Sev2,observability]should delete the created configmap (alert/g0)", func() {
 		err := hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Delete(configmap[1], &metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
