@@ -26,7 +26,7 @@ var _ = Describe("Observability:", func() {
 
 	It("should have not the expected MCO addon pods (addon/g0)", func() {
 		By("Modifying MCO cr to disable observabilityaddon")
-		err := utils.ModifyMCOAddonSpec(testOptions, false)
+		err := utils.ModifyMCOAddonSpecMetrics(testOptions, false)
 		Expect(err).ToNot(HaveOccurred())
 
 		By("Waiting for MCO addon components scales to 0")
@@ -38,6 +38,27 @@ var _ = Describe("Observability:", func() {
 			}
 			return nil
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+		clusters, err := dynClient.Resource(utils.NewOCMManagedClustersGVR()).List(metav1.ListOptions{})
+		if err != nil {
+			panic(err.Error())
+		}
+		for _, cluster := range clusters.Items {
+			clusterName := cluster.Object["metadata"].(map[string]interface{})["name"].(string)
+			Eventually(func() string {
+				mco, err := dynClient.Resource(utils.NewMCOAddonGVR()).Namespace(string(clusterName)).Get("observability-addon", metav1.GetOptions{})
+				if err != nil {
+					panic(err.Error())
+				}
+				return fmt.Sprintf("%T", mco.Object["status"])
+			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).ShouldNot(Equal("nil"))
+			Eventually(func() string {
+				mco, err := dynClient.Resource(utils.NewMCOAddonGVR()).Namespace(string(clusterName)).Get("observability-addon", metav1.GetOptions{})
+				if err != nil {
+					panic(err.Error())
+				}
+				return mco.Object["status"].(map[string]interface{})["conditions"].([]interface{})[0].(map[string]interface{})["message"].(string)
+			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Equal("enableMetrics is set to False"))
+		}
 	})
 
 	It("should have not metric data (addon/g0)", func() {
@@ -51,7 +72,17 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 
 		By("Modifying MCO cr to enalbe observabilityaddon")
-		err := utils.ModifyMCOAddonSpec(testOptions, true)
+		err := utils.ModifyMCOAddonSpecMetrics(testOptions, true)
 		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("should not set interval to values beyond scope (addon/g0)", func() {
+		By("Set interval to 14")
+		err := utils.ModifyMCOAddonSpecInterval(testOptions, int64(14))
+		Expect(err.Error()).To(ContainSubstring("Invalid value: 15"))
+
+		By("Set interval to 3601")
+		err = utils.ModifyMCOAddonSpecInterval(testOptions, int64(3601))
+		Expect(err.Error()).To(ContainSubstring("Invalid value: 3600"))
 	})
 })
