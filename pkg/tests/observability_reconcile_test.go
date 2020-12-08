@@ -100,8 +100,13 @@ var _ = Describe("Observability:", func() {
 
 	It("should work in basic mode (reconcile/g0)", func() {
 		By("Modifying MCO availabilityConfig to enable basic mode")
-		err := utils.ModifyMCOAvailabilityConfig(testOptions, "Basic")
-		Expect(err).ToNot(HaveOccurred())
+		Eventually(func() error {
+			err := utils.ModifyMCOAvailabilityConfig(testOptions, "Basic")
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
 
 		By("Checking MCO components in Basic mode")
 		Eventually(func() error {
@@ -113,8 +118,13 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 
 		By("Modifying MCO availabilityConfig to enable high mode")
-		err = utils.ModifyMCOAvailabilityConfig(testOptions, "High")
-		Expect(err).ToNot(HaveOccurred())
+		Eventually(func() error {
+			err = utils.ModifyMCOAvailabilityConfig(testOptions, "High")
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
 
 		By("Checking MCO components in High mode")
 		Eventually(func() error {
