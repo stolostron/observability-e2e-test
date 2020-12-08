@@ -428,6 +428,43 @@ func RevertMCOCRModification(opt TestOptions) error {
 	return nil
 }
 
+func CheckMCOAddon(opt TestOptions) error {
+	client := NewKubeClient(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+	if len(opt.ManagedClusters) > 0 {
+		client = NewKubeClient(
+			opt.ManagedClusters[0].MasterURL,
+			opt.ManagedClusters[0].KubeConfig,
+			"")
+	}
+	expectedPodNames := []string{
+		"endpoint-observability-operator",
+		"metrics-collector-deployment",
+	}
+	podList, err := client.CoreV1().Pods(MCO_ADDON_NAMESPACE).List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	podsn := make(map[string]corev1.PodPhase)
+	for _, pod := range podList.Items {
+		podsn[pod.Name] = pod.Status.Phase
+	}
+	for _, podName := range expectedPodNames {
+		exist := false
+		for key, value := range podsn {
+			if strings.HasPrefix(key, podName) && value == "Running" {
+				exist = true
+			}
+		}
+		if !exist {
+			return fmt.Errorf(podName + " not found")
+		}
+	}
+	return nil
+}
+
 func ModifyMCORetentionResolutionRaw(opt TestOptions) error {
 	clientDynamic := NewKubeClientDynamic(
 		opt.HubCluster.MasterURL,
@@ -445,6 +482,20 @@ func ModifyMCORetentionResolutionRaw(opt TestOptions) error {
 		return updateErr
 	}
 	return nil
+}
+
+func GetMCOAddonSpecMetrics(opt TestOptions) (bool, error) {
+	clientDynamic := NewKubeClientDynamic(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	if getErr != nil {
+		return false, getErr
+	}
+
+	enable := mco.Object["spec"].(map[string]interface{})["observabilityAddonSpec"].(map[string]interface{})["enableMetrics"].(bool)
+	return enable, nil
 }
 
 func ModifyMCOAddonSpecMetrics(opt TestOptions, enable bool) error {
