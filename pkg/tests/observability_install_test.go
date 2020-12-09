@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"fmt"
 	"os"
 
 	. "github.com/onsi/ginkgo"
@@ -74,4 +75,36 @@ func installMCO() {
 	observabilityAddonSpec := mco_res.Object["spec"].(map[string]interface{})["observabilityAddonSpec"].(map[string]interface{})
 	Expect(observabilityAddonSpec["enableMetrics"]).To(Equal(true))
 	Expect(observabilityAddonSpec["interval"]).To(Equal(int64(60)))
+
+	By("Checking pvc and storageclass is gp2 or the default")
+	scList, err := hubClient.StorageV1().StorageClasses().List(metav1.ListOptions{})
+	gp2 := false
+	defaultSC := ""
+	for _, sc := range scList.Items {
+		if sc.Annotations["storageclass.kubernetes.io/is-default-class"] == "true" {
+			defaultSC = sc.Name
+		}
+		if sc.Name == "gp2" {
+			gp2 = true
+		}
+	}
+	expectedSC := defaultSC
+	if gp2 {
+		expectedSC = "gp2"
+	}
+	Eventually(func() error {
+		pvcList, err := hubClient.CoreV1().PersistentVolumeClaims("open-cluster-management-observability").List(metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+		for _, pvc := range pvcList.Items {
+			pvcSize := pvc.Spec.Resources.Requests["storage"]
+			scName := *pvc.Spec.StorageClassName
+			statusPhase := pvc.Status.Phase
+			if pvcSize.String() != "10Gi" || scName != expectedSC || statusPhase != "Bound" {
+				return fmt.Errorf("PVC check failed")
+			}
+		}
+		return nil
+	}).Should(Succeed())
 }
