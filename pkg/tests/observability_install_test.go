@@ -66,6 +66,15 @@ func installMCO() {
 		utils.PrintAllMCOPodsStatus(testOptions)
 	}
 
+	By("Check clustermanagementaddon CR is created")
+	Eventually(func() error {
+		_, err := dynClient.Resource(utils.NewMCOClusterManagementAddonsGVR()).Get("observability-controller", metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		return nil
+	}).Should(Succeed())
+
 	By("Checking metrics default values on managed cluster")
 	mco_res, err := dynClient.Resource(utils.NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
 	if err != nil {
