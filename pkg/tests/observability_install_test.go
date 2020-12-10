@@ -76,24 +76,32 @@ func installMCO() {
 	Expect(observabilityAddonSpec["enableMetrics"]).To(Equal(true))
 	Expect(observabilityAddonSpec["interval"]).To(Equal(int64(60)))
 
-	By("Checking pvc and storageclass is gp2 or the default")
+	By("Checking pvc and storageclass is the default")
+	mco_sc, err := dynClient.Resource(utils.NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred())
+
+	spec := mco_sc.Object["spec"].(map[string]interface{})
+	sizeInCR := spec["storageConfigObject"].(map[string]interface{})["statefulSetSize"].(string)
+	scInCR := spec["storageConfigObject"].(map[string]interface{})["statefulSetStorageClass"].(string)
+
 	scList, err := hubClient.StorageV1().StorageClasses().List(metav1.ListOptions{})
-	gp2 := false
+	scMatch := false
 	defaultSC := ""
 	for _, sc := range scList.Items {
 		if sc.Annotations["storageclass.kubernetes.io/is-default-class"] == "true" {
 			defaultSC = sc.Name
 		}
-		if sc.Name == "gp2" {
-			gp2 = true
+		if sc.Name == scInCR {
+			scMatch = true
 		}
 	}
 	expectedSC := defaultSC
-	if gp2 {
-		expectedSC = "gp2"
+	if scMatch {
+		expectedSC = scInCR
 	}
+
 	Eventually(func() error {
-		pvcList, err := hubClient.CoreV1().PersistentVolumeClaims("open-cluster-management-observability").List(metav1.ListOptions{})
+		pvcList, err := hubClient.CoreV1().PersistentVolumeClaims(MCO_NAMESPACE).List(metav1.ListOptions{})
 		if err != nil {
 			return err
 		}
@@ -101,8 +109,8 @@ func installMCO() {
 			pvcSize := pvc.Spec.Resources.Requests["storage"]
 			scName := *pvc.Spec.StorageClassName
 			statusPhase := pvc.Status.Phase
-			if pvcSize.String() != "10Gi" || scName != expectedSC || statusPhase != "Bound" {
-				return fmt.Errorf("PVC check failed")
+			if pvcSize.String() != sizeInCR || scName != expectedSC || statusPhase != "Bound" {
+				return fmt.Errorf("PVC check failed, pvcSize = %s, sizeInCR = %s, scName = %s, expectedSC = %s, statusPhase = %s", pvcSize.String(), sizeInCR, scName, expectedSC, statusPhase)
 			}
 		}
 		return nil
