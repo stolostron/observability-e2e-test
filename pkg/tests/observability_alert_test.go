@@ -204,4 +204,10 @@ var _ = Describe("Observability:", func() {
 
 		klog.V(3).Infof("Successfully deleted CM: thanos-ruler-custom-rules")
 	})
+
+	AfterEach(func() {
+		utils.PrintAllMCOPodsStatus(testOptions)
+		utils.PrintAllOBAPodsStatus(testOptions)
+		testFailed = testFailed || CurrentGinkgoTestDescription().Failed
+	})
 })

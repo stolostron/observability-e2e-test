@@ -48,6 +48,8 @@ var hiveClusterName, hiveGCPClusterName, hiveAzureClusterName string
 
 var ocpRelease string
 
+var testFailed = false
+
 const OCP_RELEASE_DEFAULT = "4.4.4"
 
 const charset = "abcdefghijklmnopqrstuvwxyz" +
@@ -94,7 +96,10 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	uninstallMCO()
+	testMCOReconcile()
+	if !testFailed {
+		uninstallMCO()
+	}
 })
 
 func initVars() {

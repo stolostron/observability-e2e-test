@@ -49,4 +49,10 @@ var _ = Describe("Observability:", func() {
 			return err
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
 	})
+
+	AfterEach(func() {
+		utils.PrintAllMCOPodsStatus(testOptions)
+		utils.PrintAllOBAPodsStatus(testOptions)
+		testFailed = testFailed || CurrentGinkgoTestDescription().Failed
+	})
 })

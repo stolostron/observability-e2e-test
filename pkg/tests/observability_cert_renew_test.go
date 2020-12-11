@@ -35,13 +35,13 @@ var _ = Describe("Observability:", func() {
 				}
 			}
 			if apiPodName == "" {
-				_, podList := utils.GetPodList(testOptions, true, MCO_ADDON_NAMESPACE, "app.kubernetes.io/name=observatorium-api")
+				_, podList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, "app.kubernetes.io/name=observatorium-api")
 				if podList != nil && len(podList.Items) > 0 {
 					apiPodName = podList.Items[0].Name
 				}
 			}
 			if rbacPodName == "" {
-				_, podList := utils.GetPodList(testOptions, true, MCO_ADDON_NAMESPACE, "app=rbac-query-proxy")
+				_, podList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, "app=rbac-query-proxy")
 				if podList != nil && len(podList.Items) > 0 {
 					rbacPodName = podList.Items[0].Name
 				}
@@ -58,7 +58,7 @@ var _ = Describe("Observability:", func() {
 
 		By(fmt.Sprintf("Waiting for old pod removed: %s", rbacPodName))
 		Eventually(func() bool {
-			err, podList := utils.GetPodList(testOptions, true, MCO_ADDON_NAMESPACE, "app=rbac-query-proxy")
+			err, podList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, "app=rbac-query-proxy")
 			if err == nil {
 				for _, pod := range podList.Items {
 					if pod.Name == rbacPodName {
@@ -73,7 +73,7 @@ var _ = Describe("Observability:", func() {
 
 		By(fmt.Sprintf("Waiting for old pod removed: %s", apiPodName))
 		Eventually(func() bool {
-			err, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
+			err, podList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, "app.kubernetes.io/name=observatorium-api")
 			if err == nil {
 				for _, pod := range podList.Items {
 					if pod.Name == apiPodName {
@@ -100,5 +100,11 @@ var _ = Describe("Observability:", func() {
 			}
 			return false
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeFalse())
+	})
+
+	AfterEach(func() {
+		utils.PrintAllMCOPodsStatus(testOptions)
+		utils.PrintAllOBAPodsStatus(testOptions)
+		testFailed = testFailed || CurrentGinkgoTestDescription().Failed
 	})
 })

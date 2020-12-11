@@ -60,4 +60,10 @@ var _ = Describe("Observability:", func() {
 			return result
 		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(BeFalse())
 	})
+
+	AfterEach(func() {
+		utils.PrintAllMCOPodsStatus(testOptions)
+		utils.PrintAllOBAPodsStatus(testOptions)
+		testFailed = testFailed || CurrentGinkgoTestDescription().Failed
+	})
 })

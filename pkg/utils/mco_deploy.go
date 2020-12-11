@@ -151,6 +151,39 @@ func PrintAllMCOPodsStatus(opt TestOptions) {
 	}
 }
 
+func GetAllOBAPods(opt TestOptions) ([]corev1.Pod, error) {
+	clientKube := getKubeClient(opt, false)
+
+	obaPods, err := clientKube.CoreV1().Pods(MCO_ADDON_NAMESPACE).List(metav1.ListOptions{})
+	if err != nil {
+		return []corev1.Pod{}, err
+	}
+
+	return obaPods.Items, nil
+}
+
+func PrintAllOBAPodsStatus(opt TestOptions) {
+	podList, err := GetAllOBAPods(opt)
+	if err != nil {
+		klog.Errorf("Failed to get all OBA pods")
+	}
+
+	for _, pod := range podList {
+		isReady := false
+		for _, cond := range pod.Status.Conditions {
+			if cond.Type == "Ready" {
+				klog.V(1).Infof("Pod <%s> is <Ready> on <%s> status\n", pod.Name, pod.Status.Phase)
+				isReady = true
+				break
+			}
+		}
+
+		if !isReady {
+			klog.V(1).Infof("Pod <%s> is not <Ready> on <%s> status\n", pod.Name, pod.Status.Phase)
+		}
+	}
+}
+
 func CheckAllPodNodeSelector(opt TestOptions) error {
 	podList, err := GetAllMCOPods(opt)
 	if err != nil {
