@@ -328,6 +328,53 @@ func CheckMCOComponentsInHighMode(opt TestOptions) error {
 	return nil
 }
 
+// ModifyMCOCR modifies the MCO CR for reconciling. modify multiple parameter to save running time
+func ModifyMCOCR(opt TestOptions) error {
+	clientDynamic := NewKubeClientDynamic(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	if getErr != nil {
+		return getErr
+	}
+	spec := mco.Object["spec"].(map[string]interface{})
+	spec["retentionResolutionRaw"] = "3d"
+	spec["nodeSelector"] = map[string]string{"kubernetes.io/os": "linux"}
+	spec["availabilityConfig"] = "Basic"
+
+	_, updateErr := clientDynamic.Resource(NewMCOGVR()).Update(mco, metav1.UpdateOptions{})
+	if updateErr != nil {
+		return updateErr
+	}
+	return nil
+}
+
+// RevertMCOCRModification revert the previous changes
+func RevertMCOCRModification(opt TestOptions) error {
+	clientDynamic := NewKubeClientDynamic(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	if getErr != nil {
+		return getErr
+	}
+	spec := mco.Object["spec"].(map[string]interface{})
+	spec["retentionResolutionRaw"] = "5d"
+	spec["nodeSelector"] = map[string]string{}
+	if IsCanaryEnvironment(opt) {
+		//KinD cluster does not have enough resource to support High mode
+		spec["availabilityConfig"] = "High"
+	}
+
+	_, updateErr := clientDynamic.Resource(NewMCOGVR()).Update(mco, metav1.UpdateOptions{})
+	if updateErr != nil {
+		return updateErr
+	}
+	return nil
+}
+
 func ModifyMCORetentionResolutionRaw(opt TestOptions) error {
 	clientDynamic := NewKubeClientDynamic(
 		opt.HubCluster.MasterURL,

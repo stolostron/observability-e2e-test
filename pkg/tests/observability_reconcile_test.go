@@ -43,8 +43,8 @@ func testMCOReconcile() {
 		testOptions.KubeConfig,
 		testOptions.HubCluster.KubeContext)
 
-	By("Modifying MCO retentionResolutionRaw filed")
-	err := utils.ModifyMCORetentionResolutionRaw(testOptions)
+	By("Modifying MCO CR for reconciling")
+	err := utils.ModifyMCOCR(testOptions)
 	Expect(err).ToNot(HaveOccurred())
 
 	By("Waiting for MCO retentionResolutionRaw filed to take effect")
@@ -63,11 +63,6 @@ func testMCOReconcile() {
 		return fmt.Errorf("Failed to find modified retention field")
 	}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 
-	By("Adding node selector to MCO cr")
-	selector := map[string]string{"kubernetes.io/os": "linux"}
-	err := utils.ModifyMCONodeSelector(testOptions, selector)
-	Expect(err).ToNot(HaveOccurred())
-
 	By("Checking node selector for all pods")
 	Eventually(func() error {
 		err = utils.CheckAllPodNodeSelector(testOptions)
@@ -76,10 +71,6 @@ func testMCOReconcile() {
 		}
 		return nil
 	}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
-
-	By("Deleting node selector from MCO cr")
-	err = utils.ModifyMCONodeSelector(testOptions, map[string]string{})
-	Expect(err).ToNot(HaveOccurred())
 
 	By("Checking podAntiAffinity for all pods")
 	Eventually(func() error {
@@ -90,35 +81,21 @@ func testMCOReconcile() {
 		return nil
 	}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 
+	By("Checking MCO components in Basic mode")
+	Eventually(func() error {
+		err = utils.CheckMCOComponentsInBaiscMode(testOptions)
+		if err != nil {
+			return err
+		}
+		return nil
+	}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+
 	if !utils.IsCanaryEnvironment(testOptions) {
-		Skip("should work in basic mode (reconcile/g0)")
+		Skip("should skip the high basic mode (reconcile/g0)")
 	} else {
-		By("Modifying MCO availabilityConfig to enable basic mode")
-		Eventually(func() error {
-			err := utils.ModifyMCOAvailabilityConfig(testOptions, "Basic")
-			if err != nil {
-				return err
-			}
-			return nil
-		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
-
-		By("Checking MCO components in Basic mode")
-		Eventually(func() error {
-			err = utils.CheckMCOComponentsInBaiscMode(testOptions)
-			if err != nil {
-				return err
-			}
-			return nil
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
-
-		By("Modifying MCO availabilityConfig to enable high mode")
-		Eventually(func() error {
-			err = utils.ModifyMCOAvailabilityConfig(testOptions, "High")
-			if err != nil {
-				return err
-			}
-			return nil
-		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
+		By("Revert MCO CR changes")
+		err := utils.RevertMCOCRModification(testOptions)
+		Expect(err).ToNot(HaveOccurred())
 
 		By("Checking MCO components in High mode")
 		Eventually(func() error {
