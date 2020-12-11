@@ -49,7 +49,7 @@ var _ = Describe("Observability:", func() {
 				return err
 			}
 			newDep.Spec.Template.Spec.ServiceAccountName = updateSaName
-			err, _ = utils.UpdateDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE, newDep)
+			err, newDep = utils.UpdateDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE, newDep)
 			return err
 		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
 		Eventually(func() bool {
@@ -114,5 +114,11 @@ var _ = Describe("Observability:", func() {
 			}
 			return false
 		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(BeTrue())
+	})
+
+	AfterEach(func() {
+		utils.PrintAllMCOPodsStatus(testOptions)
+		utils.PrintAllOBAPodsStatus(testOptions)
+		testFailed = testFailed || CurrentGinkgoTestDescription().Failed
 	})
 })

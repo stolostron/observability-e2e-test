@@ -151,6 +151,39 @@ func PrintAllMCOPodsStatus(opt TestOptions) {
 	}
 }
 
+func GetAllOBAPods(opt TestOptions) ([]corev1.Pod, error) {
+	clientKube := getKubeClient(opt, false)
+
+	obaPods, err := clientKube.CoreV1().Pods(MCO_ADDON_NAMESPACE).List(metav1.ListOptions{})
+	if err != nil {
+		return []corev1.Pod{}, err
+	}
+
+	return obaPods.Items, nil
+}
+
+func PrintAllOBAPodsStatus(opt TestOptions) {
+	podList, err := GetAllOBAPods(opt)
+	if err != nil {
+		klog.Errorf("Failed to get all OBA pods")
+	}
+
+	for _, pod := range podList {
+		isReady := false
+		for _, cond := range pod.Status.Conditions {
+			if cond.Type == "Ready" {
+				klog.V(1).Infof("Pod <%s> is <Ready> on <%s> status\n", pod.Name, pod.Status.Phase)
+				isReady = true
+				break
+			}
+		}
+
+		if !isReady {
+			klog.V(1).Infof("Pod <%s> is not <Ready> on <%s> status\n", pod.Name, pod.Status.Phase)
+		}
+	}
+}
+
 func CheckAllPodNodeSelector(opt TestOptions) error {
 	podList, err := GetAllMCOPods(opt)
 	if err != nil {
@@ -292,6 +325,53 @@ func CheckMCOComponentsInHighMode(opt TestOptions) error {
 		}
 	}
 
+	return nil
+}
+
+// ModifyMCOCR modifies the MCO CR for reconciling. modify multiple parameter to save running time
+func ModifyMCOCR(opt TestOptions) error {
+	clientDynamic := NewKubeClientDynamic(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	if getErr != nil {
+		return getErr
+	}
+	spec := mco.Object["spec"].(map[string]interface{})
+	spec["retentionResolutionRaw"] = "3d"
+	spec["nodeSelector"] = map[string]string{"kubernetes.io/os": "linux"}
+	spec["availabilityConfig"] = "Basic"
+
+	_, updateErr := clientDynamic.Resource(NewMCOGVR()).Update(mco, metav1.UpdateOptions{})
+	if updateErr != nil {
+		return updateErr
+	}
+	return nil
+}
+
+// RevertMCOCRModification revert the previous changes
+func RevertMCOCRModification(opt TestOptions) error {
+	clientDynamic := NewKubeClientDynamic(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	if getErr != nil {
+		return getErr
+	}
+	spec := mco.Object["spec"].(map[string]interface{})
+	spec["retentionResolutionRaw"] = "5d"
+	spec["nodeSelector"] = map[string]string{}
+	if IsCanaryEnvironment(opt) {
+		//KinD cluster does not have enough resource to support High mode
+		spec["availabilityConfig"] = "High"
+	}
+
+	_, updateErr := clientDynamic.Resource(NewMCOGVR()).Update(mco, metav1.UpdateOptions{})
+	if updateErr != nil {
+		return updateErr
+	}
 	return nil
 }
 

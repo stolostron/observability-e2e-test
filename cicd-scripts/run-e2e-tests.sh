@@ -13,7 +13,6 @@ go get -u github.com/onsi/ginkgo/ginkgo
 export KUBECONFIG=$HOME/.kube/kind-config-hub
 export IMPORT_KUBECONFIG=$HOME/.kube/kind-config-spoke
 export SKIP_INSTALL_STEP=true
-export SKIP_UNINSTALL_STEP=true
 
 cd ${WORKDIR}
 
@@ -29,7 +28,7 @@ printf "\n  clusters:" >> resources/options.yaml
 printf "\n    - name: spoke" >> resources/options.yaml
 printf "\n      masterURL: https://127.0.0.1:32807" >> resources/options.yaml
 
-ginkgo --skip="should work in basic mode \(reconcile/g0\)" -v ./pkg/tests -- -options=../../resources/options.yaml -v=3
+ginkgo -v ./pkg/tests -- -options=../../resources/options.yaml -v=3
 
 cat ./pkg/tests/results.xml | grep failures=\"0\" | grep errors=\"0\"
 if [ $? -ne 0 ]; then

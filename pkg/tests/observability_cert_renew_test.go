@@ -25,8 +25,6 @@ var _ = Describe("Observability:", func() {
 	It("[P1,Sev1,observability] should have metrics collector pod restart if cert secret re-generated (certrenew/g0)", func() {
 		By("Waiting for pods ready: observability-observatorium-observatorium-api, rbac-query-proxy, metrics-collector-deployment")
 		collectorPodName := ""
-		apiPodName := ""
-		rbacPodName := ""
 		Eventually(func() bool {
 			if collectorPodName == "" {
 				_, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
@@ -34,19 +32,7 @@ var _ = Describe("Observability:", func() {
 					collectorPodName = podList.Items[0].Name
 				}
 			}
-			if apiPodName == "" {
-				_, podList := utils.GetPodList(testOptions, true, MCO_ADDON_NAMESPACE, "app.kubernetes.io/name=observatorium-api")
-				if podList != nil && len(podList.Items) > 0 {
-					apiPodName = podList.Items[0].Name
-				}
-			}
-			if rbacPodName == "" {
-				_, podList := utils.GetPodList(testOptions, true, MCO_ADDON_NAMESPACE, "app=rbac-query-proxy")
-				if podList != nil && len(podList.Items) > 0 {
-					rbacPodName = podList.Items[0].Name
-				}
-			}
-			if collectorPodName == "" && apiPodName == "" && rbacPodName == "" {
+			if collectorPodName == "" {
 				return false
 			}
 			return true
@@ -55,36 +41,6 @@ var _ = Describe("Observability:", func() {
 		By("Deleting certificate secret to simulate certificate renew")
 		err := utils.DeleteCertSecret(testOptions)
 		Expect(err).ToNot(HaveOccurred())
-
-		By(fmt.Sprintf("Waiting for old pod removed: %s", rbacPodName))
-		Eventually(func() bool {
-			err, podList := utils.GetPodList(testOptions, true, MCO_ADDON_NAMESPACE, "app=rbac-query-proxy")
-			if err == nil {
-				for _, pod := range podList.Items {
-					if pod.Name == rbacPodName {
-						return true
-					}
-				}
-			} else {
-				return true
-			}
-			return false
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeFalse())
-
-		By(fmt.Sprintf("Waiting for old pod removed: %s", apiPodName))
-		Eventually(func() bool {
-			err, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
-			if err == nil {
-				for _, pod := range podList.Items {
-					if pod.Name == apiPodName {
-						return true
-					}
-				}
-			} else {
-				return true
-			}
-			return false
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeFalse())
 
 		By(fmt.Sprintf("Waiting for old pod removed: %s", collectorPodName))
 		Eventually(func() bool {
@@ -100,5 +56,11 @@ var _ = Describe("Observability:", func() {
 			}
 			return false
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeFalse())
+	})
+
+	AfterEach(func() {
+		utils.PrintAllMCOPodsStatus(testOptions)
+		utils.PrintAllOBAPodsStatus(testOptions)
+		testFailed = testFailed || CurrentGinkgoTestDescription().Failed
 	})
 })

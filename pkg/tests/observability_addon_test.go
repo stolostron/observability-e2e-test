@@ -85,4 +85,10 @@ var _ = Describe("Observability:", func() {
 		err = utils.ModifyMCOAddonSpecInterval(testOptions, int64(3601))
 		Expect(err.Error()).To(ContainSubstring("Invalid value: 3600"))
 	})
+
+	AfterEach(func() {
+		utils.PrintAllMCOPodsStatus(testOptions)
+		utils.PrintAllOBAPodsStatus(testOptions)
+		testFailed = testFailed || CurrentGinkgoTestDescription().Failed
+	})
 })
