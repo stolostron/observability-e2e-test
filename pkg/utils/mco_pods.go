@@ -21,3 +21,13 @@ func GetPodList(opt TestOptions, isHub bool, namespace string, labelSelector str
 	}
 	return err, podList
 }
+
+func DeletePod(opt TestOptions, isHub bool, namespace, name string) error {
+	clientKube := getKubeClient(opt, isHub)
+	err := clientKube.CoreV1().Pods(namespace).Delete(name, &metav1.DeleteOptions{})
+	if err != nil {
+		klog.Errorf("Failed to delete pod %s in namespace %s due to %v", name, namespace, err)
+		return err
+	}
+	return nil
+}
