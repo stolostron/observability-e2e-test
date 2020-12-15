@@ -1,5 +1,4 @@
 # the tests.sh is designed to run in KinD cluster
-cd ${WORKDIR}
 
 go get -u github.com/onsi/ginkgo/ginkgo
 
@@ -19,7 +18,7 @@ printf "\n  clusters:" >> resources/options.yaml
 printf "\n    - name: spoke" >> resources/options.yaml
 printf "\n      masterURL: https://127.0.0.1:32807" >> resources/options.yaml
 
-ginkgo -v ./pkg/tests -- -options=../../resources/options.yaml -v=3
+ginkgo -x -debug -trace -v ./pkg/tests -- -options=../../resources/options.yaml -v=3
 
 cat ./pkg/tests/results.xml | grep failures=\"0\" | grep errors=\"0\"
 if [ $? -ne 0 ]; then
