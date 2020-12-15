@@ -21,7 +21,7 @@ func getKubeClient(opt TestOptions, isHub bool) kubernetes.Interface {
 	return clientKube
 }
 
-func getKubeClientDynamic(opt TestOptions, isHub bool) dynamic.Interface {
+func GetKubeClientDynamic(opt TestOptions, isHub bool) dynamic.Interface {
 	url := opt.HubCluster.MasterURL
 	kubeConfig := opt.KubeConfig
 	kubeContext := opt.HubCluster.KubeContext
