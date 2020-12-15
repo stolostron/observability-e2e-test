@@ -10,7 +10,7 @@ fi
 
 # run test cases
 cd ${WORKDIR}
-./tests.sh
+./cicd-scripts/tests.sh
 if [ $? -ne 0 ]; then
     echo "Cannot pass all test cases."
     cat ${WORKDIR}/pkg/tests/results.xml
