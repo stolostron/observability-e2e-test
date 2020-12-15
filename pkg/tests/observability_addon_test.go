@@ -86,6 +86,36 @@ var _ = Describe("Observability:", func() {
 		Expect(err.Error()).To(ContainSubstring("Invalid value: 3600"))
 	})
 
+	It("should have not the expected MCO addon pods when disable observability from managedcluster (addon/g0)", func() {
+		By("Modifying managedcluster cr to disable observability")
+		Eventually(func() error {
+			return utils.UpdateObservabilityFromManagedCluster(testOptions, false)
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+
+		By("Waiting for MCO addon components scales to 0")
+		Eventually(func() bool {
+			_, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
+			if len(podList.Items) == 0 && err == nil {
+				return true
+			}
+			return false
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
+
+		By("Modifying managedcluster cr to enable observability")
+		Eventually(func() error {
+			return utils.UpdateObservabilityFromManagedCluster(testOptions, true)
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+
+		By("Waiting for MCO addon components ready")
+		Eventually(func() bool {
+			err, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
+			if len(podList.Items) == 1 && err == nil {
+				return true
+			}
+			return false
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
+	})
+
 	AfterEach(func() {
 		utils.PrintAllMCOPodsStatus(testOptions)
 		utils.PrintAllOBAPodsStatus(testOptions)
