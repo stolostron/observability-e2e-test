@@ -34,7 +34,7 @@ var _ = Describe("Observability:", func() {
 		Eventually(func() bool {
 			_, result := utils.ContainDashboard(testOptions, dashboardTitle)
 			return result
-		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(BeTrue())
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 	})
 
 	It("should have update custom dashboard after configmap updated (dashboard/g0)", func() {
@@ -44,11 +44,12 @@ var _ = Describe("Observability:", func() {
 		Eventually(func() bool {
 			_, result := utils.ContainDashboard(testOptions, dashboardTitle)
 			return result
-		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(BeFalse())
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeFalse())
+
 		Eventually(func() bool {
 			_, result := utils.ContainDashboard(testOptions, updateDashboardTitle)
 			return result
-		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(BeTrue())
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 	})
 
 	It("should have no custom dashboard in grafana after related configmap removed(dashboard/g0)", func() {
@@ -58,7 +59,7 @@ var _ = Describe("Observability:", func() {
 		Eventually(func() bool {
 			_, result := utils.ContainDashboard(testOptions, updateDashboardTitle)
 			return result
-		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(BeFalse())
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeFalse())
 	})
 
 	AfterEach(func() {

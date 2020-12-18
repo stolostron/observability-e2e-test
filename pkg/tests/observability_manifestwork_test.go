@@ -34,7 +34,7 @@ var _ = Describe("Observability:", func() {
 			Eventually(func() error {
 				err := clientDynamic.Resource(utils.NewOCMManifestworksGVR()).Namespace(clusterName).Delete(manifestWorkName, &metav1.DeleteOptions{})
 				return err
-			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
+			}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
 
 			By("Waiting for manifestwork to be created automatically")
 			Eventually(func() error {
