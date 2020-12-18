@@ -195,11 +195,18 @@ func CheckAllPodNodeSelector(opt TestOptions) error {
 	ignorePodList := []string{MCO_CR_NAME + "-observatorium-thanos-store-shard-1-0", MCO_CR_NAME + "-observatorium-thanos-store-shard-2-0"}
 
 	for _, pod := range podList {
+		isIgnorePod := false
 		for _, ignorePod := range ignorePodList {
 			if ignorePod == pod.GetName() {
+				isIgnorePod = true
 				break
 			}
 		}
+
+		if isIgnorePod {
+			continue
+		}
+
 		selecterValue, ok := pod.Spec.NodeSelector["kubernetes.io/os"]
 		if !ok || selecterValue != "linux" {
 			return fmt.Errorf("Failed to check node selector for pod: %v", pod.GetName())
