@@ -100,7 +100,7 @@ var _ = Describe("Observability:", func() {
 			err, _ := utils.ContainManagedClusterMetric(testOptions, `ALERTS{`+labelName+`="`+labelValue+`"}`, "2m",
 				[]string{`"__name__":"ALERTS"`, `"` + labelName + `":"` + labelValue + `"`})
 			return err
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
 	It("[P1,Sev1,observability]should modify the SECRET: alertmanager-config (alert/g0)", func() {
