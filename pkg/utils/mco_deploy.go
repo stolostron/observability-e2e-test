@@ -189,8 +189,17 @@ func CheckAllPodNodeSelector(opt TestOptions) error {
 	if err != nil {
 		return err
 	}
+	//shard-1-0 and shard-2-0 won't be deleted when switch from High to Basic
+	//And cannot apply the nodeSelector to shard-1-0 and shard-2-0
+	//https://github.com/open-cluster-management/backlog/issues/6532
+	ignorePodList := []string{MCO_CR_NAME + "-observatorium-thanos-store-shard-1-0", MCO_CR_NAME + "-observatorium-thanos-store-shard-2-0"}
 
 	for _, pod := range podList {
+		for _, ignorePod := range ignorePodList {
+			if ignorePod == pod.GetName() {
+				break
+			}
+		}
 		selecterValue, ok := pod.Spec.NodeSelector["kubernetes.io/os"]
 		if !ok || selecterValue != "linux" {
 			return fmt.Errorf("Failed to check node selector for pod: %v", pod.GetName())
