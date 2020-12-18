@@ -26,10 +26,21 @@ var _ = Describe("Observability:", func() {
 
 	It("[P1,Sev1,observability] should revert any manual changes on metrics-collector deployment (endpoint_preserve/g0)", func() {
 		By("Deleting metrics-collector deployment")
-		err, dep := utils.GetDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE)
-		Expect(err).ToNot(HaveOccurred())
-		err = utils.DeleteDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE)
-		Expect(err).ToNot(HaveOccurred())
+		var (
+			err error
+			dep *appv1.Deployment
+		)
+
+		Eventually(func() error {
+			err, dep = utils.GetDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE)
+			return err
+		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
+
+		Eventually(func() error {
+			err = utils.DeleteDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE)
+			return err
+		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
+
 		newDep := &appv1.Deployment{}
 		Eventually(func() bool {
 			err, newDep = utils.GetDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE)
@@ -79,7 +90,7 @@ var _ = Describe("Observability:", func() {
 				}
 			}
 			return false
-		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(BeTrue())
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 
 		By("Updating metrics-collector-view clusterolebinding")
 		updateSubName := "test-subject"
@@ -100,9 +111,21 @@ var _ = Describe("Observability:", func() {
 
 	It("[P1,Sev1,observability] should recreate on metrics-collector-serving-certs-ca-bundle configmap if deleted (endpoint_preserve/g0)", func() {
 		By("Deleting metrics-collector-serving-certs-ca-bundle configmap")
-		err, cm := utils.GetConfigMap(testOptions, false, "metrics-collector-serving-certs-ca-bundle", MCO_ADDON_NAMESPACE)
-		Expect(err).ToNot(HaveOccurred())
-		err = utils.DeleteConfigMap(testOptions, false, "metrics-collector-serving-certs-ca-bundle", MCO_ADDON_NAMESPACE)
+		var (
+			err error
+			cm  *v1.ConfigMap
+		)
+
+		Eventually(func() error {
+			err, cm = utils.GetConfigMap(testOptions, false, "metrics-collector-serving-certs-ca-bundle", MCO_ADDON_NAMESPACE)
+			return err
+		}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
+
+		Eventually(func() error {
+			err = utils.DeleteConfigMap(testOptions, false, "metrics-collector-serving-certs-ca-bundle", MCO_ADDON_NAMESPACE)
+			return err
+		}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
+
 		Expect(err).ToNot(HaveOccurred())
 		newCm := &v1.ConfigMap{}
 		Eventually(func() bool {

@@ -197,7 +197,7 @@ var _ = Describe("Observability:", func() {
 			}
 
 			return nil
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
 	It("[P2,Sev2,observability]should delete the created configmap (alert/g0)", func() {
