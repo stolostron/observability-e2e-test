@@ -1,6 +1,9 @@
 package utils
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
+)
 
 func UpdateObservabilityFromManagedCluster(opt TestOptions, enableObservability bool) error {
 	clientDynamic := GetKubeClientDynamic(opt, true)
@@ -21,6 +24,7 @@ func UpdateObservabilityFromManagedCluster(opt TestOptions, enableObservability 
 		} else {
 			delete(labels, "observability")
 		}
+		klog.V(1).Infof("cluster labels: %v", labels)
 		_, updateErr := clientDynamic.Resource(NewOCMManagedClustersGVR()).Update(&cluster, metav1.UpdateOptions{})
 		if updateErr != nil {
 			return updateErr

@@ -3,6 +3,7 @@ package tests
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -85,7 +86,7 @@ var _ = Describe("Observability:", func() {
 		By("Set interval to 14")
 		err := utils.ModifyMCOAddonSpecInterval(testOptions, int64(14))
 		Expect(err.Error()).To(ContainSubstring("Invalid value: 15"))
-
+		time.Sleep(time.Second * 1)
 		By("Set interval to 3601")
 		err = utils.ModifyMCOAddonSpecInterval(testOptions, int64(3601))
 		Expect(err.Error()).To(ContainSubstring("Invalid value: 3600"))
@@ -121,7 +122,7 @@ var _ = Describe("Observability:", func() {
 				return true
 			}
 			return false
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
+		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(BeTrue())
 	})
 
 	AfterEach(func() {
