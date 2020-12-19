@@ -34,12 +34,12 @@ var _ = Describe("Observability:", func() {
 		Eventually(func() error {
 			err, dep = utils.GetDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE)
 			return err
-		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
+		}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
 
 		Eventually(func() error {
 			err = utils.DeleteDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE)
 			return err
-		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
+		}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
 
 		newDep := &appv1.Deployment{}
 		Eventually(func() bool {
@@ -50,7 +50,7 @@ var _ = Describe("Observability:", func() {
 				}
 			}
 			return false
-		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(BeTrue())
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 
 		By("Updating metrics-collector deployment")
 		updateSaName := "test-serviceaccount"
@@ -72,7 +72,7 @@ var _ = Describe("Observability:", func() {
 				}
 			}
 			return false
-		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(BeTrue())
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 	})
 
 	It("[P1,Sev1,observability] should revert any manual changes on metrics-collector-view clusterolebinding (endpoint_preserve/g0)", func() {
@@ -106,7 +106,7 @@ var _ = Describe("Observability:", func() {
 				}
 			}
 			return false
-		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(BeTrue())
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 	})
 
 	It("[P1,Sev1,observability] should recreate on metrics-collector-serving-certs-ca-bundle configmap if deleted (endpoint_preserve/g0)", func() {
@@ -136,7 +136,7 @@ var _ = Describe("Observability:", func() {
 				}
 			}
 			return false
-		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(BeTrue())
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 	})
 
 	AfterEach(func() {
