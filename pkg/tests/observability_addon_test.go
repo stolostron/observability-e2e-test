@@ -108,8 +108,7 @@ var _ = Describe("Observability:", func() {
 				return true
 			}
 			return false
-			// TODO: need to figure out why use so much time
-		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(BeTrue())
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 
 		By("Modifying managedcluster cr to enable observability")
 		Eventually(func() error {
@@ -123,8 +122,7 @@ var _ = Describe("Observability:", func() {
 				return true
 			}
 			return false
-			// TODO: need to figure out why use so much time
-		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(BeTrue())
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 	})
 
 	AfterEach(func() {
