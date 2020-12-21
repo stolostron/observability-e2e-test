@@ -48,6 +48,7 @@ var _ = Describe("Observability:", func() {
 		if err != nil {
 			panic(err.Error())
 		}
+
 		for _, cluster := range clusters.Items {
 			clusterName := cluster.Object["metadata"].(map[string]interface{})["name"].(string)
 			Eventually(func() string {
@@ -60,7 +61,7 @@ var _ = Describe("Observability:", func() {
 				} else {
 					return ""
 				}
-			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Equal("enableMetrics is set to False"))
+			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Equal("enableMetrics is set to False"))
 		}
 
 		By("Waiting for check no metric data in grafana console")
