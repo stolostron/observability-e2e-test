@@ -422,6 +422,22 @@ func ModifyMCOAddonSpecMetrics(opt TestOptions, enable bool) error {
 	return nil
 }
 
+func MCOEnableMetricsIsTrue(opt TestOptions) bool {
+	clientDynamic := NewKubeClientDynamic(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+
+	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	if getErr != nil {
+		klog.Errorf("failed to get mco cr: %v", getErr)
+		return false
+	}
+
+	observabilityAddonSpec := mco.Object["spec"].(map[string]interface{})["observabilityAddonSpec"].(map[string]interface{})
+	return observabilityAddonSpec["enableMetrics"].(bool)
+}
+
 func ModifyMCOAddonSpecInterval(opt TestOptions, interval int64) error {
 	clientDynamic := NewKubeClientDynamic(
 		opt.HubCluster.MasterURL,

@@ -22,6 +22,12 @@ var _ = Describe("Observability:", func() {
 			testOptions.HubCluster.MasterURL,
 			testOptions.KubeConfig,
 			testOptions.HubCluster.KubeContext)
+
+		// ensure enable metrics even if test failed
+		if !utils.MCOEnableMetricsIsTrue(testOptions) {
+			err := utils.ModifyMCOAddonSpecMetrics(testOptions, true)
+			Expect(err).ToNot(HaveOccurred())
+		}
 	})
 
 	It("should have not the expected MCO addon pods (addon/g0)", func() {
@@ -145,6 +151,12 @@ var _ = Describe("Observability:", func() {
 	AfterEach(func() {
 		utils.PrintAllMCOPodsStatus(testOptions)
 		utils.PrintAllOBAPodsStatus(testOptions)
-		testFailed = testFailed || CurrentGinkgoTestDescription().Failed
+		testFailed = (testFailed || CurrentGinkgoTestDescription().Failed)
+
+		// ensure revert to enable metrics even if test failed
+		if testFailed && !utils.MCOEnableMetricsIsTrue(testOptions) {
+			err := utils.ModifyMCOAddonSpecMetrics(testOptions, true)
+			Expect(err).ToNot(HaveOccurred())
+		}
 	})
 })
