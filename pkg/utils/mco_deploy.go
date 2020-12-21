@@ -197,7 +197,7 @@ func CheckAllPodNodeSelector(opt TestOptions) error {
 
 	for _, pod := range podList {
 		if strings.Contains(ignorePods, pod.GetName()) {
-			break
+			continue
 		}
 
 		selecterValue, ok := pod.Spec.NodeSelector["kubernetes.io/os"]

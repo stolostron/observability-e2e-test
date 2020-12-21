@@ -3,7 +3,6 @@ package tests
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -55,7 +54,12 @@ var _ = Describe("Observability:", func() {
 				} else {
 					return ""
 				}
+<<<<<<< HEAD
 			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Equal("enableMetrics is set to False"))
+=======
+				return mco.Object["status"].(map[string]interface{})["conditions"].([]interface{})[0].(map[string]interface{})["message"].(string)
+			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Equal("enableMetrics is set to False"))
+>>>>>>> revert test timeout
 		}
 	})
 
@@ -67,7 +71,11 @@ var _ = Describe("Observability:", func() {
 				return nil
 			}
 			return fmt.Errorf("Check no metric data in grafana console error: %v", err)
+<<<<<<< HEAD
 		}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
+=======
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+>>>>>>> revert test timeout
 
 		By("Modifying MCO cr to enalbe observabilityaddon")
 		err := utils.ModifyMCOAddonSpecMetrics(testOptions, true)
@@ -84,12 +92,22 @@ var _ = Describe("Observability:", func() {
 
 	It("should not set interval to values beyond scope (addon/g0)", func() {
 		By("Set interval to 14")
-		err := utils.ModifyMCOAddonSpecInterval(testOptions, int64(14))
-		Expect(err.Error()).To(ContainSubstring("Invalid value: 15"))
-		time.Sleep(time.Second * 1)
+		Eventually(func() bool {
+			err := utils.ModifyMCOAddonSpecInterval(testOptions, int64(14))
+			if strings.Contains(err.Error(), "Invalid value: 15") {
+				return true
+			}
+			return false
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
+
 		By("Set interval to 3601")
-		err = utils.ModifyMCOAddonSpecInterval(testOptions, int64(3601))
-		Expect(err.Error()).To(ContainSubstring("Invalid value: 3600"))
+		Eventually(func() bool {
+			err := utils.ModifyMCOAddonSpecInterval(testOptions, int64(3601))
+			if strings.Contains(err.Error(), "Invalid value: 3600") {
+				return true
+			}
+			return false
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 	})
 
 	It("should have not the expected MCO addon pods when disable observability from managedcluster (addon/g0)", func() {
@@ -121,7 +139,6 @@ var _ = Describe("Observability:", func() {
 			if len(podList.Items) == 1 && err == nil {
 				return true
 			}
-			return false
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 	})
 

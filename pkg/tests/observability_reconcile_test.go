@@ -104,7 +104,7 @@ func testMCOReconcile() {
 				return err
 			}
 			return nil
-		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	}
 
 	utils.PrintAllMCOPodsStatus(testOptions)
