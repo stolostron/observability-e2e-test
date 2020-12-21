@@ -62,9 +62,7 @@ var _ = Describe("Observability:", func() {
 				}
 			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Equal("enableMetrics is set to False"))
 		}
-	})
 
-	It("should have not metric data (addon/g0)", func() {
 		By("Waiting for check no metric data in grafana console")
 		Eventually(func() error {
 			err, hasMetric := utils.ContainManagedClusterMetric(testOptions, "node_memory_MemAvailable_bytes", "90s", []string{`"__name__":"node_memory_MemAvailable_bytes"`})
@@ -75,7 +73,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 
 		By("Modifying MCO cr to enalbe observabilityaddon")
-		err := utils.ModifyMCOAddonSpecMetrics(testOptions, true)
+		err = utils.ModifyMCOAddonSpecMetrics(testOptions, true)
 		Expect(err).ToNot(HaveOccurred())
 		By("Waiting for MCO addon components ready")
 		Eventually(func() bool {
