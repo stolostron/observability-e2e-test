@@ -36,7 +36,7 @@ var _ = Describe("Observability:", func() {
 		Eventually(func() error {
 			err, _ := utils.ContainManagedClusterMetric(testOptions, "node_memory_Active_bytes", "1m", []string{`"__name__":"node_memory_Active_bytes"`})
 			return err
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
 	It("[P1,Sev1,observability] should have no metrics after custom metrics whitelist deleted (metricslist/g0)", func() {
@@ -50,7 +50,7 @@ var _ = Describe("Observability:", func() {
 		Eventually(func() error {
 			err, _ := utils.ContainManagedClusterMetric(testOptions, "node_memory_Active_bytes", "1m", []string{`"__name__":"node_memory_Active_bytes"`})
 			return err
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
+		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
 	})
 
 	AfterEach(func() {

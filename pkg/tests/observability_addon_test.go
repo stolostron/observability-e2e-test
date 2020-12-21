@@ -60,12 +60,7 @@ var _ = Describe("Observability:", func() {
 				} else {
 					return ""
 				}
-<<<<<<< HEAD
 			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Equal("enableMetrics is set to False"))
-=======
-				return mco.Object["status"].(map[string]interface{})["conditions"].([]interface{})[0].(map[string]interface{})["message"].(string)
-			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Equal("enableMetrics is set to False"))
->>>>>>> revert test timeout
 		}
 	})
 
@@ -77,11 +72,7 @@ var _ = Describe("Observability:", func() {
 				return nil
 			}
 			return fmt.Errorf("Check no metric data in grafana console error: %v", err)
-<<<<<<< HEAD
-		}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
-=======
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
->>>>>>> revert test timeout
+		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 
 		By("Modifying MCO cr to enalbe observabilityaddon")
 		err := utils.ModifyMCOAddonSpecMetrics(testOptions, true)
@@ -145,6 +136,7 @@ var _ = Describe("Observability:", func() {
 			if len(podList.Items) == 1 && err == nil {
 				return true
 			}
+			return false
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 	})
 
