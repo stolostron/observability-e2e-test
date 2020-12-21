@@ -49,14 +49,11 @@ var _ = Describe("Observability:", func() {
 				if err != nil {
 					panic(err.Error())
 				}
-				return fmt.Sprintf("%T", mco.Object["status"])
-			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).ShouldNot(Equal("nil"))
-			Eventually(func() string {
-				mco, err := dynClient.Resource(utils.NewMCOAddonGVR()).Namespace(string(clusterName)).Get("observability-addon", metav1.GetOptions{})
-				if err != nil {
-					panic(err.Error())
+				if mco.Object["status"] != nil {
+					return mco.Object["status"].(map[string]interface{})["conditions"].([]interface{})[0].(map[string]interface{})["message"].(string)
+				} else {
+					return ""
 				}
-				return mco.Object["status"].(map[string]interface{})["conditions"].([]interface{})[0].(map[string]interface{})["message"].(string)
 			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Equal("enableMetrics is set to False"))
 		}
 	})
@@ -69,11 +66,19 @@ var _ = Describe("Observability:", func() {
 				return nil
 			}
 			return fmt.Errorf("Check no metric data in grafana console error: %v", err)
-		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
+		}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
 
 		By("Modifying MCO cr to enalbe observabilityaddon")
 		err := utils.ModifyMCOAddonSpecMetrics(testOptions, true)
 		Expect(err).ToNot(HaveOccurred())
+		By("Waiting for MCO addon components ready")
+		Eventually(func() bool {
+			err, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
+			if len(podList.Items) == 1 && err == nil {
+				return true
+			}
+			return false
+		}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(BeTrue())
 	})
 
 	It("should not set interval to values beyond scope (addon/g0)", func() {
@@ -87,6 +92,9 @@ var _ = Describe("Observability:", func() {
 	})
 
 	It("should have not the expected MCO addon pods when disable observability from managedcluster (addon/g0)", func() {
+		if !utils.IsCanaryEnvironment(testOptions) {
+			Skip("Modifying managedcluster cr to disable observability")
+		}
 		By("Modifying managedcluster cr to disable observability")
 		Eventually(func() error {
 			return utils.UpdateObservabilityFromManagedCluster(testOptions, false)
