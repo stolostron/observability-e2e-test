@@ -6,10 +6,11 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.8.1 // indirect
 	github.com/prometheus/common v0.4.1
 	github.com/sclevine/agouti v3.0.0+incompatible
-	github.com/spf13/cobra v1.0.0
+	github.com/slack-go/slack v0.7.4
+	github.com/spf13/cobra v1.0.0 // indirect
 	github.com/stretchr/testify v1.6.1
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.17.2
