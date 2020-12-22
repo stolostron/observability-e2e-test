@@ -15,11 +15,12 @@ func GetPodList(opt TestOptions, isHub bool, namespace string, labelSelector str
 	podList, err := clientKube.CoreV1().Pods(namespace).List(listOption)
 	if err != nil {
 		klog.Errorf("Failed to get pod list in namespace %s using labelselector %s due to %v", namespace, labelSelector, err)
+		return err, podList
 	}
 	if podList != nil && len(podList.Items) == 0 {
 		klog.V(1).Infof("No pod found for labelselector %s", labelSelector)
 	}
-	return err, podList
+	return nil, podList
 }
 
 func DeletePod(opt TestOptions, isHub bool, namespace, name string) error {
