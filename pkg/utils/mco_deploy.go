@@ -228,6 +228,30 @@ func CheckAllPodsAffinity(opt TestOptions) error {
 	return nil
 }
 
+func CheckOBAComponents(opt TestOptions) error {
+	client := getKubeClient(opt, false)
+	deployments := client.AppsV1().Deployments(MCO_ADDON_NAMESPACE)
+	expectedDeploymentNames := []string{
+		"endpoint-observability-operator",
+		"metrics-collector-deployment",
+	}
+
+	for _, deploymentName := range expectedDeploymentNames {
+		deployment, err := deployments.Get(deploymentName, metav1.GetOptions{})
+		if err != nil {
+			klog.Errorf("Error while retrieving deployment %s: %s", deploymentName, err.Error())
+			return err
+		}
+
+		if deployment.Status.ReadyReplicas != 1 {
+			err = fmt.Errorf("Expect 1 but got %d ready replicas", deployment.Status.ReadyReplicas)
+			return err
+		}
+	}
+
+	return nil
+}
+
 func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 	client := NewKubeClient(
 		opt.HubCluster.MasterURL,

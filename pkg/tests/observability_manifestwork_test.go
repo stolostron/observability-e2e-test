@@ -1,6 +1,8 @@
 package tests
 
 import (
+	"errors"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,6 +31,18 @@ var _ = Describe("Observability:", func() {
 		clientDynamic := utils.GetKubeClientDynamic(testOptions, true)
 		for _, cluster := range clusters.Items {
 			clusterName := cluster.Object["metadata"].(map[string]interface{})["name"].(string)
+			oldManifestWorkResourceVersion := ""
+			oldCollectorPodName := ""
+			_, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
+			if podList != nil && len(podList.Items) > 0 {
+				oldCollectorPodName = podList.Items[0].Name
+			}
+
+			Eventually(func() error {
+				oldManifestWork, err := clientDynamic.Resource(utils.NewOCMManifestworksGVR()).Namespace(clusterName).Get(manifestWorkName, metav1.GetOptions{})
+				oldManifestWorkResourceVersion = oldManifestWork.GetResourceVersion()
+				return err
+			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
 
 			By("Waiting for manifestwork to be deleted")
 			Eventually(func() error {
@@ -38,9 +52,37 @@ var _ = Describe("Observability:", func() {
 
 			By("Waiting for manifestwork to be created automatically")
 			Eventually(func() error {
-				_, err := clientDynamic.Resource(utils.NewOCMManifestworksGVR()).Namespace(clusterName).Get(manifestWorkName, metav1.GetOptions{})
-				return err
-			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
+				newManifestWork, err := clientDynamic.Resource(utils.NewOCMManifestworksGVR()).Namespace(clusterName).Get(manifestWorkName, metav1.GetOptions{})
+				if err == nil {
+					if newManifestWork.GetResourceVersion() != oldManifestWorkResourceVersion {
+						return nil
+					} else {
+						return errors.New("No new manifestwork generated")
+					}
+				} else {
+					return err
+				}
+			}, EventuallyTimeoutMinute*2, EventuallyIntervalSecond*5).Should(Succeed())
+
+			By("Waiting for metrics collector to be created automatically")
+			Eventually(func() error {
+				_, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
+				if podList != nil && len(podList.Items) > 0 {
+					if oldCollectorPodName != podList.Items[0].Name {
+						return nil
+					}
+				}
+				return errors.New("No new metrics collector generated")
+			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+
+			By("Checking OBA components are ready")
+			Eventually(func() error {
+				err = utils.CheckOBAComponents(testOptions)
+				if err != nil {
+					return err
+				}
+				return nil
+			}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
 
 			By("Checking metric to ensure that no data is lost in 1 minute")
 			Eventually(func() error {
