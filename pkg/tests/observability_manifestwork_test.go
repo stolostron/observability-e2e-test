@@ -25,12 +25,9 @@ var _ = Describe("Observability:", func() {
 
 	It("should be automatically created within 1 minute when delete manifestwork (manifestwork/g0)", func() {
 		manifestWorkName := "endpoint-observability-work"
-		clusters, err := dynClient.Resource(utils.NewOCMManagedClustersGVR()).List(metav1.ListOptions{})
-		Expect(err).ToNot(HaveOccurred())
-
 		clientDynamic := utils.GetKubeClientDynamic(testOptions, true)
-		for _, cluster := range clusters.Items {
-			clusterName := cluster.Object["metadata"].(map[string]interface{})["name"].(string)
+		clusterName := utils.GetManagedClusterName(testOptions)
+		if clusterName != "" {
 			oldManifestWorkResourceVersion := ""
 			oldCollectorPodName := ""
 			_, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")

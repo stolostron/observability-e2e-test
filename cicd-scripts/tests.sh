@@ -15,10 +15,10 @@ printf "\n    masterURL: https://127.0.0.1:32806" >> resources/options.yaml
 printf "\n    grafanaURL: http://127.0.0.1" >> resources/options.yaml
 printf "\n    grafanaHost: grafana-test" >> resources/options.yaml
 printf "\n  clusters:" >> resources/options.yaml
-printf "\n    - name: spoke" >> resources/options.yaml
+printf "\n    - name: cluster1" >> resources/options.yaml
 printf "\n      masterURL: https://127.0.0.1:32807" >> resources/options.yaml
 
-ginkgo -x -debug -trace -v ./pkg/tests -- -options=../../resources/options.yaml -v=3
+ginkgo -debug -trace -v ./pkg/tests -- -options=../../resources/options.yaml -v=3
 
 cat ./pkg/tests/results.xml | grep failures=\"0\" | grep errors=\"0\"
 if [ $? -ne 0 ]; then

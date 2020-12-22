@@ -38,12 +38,9 @@ var _ = Describe("Observability:", func() {
 			}
 			return nil
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
-		clusters, err := dynClient.Resource(utils.NewOCMManagedClustersGVR()).List(metav1.ListOptions{})
-		if err != nil {
-			panic(err.Error())
-		}
-		for _, cluster := range clusters.Items {
-			clusterName := cluster.Object["metadata"].(map[string]interface{})["name"].(string)
+
+		clusterName := utils.GetManagedClusterName(testOptions)
+		if clusterName != "" {
 			Eventually(func() string {
 				mco, err := dynClient.Resource(utils.NewMCOAddonGVR()).Namespace(string(clusterName)).Get("observability-addon", metav1.GetOptions{})
 				if err != nil {

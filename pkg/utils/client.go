@@ -43,3 +43,10 @@ func GetKubeClientDynamic(opt TestOptions, isHub bool) dynamic.Interface {
 
 	return clientset
 }
+
+func GetManagedClusterName(opt TestOptions) string {
+	if len(opt.ManagedClusters) > 0 {
+		return opt.ManagedClusters[0].Name
+	}
+	return ""
+}
