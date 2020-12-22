@@ -61,11 +61,11 @@ var _ = Describe("Observability:", func() {
 			}
 		}
 
-		By(fmt.Sprintf("Waiting for old pods removed: %v and new pods recreated", apiPodsName))
+		By(fmt.Sprintf("Waiting for old pods removed: %v and new pods created", apiPodsName))
 		Eventually(func() bool {
 			err, podList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, "app.kubernetes.io/name=observatorium-api")
 			if err == nil {
-				if len(podList.Items) == 2 {
+				if len(podList.Items) != 0 {
 					for oldPodName := range apiPodsName {
 						apiPodsName[oldPodName] = true
 						for _, pod := range podList.Items {
@@ -90,7 +90,7 @@ var _ = Describe("Observability:", func() {
 			return false
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 
-		By(fmt.Sprintf("Waiting for old pod removed: %s and new pod recreated", collectorPodName))
+		By(fmt.Sprintf("Waiting for old pod removed: %s and new pod created", collectorPodName))
 		Eventually(func() bool {
 			err, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
 			if err == nil {
