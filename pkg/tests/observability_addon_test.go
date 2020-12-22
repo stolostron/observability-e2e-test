@@ -24,7 +24,7 @@ var _ = Describe("Observability:", func() {
 			testOptions.HubCluster.KubeContext)
 	})
 
-	It("should have not the expected MCO addon pods (addon/g0)", func() {
+	It("should not have the expected MCO addon pods (addon/g0)", func() {
 		By("Modifying MCO cr to disable observabilityaddon")
 		err := utils.ModifyMCOAddonSpecMetrics(testOptions, false)
 		Expect(err).ToNot(HaveOccurred())
@@ -55,27 +55,29 @@ var _ = Describe("Observability:", func() {
 		}
 	})
 
-	It("should have not metric data (addon/g0)", func() {
-		By("Waiting for check no metric data in grafana console")
-		Eventually(func() error {
-			err, hasMetric := utils.ContainManagedClusterMetric(testOptions, "node_memory_MemAvailable_bytes", "90s", []string{`"__name__":"node_memory_MemAvailable_bytes"`})
-			if err != nil && !hasMetric && strings.Contains(err.Error(), "Failed to find metric name from response") {
-				return nil
-			}
-			return fmt.Errorf("Check no metric data in grafana console error: %v", err)
-		}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
+	Context("should not have metric data (addon/g0)", func() {
+		It("Waiting for check no metric data in grafana console", func() {
+			Eventually(func() error {
+				err, hasMetric := utils.ContainManagedClusterMetric(testOptions, "node_memory_MemAvailable_bytes", "90s", []string{`"__name__":"node_memory_MemAvailable_bytes"`})
+				if err != nil && !hasMetric && strings.Contains(err.Error(), "Failed to find metric name from response") {
+					return nil
+				}
+				return fmt.Errorf("Check no metric data in grafana console error: %v", err)
+			}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
+		})
 
-		By("Modifying MCO cr to enalbe observabilityaddon")
-		err := utils.ModifyMCOAddonSpecMetrics(testOptions, true)
-		Expect(err).ToNot(HaveOccurred())
-		By("Waiting for MCO addon components ready")
-		Eventually(func() bool {
-			err, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
-			if len(podList.Items) == 1 && err == nil {
-				return true
-			}
-			return false
-		}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(BeTrue())
+		It("Modifying MCO cr to enalbe observabilityaddon", func() {
+			err := utils.ModifyMCOAddonSpecMetrics(testOptions, true)
+			Expect(err).ToNot(HaveOccurred())
+			By("Waiting for MCO addon components ready")
+			Eventually(func() bool {
+				err, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
+				if len(podList.Items) == 1 && err == nil {
+					return true
+				}
+				return false
+			}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(BeTrue())
+		})
 	})
 
 	It("should not set interval to values beyond scope (addon/g0)", func() {
@@ -88,37 +90,39 @@ var _ = Describe("Observability:", func() {
 		Expect(err.Error()).To(ContainSubstring("Invalid value: 3600"))
 	})
 
-	It("should have not the expected MCO addon pods when disable observability from managedcluster (addon/g0)", func() {
+	Context("should not have the expected MCO addon pods when disable observability from managedcluster (addon/g0)", func() {
 		if !utils.IsCanaryEnvironment(testOptions) {
 			Skip("Modifying managedcluster cr to disable observability")
 		}
-		By("Modifying managedcluster cr to disable observability")
-		Eventually(func() error {
-			return utils.UpdateObservabilityFromManagedCluster(testOptions, false)
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+		It("Modifying managedcluster cr to disable observability", func() {
+			Eventually(func() error {
+				return utils.UpdateObservabilityFromManagedCluster(testOptions, false)
+			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 
-		By("Waiting for MCO addon components scales to 0")
-		Eventually(func() bool {
-			_, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
-			if len(podList.Items) == 0 && err == nil {
-				return true
-			}
-			return false
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
+			By("Waiting for MCO addon components scales to 0")
+			Eventually(func() bool {
+				_, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
+				if len(podList.Items) == 0 && err == nil {
+					return true
+				}
+				return false
+			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
+		})
 
-		By("Modifying managedcluster cr to enable observability")
-		Eventually(func() error {
-			return utils.UpdateObservabilityFromManagedCluster(testOptions, true)
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+		It("Modifying managedcluster cr to enable observability", func() {
+			Eventually(func() error {
+				return utils.UpdateObservabilityFromManagedCluster(testOptions, true)
+			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 
-		By("Waiting for MCO addon components ready")
-		Eventually(func() bool {
-			err, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
-			if len(podList.Items) == 1 && err == nil {
-				return true
-			}
-			return false
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
+			By("Waiting for MCO addon components ready")
+			Eventually(func() bool {
+				err, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
+				if len(podList.Items) == 1 && err == nil {
+					return true
+				}
+				return false
+			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
+		})
 	})
 
 	AfterEach(func() {

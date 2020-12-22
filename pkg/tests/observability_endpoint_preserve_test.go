@@ -24,44 +24,46 @@ var _ = Describe("Observability:", func() {
 			testOptions.HubCluster.KubeContext)
 	})
 
-	It("[P1,Sev1,observability] should revert any manual changes on metrics-collector deployment (endpoint_preserve/g0)", func() {
-		By("Deleting metrics-collector deployment")
-		err, dep := utils.GetDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE)
-		Expect(err).ToNot(HaveOccurred())
-		err = utils.DeleteDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE)
-		Expect(err).ToNot(HaveOccurred())
+	Context("[P1,Sev1,observability] should revert any manual changes on metrics-collector deployment (endpoint_preserve/g0)", func() {
 		newDep := &appv1.Deployment{}
-		Eventually(func() bool {
-			err, newDep = utils.GetDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE)
-			if err == nil {
-				if dep.ObjectMeta.ResourceVersion != newDep.ObjectMeta.ResourceVersion {
-					return true
+		It("Deleting metrics-collector deployment", func() {
+			err, dep := utils.GetDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE)
+			Expect(err).ToNot(HaveOccurred())
+			err = utils.DeleteDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE)
+			Expect(err).ToNot(HaveOccurred())
+			Eventually(func() bool {
+				err, newDep = utils.GetDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE)
+				if err == nil {
+					if dep.ObjectMeta.ResourceVersion != newDep.ObjectMeta.ResourceVersion {
+						return true
+					}
 				}
-			}
-			return false
-		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(BeTrue())
-
-		By("Updating metrics-collector deployment")
-		updateSaName := "test-serviceaccount"
-		Eventually(func() error {
-			err, newDep = utils.GetDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE)
-			if err != nil {
+				return false
+			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(BeTrue())
+		})
+		It("Updating metrics-collector deployment", func() {
+			updateSaName := "test-serviceaccount"
+			Eventually(func() error {
+				err, newDep = utils.GetDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE)
+				if err != nil {
+					return err
+				}
+				newDep.Spec.Template.Spec.ServiceAccountName = updateSaName
+				err, newDep = utils.UpdateDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE, newDep)
 				return err
-			}
-			newDep.Spec.Template.Spec.ServiceAccountName = updateSaName
-			err, newDep = utils.UpdateDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE, newDep)
-			return err
-		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
-		Eventually(func() bool {
-			err, revertDep := utils.GetDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE)
-			if err == nil {
-				if revertDep.ObjectMeta.ResourceVersion != newDep.ObjectMeta.ResourceVersion &&
-					revertDep.Spec.Template.Spec.ServiceAccountName != updateSaName {
-					return true
+			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
+
+			Eventually(func() bool {
+				err, revertDep := utils.GetDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE)
+				if err == nil {
+					if revertDep.ObjectMeta.ResourceVersion != newDep.ObjectMeta.ResourceVersion &&
+						revertDep.Spec.Template.Spec.ServiceAccountName != updateSaName {
+						return true
+					}
 				}
-			}
-			return false
-		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(BeTrue())
+				return false
+			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(BeTrue())
+		})
 	})
 
 	It("[P1,Sev1,observability] should revert any manual changes on metrics-collector-view clusterolebinding (endpoint_preserve/g0)", func() {
