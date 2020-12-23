@@ -85,7 +85,7 @@ var _ = Describe("Observability:", func() {
 
 			It("Checking metric to ensure that no data is lost in 1 minute", func() {
 				Eventually(func() error {
-					err, _ = utils.ContainManagedClusterMetric(testOptions, "node_memory_MemAvailable_bytes", "1m", []string{`"__name__":"node_memory_MemAvailable_bytes"`})
+					err, _ = utils.ContainManagedClusterMetric(testOptions, `timestamp(node_memory_MemAvailable_bytes{cluster="`+clusterName+`}) - timestamp(node_memory_MemAvailable_bytes{cluster=`+clusterName+`"} offset 1m) > 59`, []string{`"__name__":"node_memory_MemAvailable_bytes"`})
 					return err
 				}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*3).Should(Succeed())
 			})

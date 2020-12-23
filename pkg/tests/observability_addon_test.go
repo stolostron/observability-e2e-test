@@ -24,49 +24,53 @@ var _ = Describe("Observability:", func() {
 			testOptions.HubCluster.KubeContext)
 	})
 
-	It("should not have the expected MCO addon pods (addon/g0)", func() {
-		By("Modifying MCO cr to disable observabilityaddon")
-		err := utils.ModifyMCOAddonSpecMetrics(testOptions, false)
-		Expect(err).ToNot(HaveOccurred())
-
-		By("Waiting for MCO addon components scales to 0")
-		Eventually(func() error {
-			addonLabel := "component=metrics-collector"
-			var podList, _ = hubClient.CoreV1().Pods(MCO_ADDON_NAMESPACE).List(metav1.ListOptions{LabelSelector: addonLabel})
-			if len(podList.Items) != 0 {
-				return fmt.Errorf("Failed to disable observability addon")
-			}
-			return nil
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+	Context("Modifying MCO cr to disable observabilityaddon (addon/g0)", func() {
 
 		clusterName := utils.GetManagedClusterName(testOptions)
-		if clusterName != "" {
-			Eventually(func() string {
-				mco, err := dynClient.Resource(utils.NewMCOAddonGVR()).Namespace(string(clusterName)).Get("observability-addon", metav1.GetOptions{})
-				if err != nil {
-					panic(err.Error())
-				}
-				if mco.Object["status"] != nil {
-					return mco.Object["status"].(map[string]interface{})["conditions"].([]interface{})[0].(map[string]interface{})["message"].(string)
-				} else {
-					return ""
-				}
-			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Equal("enableMetrics is set to False"))
-		}
-	})
 
-	Context("should not have metric data (addon/g0)", func() {
+		It("should not have the expected MCO addon pods (addon/g0)", func() {
+			By("Modifying MCO cr to disable observabilityaddon")
+			err := utils.ModifyMCOAddonSpecMetrics(testOptions, false)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Waiting for MCO addon components scales to 0")
+			Eventually(func() error {
+				addonLabel := "component=metrics-collector"
+				var podList, _ = hubClient.CoreV1().Pods(MCO_ADDON_NAMESPACE).List(metav1.ListOptions{LabelSelector: addonLabel})
+				if len(podList.Items) != 0 {
+					return fmt.Errorf("Failed to disable observability addon")
+				}
+				return nil
+			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+
+			if clusterName != "" {
+				Eventually(func() string {
+					mco, err := dynClient.Resource(utils.NewMCOAddonGVR()).Namespace(string(clusterName)).Get("observability-addon", metav1.GetOptions{})
+					if err != nil {
+						panic(err.Error())
+					}
+					if mco.Object["status"] != nil {
+						return mco.Object["status"].(map[string]interface{})["conditions"].([]interface{})[0].(map[string]interface{})["message"].(string)
+					} else {
+						return ""
+					}
+				}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Equal("enableMetrics is set to False"))
+			}
+		})
+		// it takes Prometheus 5m to notice a metric is not available - https://github.com/prometheus/prometheus/issues/1810
+		// the corret way is use timestamp, for example:
+		// timestamp(node_memory_MemAvailable_bytes{cluster="local-cluster"}) - timestamp(node_memory_MemAvailable_bytes{cluster="local-cluster"} offset 1m) > 59
 		It("Waiting for check no metric data in grafana console", func() {
 			Eventually(func() error {
-				err, hasMetric := utils.ContainManagedClusterMetric(testOptions, "node_memory_MemAvailable_bytes", "90s", []string{`"__name__":"node_memory_MemAvailable_bytes"`})
+				err, hasMetric := utils.ContainManagedClusterMetric(testOptions, `timestamp(node_memory_MemAvailable_bytes{cluster="`+clusterName+`}) - timestamp(node_memory_MemAvailable_bytes{cluster=`+clusterName+`"} offset 1m) > 59`, []string{`"__name__":"node_memory_MemAvailable_bytes"`})
 				if err != nil && !hasMetric && strings.Contains(err.Error(), "Failed to find metric name from response") {
 					return nil
 				}
 				return fmt.Errorf("Check no metric data in grafana console error: %v", err)
-			}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
+			}, EventuallyTimeoutMinute*2, EventuallyIntervalSecond*5).Should(Succeed())
 		})
 
-		It("Modifying MCO cr to enalbe observabilityaddon", func() {
+		It("Modifying MCO cr to enable observabilityaddon", func() {
 			err := utils.ModifyMCOAddonSpecMetrics(testOptions, true)
 			Expect(err).ToNot(HaveOccurred())
 			By("Waiting for MCO addon components ready")

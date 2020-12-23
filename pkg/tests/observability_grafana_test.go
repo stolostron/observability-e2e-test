@@ -22,9 +22,9 @@ var _ = Describe("Observability:", func() {
 
 	It("should have metric data in grafana console (grafana/g0)", func() {
 		Eventually(func() error {
-			err, _ = utils.ContainManagedClusterMetric(testOptions, "node_memory_MemAvailable_bytes", "5m", []string{`"__name__":"node_memory_MemAvailable_bytes"`})
+			err, _ = utils.ContainManagedClusterMetric(testOptions, "node_memory_MemAvailable_bytes", []string{`"__name__":"node_memory_MemAvailable_bytes"`})
 			return err
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+		}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
 	AfterEach(func() {

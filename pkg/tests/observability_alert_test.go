@@ -95,7 +95,7 @@ var _ = Describe("Observability:", func() {
 
 		By("Checking alert generated")
 		Eventually(func() error {
-			err, _ := utils.ContainManagedClusterMetric(testOptions, `ALERTS{`+labelName+`="`+labelValue+`"}`, "2m",
+			err, _ := utils.ContainManagedClusterMetric(testOptions, `ALERTS{`+labelName+`="`+labelValue+`"} offset 2m`,
 				[]string{`"__name__":"ALERTS"`, `"` + labelName + `":"` + labelValue + `"`})
 			return err
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
@@ -122,7 +122,7 @@ var _ = Describe("Observability:", func() {
 
 		By("Checking alert generated")
 		Eventually(func() error {
-			err, _ := utils.ContainManagedClusterMetric(testOptions, `ALERTS{`+labelName+`="`+labelValue+`"}`, "1m",
+			err, _ := utils.ContainManagedClusterMetric(testOptions, `ALERTS{`+labelName+`="`+labelValue+`"} offset 1m`,
 				[]string{`"__name__":"ALERTS"`, `"` + labelName + `":"` + labelValue + `"`})
 			return err
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
