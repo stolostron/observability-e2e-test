@@ -129,6 +129,8 @@ var _ = Describe("Observability:", func() {
 	})
 
 	It("[P1,Sev1,observability]should verify that the alerts are created (alert/g0)", func() {
+		//This is 3rd-party functionality, it is supposed to be working
+		Skip("should verify that the alerts are created")
 		By("Checking that alertmanager and thanos-rule pods are running")
 		podList, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).List(metav1.ListOptions{})
 		Expect(err).NotTo(HaveOccurred())
