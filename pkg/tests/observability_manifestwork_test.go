@@ -23,7 +23,7 @@ var _ = Describe("Observability:", func() {
 			testOptions.HubCluster.KubeContext)
 	})
 
-	It("should be automatically created within 1 minute when delete manifestwork (manifestwork/g0)", func() {
+	Context("should be automatically created within 1 minute when delete manifestwork (manifestwork/g0)", func() {
 		manifestWorkName := "endpoint-observability-work"
 		clientDynamic := utils.GetKubeClientDynamic(testOptions, true)
 		clusterName := utils.GetManagedClusterName(testOptions)
@@ -61,31 +61,34 @@ var _ = Describe("Observability:", func() {
 				}
 			}, EventuallyTimeoutMinute*2, EventuallyIntervalSecond*5).Should(Succeed())
 
-			By("Waiting for metrics collector to be created automatically")
-			Eventually(func() error {
-				_, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
-				if podList != nil && len(podList.Items) > 0 {
-					if oldCollectorPodName != podList.Items[0].Name {
-						return nil
+			It("Waiting for metrics collector to be created automatically", func() {
+				Eventually(func() error {
+					_, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
+					if podList != nil && len(podList.Items) > 0 {
+						if oldCollectorPodName != podList.Items[0].Name {
+							return nil
+						}
 					}
-				}
-				return errors.New("No new metrics collector generated")
-			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+					return errors.New("No new metrics collector generated")
+				}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+			})
 
-			By("Checking OBA components are ready")
-			Eventually(func() error {
-				err = utils.CheckOBAComponents(testOptions)
-				if err != nil {
+			It("Checking OBA components are ready", func() {
+				Eventually(func() error {
+					err = utils.CheckOBAComponents(testOptions)
+					if err != nil {
+						return err
+					}
+					return nil
+				}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
+			})
+
+			It("Checking metric to ensure that no data is lost in 1 minute", func() {
+				Eventually(func() error {
+					err, _ = utils.ContainManagedClusterMetric(testOptions, `timestamp(node_memory_MemAvailable_bytes{cluster="`+clusterName+`}) - timestamp(node_memory_MemAvailable_bytes{cluster=`+clusterName+`"} offset 1m) > 59`, []string{`"__name__":"node_memory_MemAvailable_bytes"`})
 					return err
-				}
-				return nil
-			}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
-
-			By("Checking metric to ensure that no data is lost in 1 minute")
-			Eventually(func() error {
-				err, _ = utils.ContainManagedClusterMetric(testOptions, "node_memory_MemAvailable_bytes", "1m", []string{`"__name__":"node_memory_MemAvailable_bytes"`})
-				return err
-			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*3).Should(Succeed())
+				}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*3).Should(Succeed())
+			})
 		}
 	})
 
