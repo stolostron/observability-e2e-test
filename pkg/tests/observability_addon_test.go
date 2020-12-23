@@ -54,7 +54,7 @@ var _ = Describe("Observability:", func() {
 					} else {
 						return ""
 					}
-				}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Equal("enableMetrics is set to False"))
+				}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Equal("enableMetrics is set to False"))
 			}
 		})
 		// it takes Prometheus 5m to notice a metric is not available - https://github.com/prometheus/prometheus/issues/1810
@@ -86,12 +86,22 @@ var _ = Describe("Observability:", func() {
 
 	It("should not set interval to values beyond scope (addon/g0)", func() {
 		By("Set interval to 14")
-		err := utils.ModifyMCOAddonSpecInterval(testOptions, int64(14))
-		Expect(err.Error()).To(ContainSubstring("Invalid value: 15"))
+		Eventually(func() bool {
+			err := utils.ModifyMCOAddonSpecInterval(testOptions, int64(14))
+			if strings.Contains(err.Error(), "Invalid value: 15") {
+				return true
+			}
+			return false
+		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*1).Should(BeTrue())
 
 		By("Set interval to 3601")
-		err = utils.ModifyMCOAddonSpecInterval(testOptions, int64(3601))
-		Expect(err.Error()).To(ContainSubstring("Invalid value: 3600"))
+		Eventually(func() bool {
+			err := utils.ModifyMCOAddonSpecInterval(testOptions, int64(3601))
+			if strings.Contains(err.Error(), "Invalid value: 3600") {
+				return true
+			}
+			return false
+		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*1).Should(BeTrue())
 	})
 
 	Context("should not have the expected MCO addon pods when disable observability from managedcluster (addon/g0)", func() {

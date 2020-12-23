@@ -29,4 +29,5 @@ local.rc
 !vbh/build-harness-extensions
 
 observability-e2e-test.test
-
+observability-gitops/
+pkg/tests/tests.test
