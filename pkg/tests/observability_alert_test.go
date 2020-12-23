@@ -84,11 +84,13 @@ var _ = Describe("Observability:", func() {
 
 	It("[P1,Sev1,observability]should have custom alert generated (alert/g0)", func() {
 		By("Creating custom alert rules")
-		yamlB, _ := kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/alerts/custom_rules_valid"})
+		yamlB, err := kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/alerts/custom_rules_valid"})
+		Expect(err).NotTo(HaveOccurred())
 		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
 
 		var labelName, labelValue string
-		labels, _ := kustomize.GetLabels(yamlB)
+		labels, err := kustomize.GetLabels(yamlB)
+		Expect(err).NotTo(HaveOccurred())
 		for labelName = range labels.(map[string]interface{}) {
 			labelValue = labels.(map[string]interface{})[labelName].(string)
 		}
@@ -201,8 +203,10 @@ var _ = Describe("Observability:", func() {
 	})
 
 	It("[P2,Sev2,observability]should delete the created configmap (alert/g0)", func() {
-		err := hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Delete(configmap[1], &metav1.DeleteOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		Eventually(func() error {
+			err := hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Delete(configmap[1], &metav1.DeleteOptions{})
+			return err
+		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*1).Should(Succeed())
 
 		klog.V(3).Infof("Successfully deleted CM: thanos-ruler-custom-rules")
 	})
