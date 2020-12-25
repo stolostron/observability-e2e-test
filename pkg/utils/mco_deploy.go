@@ -358,6 +358,26 @@ func CheckMCOComponentsInHighMode(opt TestOptions) error {
 		}
 	}
 
+	expectedStatefulSetNames = []string{
+		"observability-observatorium-thanos-compact",
+		"observability-observatorium-thanos-store-shard-0",
+		"observability-observatorium-thanos-store-shard-1",
+		"observability-observatorium-thanos-store-shard-2",
+	}
+
+	for _, statefulsetName := range expectedStatefulSetNames {
+		statefulset, err := statefulsets.Get(statefulsetName, metav1.GetOptions{})
+		if err != nil {
+			klog.V(1).Infof("Error while retrieving statefulset %s: %s", statefulsetName, err.Error())
+			return err
+		}
+
+		if statefulset.Status.ReadyReplicas != 1 {
+			err = fmt.Errorf("Expect 1 but got %d ready replicas", statefulset.Status.ReadyReplicas)
+			return err
+		}
+	}
+
 	return nil
 }
 
