@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"fmt"
 	"os"
 
 	. "github.com/onsi/ginkgo"
@@ -74,4 +75,44 @@ func installMCO() {
 	observabilityAddonSpec := mco_res.Object["spec"].(map[string]interface{})["observabilityAddonSpec"].(map[string]interface{})
 	Expect(observabilityAddonSpec["enableMetrics"]).To(Equal(true))
 	Expect(observabilityAddonSpec["interval"]).To(Equal(int64(60)))
+
+	By("Checking pvc and storageclass is the default")
+	mco_sc, err := dynClient.Resource(utils.NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred())
+
+	spec := mco_sc.Object["spec"].(map[string]interface{})
+	sizeInCR := spec["storageConfigObject"].(map[string]interface{})["statefulSetSize"].(string)
+	scInCR := spec["storageConfigObject"].(map[string]interface{})["statefulSetStorageClass"].(string)
+
+	scList, err := hubClient.StorageV1().StorageClasses().List(metav1.ListOptions{})
+	scMatch := false
+	defaultSC := ""
+	for _, sc := range scList.Items {
+		if sc.Annotations["storageclass.kubernetes.io/is-default-class"] == "true" {
+			defaultSC = sc.Name
+		}
+		if sc.Name == scInCR {
+			scMatch = true
+		}
+	}
+	expectedSC := defaultSC
+	if scMatch {
+		expectedSC = scInCR
+	}
+
+	Eventually(func() error {
+		pvcList, err := hubClient.CoreV1().PersistentVolumeClaims(MCO_NAMESPACE).List(metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+		for _, pvc := range pvcList.Items {
+			pvcSize := pvc.Spec.Resources.Requests["storage"]
+			scName := *pvc.Spec.StorageClassName
+			statusPhase := pvc.Status.Phase
+			if pvcSize.String() != sizeInCR || scName != expectedSC || statusPhase != "Bound" {
+				return fmt.Errorf("PVC check failed, pvcSize = %s, sizeInCR = %s, scName = %s, expectedSC = %s, statusPhase = %s", pvcSize.String(), sizeInCR, scName, expectedSC, statusPhase)
+			}
+		}
+		return nil
+	}).Should(Succeed())
 }
