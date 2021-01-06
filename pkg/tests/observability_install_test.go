@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/open-cluster-management/observability-e2e-test/pkg/kustomize"
 	"github.com/open-cluster-management/observability-e2e-test/pkg/utils"
 )
 
@@ -47,6 +48,10 @@ func installMCO() {
 	Expect(utils.CreateMCONamespace(testOptions)).NotTo(HaveOccurred())
 	Expect(utils.CreatePullSecret(testOptions)).NotTo(HaveOccurred())
 	Expect(utils.CreateObjSecret(testOptions)).NotTo(HaveOccurred())
+	//set resource quota and limit range for canary environment to avoid destruct the node
+	yamlB, err := kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/policy"})
+	Expect(err).NotTo(HaveOccurred())
+	Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
 
 	By("Creating MCO instance")
 	mco := utils.NewMCOInstanceYaml(MCO_CR_NAME)
