@@ -147,7 +147,7 @@ func PrintAllMCOPodsStatus(opt TestOptions) {
 		}
 
 		if !isReady {
-			klog.V(1).Infof("Pod <%s> is not <Ready> on <%s> status\n", pod.Name, pod.Status.Phase)
+			klog.V(1).Infof("Pod <%s> is not <Ready> on <%s> status due to %#v\n", pod.Name, pod.Status.Phase, pod.Status)
 		}
 	}
 }
@@ -180,7 +180,7 @@ func PrintAllOBAPodsStatus(opt TestOptions) {
 		}
 
 		if !isReady {
-			klog.V(1).Infof("Pod <%s> is not <Ready> on <%s> status\n", pod.Name, pod.Status.Phase)
+			klog.V(1).Infof("Pod <%s> is not <Ready> on <%s> status due to %#v\n", pod.Name, pod.Status.Phase, pod.Status)
 		}
 	}
 }
