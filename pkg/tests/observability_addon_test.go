@@ -174,9 +174,7 @@ var _ = Describe("Observability:", func() {
 
 	Context("should not have the expected MCO addon pods when disable observability from managedcluster (addon/g0)", func() {
 		It("Modifying managedcluster cr to disable observability", func() {
-			if !utils.IsCanaryEnvironment(testOptions) {
-				Skip("Modifying managedcluster cr to disable observability")
-			}
+			Skip("Modifying managedcluster cr to disable observability")
 			Eventually(func() error {
 				return utils.UpdateObservabilityFromManagedCluster(testOptions, false)
 			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
@@ -192,9 +190,7 @@ var _ = Describe("Observability:", func() {
 		})
 
 		It("Modifying managedcluster cr to enable observability", func() {
-			if !utils.IsCanaryEnvironment(testOptions) {
-				Skip("Modifying managedcluster cr to disable observability")
-			}
+			Skip("Modifying managedcluster cr to disable observability")
 			Eventually(func() error {
 				return utils.UpdateObservabilityFromManagedCluster(testOptions, true)
 			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
