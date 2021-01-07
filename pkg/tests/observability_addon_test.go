@@ -118,8 +118,10 @@ var _ = Describe("Observability:", func() {
 		})
 
 		It("Modifying MCO cr to enable observabilityaddon", func() {
-			err := utils.ModifyMCOAddonSpecMetrics(testOptions, true)
-			Expect(err).ToNot(HaveOccurred())
+			Eventually(func() error {
+				return utils.ModifyMCOAddonSpecMetrics(testOptions, true)
+			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
+
 			By("Waiting for MCO addon components ready")
 			Eventually(func() bool {
 				err, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
@@ -128,12 +130,25 @@ var _ = Describe("Observability:", func() {
 				}
 				return false
 			}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(BeTrue())
+
+			By("Checking the status in managedclusteraddon reflects the endpoint operator status correctly")
+			if clusterName != "" {
+				Eventually(func() string {
+					mco, err := dynClient.Resource(utils.NewMCOManagedClusterAddonsGVR()).Namespace(string(clusterName)).Get("observability-controller", metav1.GetOptions{})
+					Expect(err).ToNot(HaveOccurred())
+					conditions := mco.Object["status"].(map[string]interface{})["conditions"].([]interface{})
+					for _, condition := range conditions {
+						if condition.(map[string]interface{})["message"].(string) == ManagedClusterAddOnMessage {
+							return condition.(map[string]interface{})["status"].(string)
+						}
+					}
+					return ""
+				}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Equal("False"))
+			}
 		})
 	})
 
 	It("should not set interval to values beyond scope (addon/g0)", func() {
-		clusterName := utils.GetManagedClusterName(testOptions)
-
 		By("Set interval to 14")
 		Eventually(func() bool {
 			err := utils.ModifyMCOAddonSpecInterval(testOptions, int64(14))
@@ -151,25 +166,6 @@ var _ = Describe("Observability:", func() {
 			}
 			return false
 		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*1).Should(BeTrue())
-
-		Eventually(func() error {
-			return utils.ModifyMCOAddonSpecMetrics(testOptions, true)
-		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
-
-		By("Checking the status in managedclusteraddon reflects the endpoint operator status correctly")
-		if clusterName != "" {
-			Eventually(func() string {
-				mco, err := dynClient.Resource(utils.NewMCOManagedClusterAddonsGVR()).Namespace(string(clusterName)).Get("observability-controller", metav1.GetOptions{})
-				Expect(err).ToNot(HaveOccurred())
-				conditions := mco.Object["status"].(map[string]interface{})["conditions"].([]interface{})
-				for _, condition := range conditions {
-					if condition.(map[string]interface{})["message"].(string) == ManagedClusterAddOnMessage {
-						return condition.(map[string]interface{})["status"].(string)
-					}
-				}
-				return ""
-			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Equal("False"))
-		}
 	})
 
 	Context("should not have the expected MCO addon pods when disable observability from managedcluster (addon/g0)", func() {
