@@ -24,6 +24,7 @@ const (
 	MCO_GROUP                     = "observability.open-cluster-management.io"
 	OCM_WORK_GROUP                = "work.open-cluster-management.io"
 	OCM_CLUSTER_GROUP             = "cluster.open-cluster-management.io"
+	OCM_ADDON_GROUP               = "addon.open-cluster-management.io"
 )
 
 func NewMCOInstanceYaml(name string) []byte {
@@ -68,6 +69,20 @@ func NewOCMManagedClustersGVR() schema.GroupVersionResource {
 		Group:    OCM_CLUSTER_GROUP,
 		Version:  "v1",
 		Resource: "managedclusters"}
+}
+
+func NewMCOClusterManagementAddonsGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    OCM_ADDON_GROUP,
+		Version:  "v1alpha1",
+		Resource: "clustermanagementaddons"}
+}
+
+func NewMCOManagedClusterAddonsGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    OCM_ADDON_GROUP,
+		Version:  "v1alpha1",
+		Resource: "managedclusteraddons"}
 }
 
 func ModifyMCOAvailabilityConfig(opt TestOptions, availabilityConfig string) error {
