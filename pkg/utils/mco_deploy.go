@@ -36,8 +36,8 @@ spec:
   storageConfigObject:
     metricObjectStorage:
       name: thanos-object-storage
-	  key: thanos.yaml
-	statefulSetSize: 4Gi`,
+      key: thanos.yaml
+    statefulSetSize: 4Gi`,
 		name)
 
 	return []byte(instance)

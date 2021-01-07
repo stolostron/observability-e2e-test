@@ -325,6 +325,38 @@ func Apply(url string, kubeconfig string, context string, yamlB []byte) error {
 				_, err = clientKube.AppsV1().Deployments(obj.Namespace).Update(obj)
 			}
 
+		case "LimitRange":
+			klog.V(5).Infof("Install %s: %s\n", kind, f)
+			obj := &corev1.LimitRange{}
+			err = yaml.Unmarshal([]byte(f), obj)
+			if err != nil {
+				return err
+			}
+			existingObject, errGet := clientKube.CoreV1().LimitRanges(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
+			if errGet != nil {
+				_, err = clientKube.CoreV1().LimitRanges(obj.Namespace).Create(obj)
+			} else {
+				obj.ObjectMeta = existingObject.ObjectMeta
+				klog.Warningf("%s %s/%s already exists, updating!", obj.Kind, obj.Namespace, obj.Name)
+				_, err = clientKube.CoreV1().LimitRanges(obj.Namespace).Update(obj)
+			}
+
+		case "ResourceQuota":
+			klog.V(5).Infof("Install %s: %s\n", kind, f)
+			obj := &corev1.ResourceQuota{}
+			err = yaml.Unmarshal([]byte(f), obj)
+			if err != nil {
+				return err
+			}
+			existingObject, errGet := clientKube.CoreV1().ResourceQuotas(obj.Namespace).Get(obj.Name, metav1.GetOptions{})
+			if errGet != nil {
+				_, err = clientKube.CoreV1().ResourceQuotas(obj.Namespace).Create(obj)
+			} else {
+				obj.ObjectMeta = existingObject.ObjectMeta
+				klog.Warningf("%s %s/%s already exists, updating!", obj.Kind, obj.Namespace, obj.Name)
+				_, err = clientKube.CoreV1().ResourceQuotas(obj.Namespace).Update(obj)
+			}
+
 		default:
 			switch kind {
 			case "MultiClusterObservability":
