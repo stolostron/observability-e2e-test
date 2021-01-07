@@ -353,7 +353,6 @@ func CheckMCOComponentsInHighMode(opt TestOptions) error {
 	statefulsets := client.AppsV1().StatefulSets(MCO_NAMESPACE)
 	expectedStatefulSetNames := []string{
 		"alertmanager",
-		"observability-observatorium-thanos-compact",
 		"observability-observatorium-thanos-receive-default",
 		"observability-observatorium-thanos-rule",
 		"observability-observatorium-thanos-store-memcached",
