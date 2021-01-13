@@ -26,7 +26,7 @@ var _ = Describe("Observability:", func() {
 			testOptions.HubCluster.KubeContext)
 	})
 
-	It("[P1,Sev1,observability] should have metrics which defined in custom metrics whitelist (metricslist/g0)", func() {
+	It("[P1][Sev1][observability] Should have metrics which defined in custom metrics whitelist (metricslist/g0)", func() {
 		By("Adding custom metrics whitelist configmap")
 		yamlB, err := kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/metrics/whitelist"})
 		Expect(err).ToNot(HaveOccurred())
@@ -39,7 +39,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P1,Sev1,observability] should have no metrics after custom metrics whitelist deleted (metricslist/g0)", func() {
+	It("[P1][Sev1][observability] Should have no metrics after custom metrics whitelist deleted (metricslist/g0)", func() {
 		By("Deleting custom metrics whitelist configmap")
 		Eventually(func() error {
 			err := hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Delete(whitelistCMname, &metav1.DeleteOptions{})
