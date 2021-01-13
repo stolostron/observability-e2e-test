@@ -165,7 +165,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*1).Should(BeTrue())
 	})
 
-	Context("[P1][Sev1][observability] Should not have the expected MCO addon pods when disable observability from managedcluster -", func() {
+	Context("[P1][Sev1][observability] Should not have the expected MCO addon pods when disable observability from managedcluster (addon/g0) -", func() {
 		It("Modifying managedcluster cr to disable observability", func() {
 			Skip("Modifying managedcluster cr to disable observability")
 			Eventually(func() error {
