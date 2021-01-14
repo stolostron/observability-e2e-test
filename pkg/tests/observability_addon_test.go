@@ -28,11 +28,9 @@ var _ = Describe("Observability:", func() {
 			testOptions.HubCluster.KubeContext)
 	})
 
-	Context("Modifying MCO cr to disable observabilityaddon (addon/g0)", func() {
-
+	Context("[P1][Sev1][Observability] Modifying MCO cr to disable observabilityaddon (addon/g0) -", func() {
 		clusterName := utils.GetManagedClusterName(testOptions)
-
-		It("should have endpoint-operator and metrics-collector being deployed (addon/g0)", func() {
+		It("Should have endpoint-operator and metrics-collector being deployed", func() {
 			By("Check enableMetrics is true")
 			enable, err := utils.GetMCOAddonSpecMetrics(testOptions)
 			Expect(err).ToNot(HaveOccurred())
@@ -62,8 +60,7 @@ var _ = Describe("Observability:", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should not have the expected MCO addon pods (addon/g0)", func() {
-			By("Modifying MCO cr to disable observabilityaddon")
+		It("Should not have the expected MCO addon pods when disable observabilityaddon", func() {
 			Eventually(func() error {
 				return utils.ModifyMCOAddonSpecMetrics(testOptions, false)
 			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
@@ -148,7 +145,7 @@ var _ = Describe("Observability:", func() {
 		})
 	})
 
-	It("should not set interval to values beyond scope (addon/g0)", func() {
+	It("[P1][Sev1][Observability] Should not set interval to values beyond scope (addon/g0)", func() {
 		By("Set interval to 14")
 		Eventually(func() bool {
 			err := utils.ModifyMCOAddonSpecInterval(testOptions, int64(14))
@@ -168,7 +165,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*1).Should(BeTrue())
 	})
 
-	Context("should not have the expected MCO addon pods when disable observability from managedcluster (addon/g0)", func() {
+	Context("[P1][Sev1][Observability] Should not have the expected MCO addon pods when disable observability from managedcluster (addon/g0) -", func() {
 		It("Modifying managedcluster cr to disable observability", func() {
 			Skip("Modifying managedcluster cr to disable observability")
 			Eventually(func() error {
