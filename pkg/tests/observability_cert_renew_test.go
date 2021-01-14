@@ -22,7 +22,7 @@ var _ = Describe("Observability:", func() {
 			testOptions.HubCluster.KubeContext)
 	})
 
-	It("[P1][Sev1][observability] Should have metrics collector pod restart if cert secret re-generated (certrenew/g0)", func() {
+	It("[P1][Sev1][Observability] Should have metrics collector pod restart if cert secret re-generated (certrenew/g0)", func() {
 		By("Waiting for pods ready: observability-observatorium-observatorium-api, metrics-collector-deployment")
 		collectorPodName := ""
 		apiPodsName := map[string]bool{}
