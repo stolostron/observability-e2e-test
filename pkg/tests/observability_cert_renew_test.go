@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"k8s.io/klog"
 
 	"github.com/open-cluster-management/observability-e2e-test/pkg/utils"
 )
@@ -87,6 +88,13 @@ var _ = Describe("Observability:", func() {
 			} else {
 				return false
 			}
+
+			// debug code to check label "certmanager.k8s.io/time-restarted"
+			err, deployment := utils.GetDeployment(testOptions, true, MCO_CR_NAME+"-observatorium-observatorium-api", MCO_NAMESPACE)
+			if err == nil {
+				klog.V(1).Infof("labels: <%v>", deployment.ObjectMeta.Labels)
+			}
+
 			return false
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 
