@@ -3,10 +3,12 @@ package tests
 import (
 	"fmt"
 	"os"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 
 	"github.com/open-cluster-management/observability-e2e-test/pkg/kustomize"
 	"github.com/open-cluster-management/observability-e2e-test/pkg/utils"
@@ -129,4 +131,7 @@ func installMCO() {
 		}
 		return nil
 	}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
+
+	klog.V(1).Info("Sleep 30 seconds after installation completed")
+	time.Sleep(30 * time.Second)
 }
