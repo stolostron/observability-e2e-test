@@ -90,7 +90,7 @@ var _ = Describe("Observability:", func() {
 			}
 
 			// debug code to check label "certmanager.k8s.io/time-restarted"
-			err, deployment := utils.GetDeployment(testOptions, true, "observability-observatorium-observatorium-api", MCO_NAMESPACE)
+			err, deployment := utils.GetDeployment(testOptions, true, MCO_CR_NAME+"-observatorium-observatorium-api", MCO_NAMESPACE)
 			if err == nil {
 				klog.V(1).Infof("labels: <%v>", deployment.ObjectMeta.Labels)
 			}
