@@ -24,9 +24,9 @@ var _ = Describe("Observability:", func() {
 	})
 
 	It("[P1][Sev1][Observability] Should have metrics collector pod restart if cert secret re-generated (certrenew/g0)", func() {
-		By("Waiting for pods ready: observability-observatorium-observatorium-api, metrics-collector-deployment")
+		By("Waiting for pods ready: observability-observatorium-observatorium-api, rbac-query-proxy, metrics-collector-deployment")
 		collectorPodName := ""
-		apiPodsName := map[string]bool{}
+		hubPodsName := []string{}
 		Eventually(func() bool {
 			if collectorPodName == "" {
 				_, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
@@ -34,18 +34,27 @@ var _ = Describe("Observability:", func() {
 					collectorPodName = podList.Items[0].Name
 				}
 			}
-			if len(apiPodsName) == 0 {
-				_, podList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, "app.kubernetes.io/name=observatorium-api")
-				if podList != nil {
-					for _, pod := range podList.Items {
-						apiPodsName[pod.Name] = false
-					}
-				}
-
-			}
-			if collectorPodName == "" && len(apiPodsName) == 0 {
+			if collectorPodName == "" {
 				return false
 			}
+			hubPodsName = []string{}
+			_, apiPodList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, "app.kubernetes.io/name=observatorium-api")
+			if apiPodList != nil && len(apiPodList.Items) != 0 {
+				for _, pod := range apiPodList.Items {
+					hubPodsName = append(hubPodsName, pod.Name)
+				}
+			} else {
+				return false
+			}
+			_, rbacPodList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, "app=rbac-query-proxy")
+			if rbacPodList != nil && len(rbacPodList.Items) != 0 {
+				for _, pod := range rbacPodList.Items {
+					hubPodsName = append(hubPodsName, pod.Name)
+				}
+			} else {
+				return false
+			}
+
 			return true
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 
@@ -57,44 +66,36 @@ var _ = Describe("Observability:", func() {
 			//When a secret currently consumed in a volume is updated, projected keys are eventually updated as well. The kubelet checks whether the mounted secret is fresh on every periodic sync. However, the kubelet uses its local cache for getting the current value of the Secret. The type of the cache is configurable using the ConfigMapAndSecretChangeDetectionStrategy field in the KubeletConfiguration struct. A Secret can be either propagated by watch (default), ttl-based, or simply redirecting all requests directly to the API server. As a result, the total delay from the moment when the Secret is updated to the moment when new keys are projected to the Pod can be as long as the kubelet sync period + cache propagation delay, where the cache propagation delay depends on the chosen cache type (it equals to watch propagation delay, ttl of cache, or zero correspondingly).
 			// in KinD cluster, the observatorium-api won't be restarted, it may due to cert-manager webhook or the kubelet sync period + cache propagation delay
 			// so manually delete the pod to force it restart
-			for apiPodName := range apiPodsName {
-				utils.DeletePod(testOptions, true, MCO_NAMESPACE, apiPodName)
+			for _, hubPodName := range hubPodsName {
+				utils.DeletePod(testOptions, true, MCO_NAMESPACE, hubPodName)
 			}
 		}
 
-		By(fmt.Sprintf("Waiting for old pods removed: %v and new pods created", apiPodsName))
+		By(fmt.Sprintf("Waiting for old pods removed: %v and new pods created", hubPodsName))
 		Eventually(func() bool {
-			err, podList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, "app.kubernetes.io/name=observatorium-api")
-			if err == nil {
-				if len(podList.Items) != 0 {
-					for oldPodName := range apiPodsName {
-						apiPodsName[oldPodName] = true
-						for _, pod := range podList.Items {
-							if oldPodName == pod.Name {
-								apiPodsName[oldPodName] = false
-							}
+			err1, appPodList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, "app.kubernetes.io/name=observatorium-api")
+			err2, rbacPodList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, "app=rbac-query-proxy")
+			if err1 == nil && err2 == nil {
+				if len(hubPodsName) != len(appPodList.Items)+len(rbacPodList.Items) {
+					klog.V(1).Infof("Wrong number of pods: <%d> observatorium-api pods and <%d> rbac-query-proxy pods", len(appPodList.Items), len(rbacPodList.Items))
+					return false
+				}
+				for _, oldPodName := range hubPodsName {
+					for _, pod := range appPodList.Items {
+						if oldPodName == pod.Name {
+							klog.V(1).Infof("<%s> not removed yet", oldPodName)
+							return false
+						}
+					}
+					for _, pod := range rbacPodList.Items {
+						if oldPodName == pod.Name {
+							klog.V(1).Infof("<%s> not removed yet", oldPodName)
+							return false
 						}
 					}
 				}
-				allRecreated := true
-				for _, value := range apiPodsName {
-					if !value {
-						allRecreated = false
-					}
-				}
-				if allRecreated {
-					return true
-				}
-			} else {
-				return false
+				return true
 			}
-
-			// debug code to check label "certmanager.k8s.io/time-restarted"
-			err, deployment := utils.GetDeployment(testOptions, true, MCO_CR_NAME+"-observatorium-observatorium-api", MCO_NAMESPACE)
-			if err == nil {
-				klog.V(1).Infof("labels: <%v>", deployment.ObjectMeta.Labels)
-			}
-
 			return false
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 
