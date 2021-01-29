@@ -96,8 +96,8 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	testMCOReconcile()
 	if !testFailed {
+		testMCOReconcile()
 		uninstallMCO()
 	}
 })
