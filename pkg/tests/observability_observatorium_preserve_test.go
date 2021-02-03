@@ -22,20 +22,17 @@ var _ = Describe("Observability:", func() {
 	})
 
 	Context("[P1][Sev1][Observability] Should revert any manual changes on observatorium cr (observatorium_preserve/g0) -", func() {
-		It("Updating observatorium cr", func() {
+		It("Updating observatorium cr (spec.rule.replicas) should be automatically reverted", func() {
 			crName := "observability-observatorium"
-			resourceVersionOld := ""
-			replicasOld := int64(3)
+			oldResourceVersion := ""
+			updateReplicas := int64(2)
 			Eventually(func() error {
 				cr, err := dynClient.Resource(utils.NewMCOMObservatoriumGVR()).Namespace(MCO_NAMESPACE).Get(crName, metav1.GetOptions{})
 				if err != nil {
 					return err
 				}
-				replicasOld = cr.Object["spec"].(map[string]interface{})["rule"].(map[string]interface{})["replicas"].(int64)
-				cr.Object["spec"].(map[string]interface{})["rule"].(map[string]interface{})["replicas"] = 1
-
-				resourceVersionOld = cr.Object["metadata"].(map[string]interface{})["resourceVersion"].(string)
-
+				cr.Object["spec"].(map[string]interface{})["rule"].(map[string]interface{})["replicas"] = updateReplicas
+				oldResourceVersion = cr.Object["metadata"].(map[string]interface{})["resourceVersion"].(string)
 				_, err = dynClient.Resource(utils.NewMCOMObservatoriumGVR()).Namespace(MCO_NAMESPACE).Update(cr, metav1.UpdateOptions{})
 				return err
 			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*1).Should(Succeed())
@@ -44,14 +41,14 @@ var _ = Describe("Observability:", func() {
 				cr, err := dynClient.Resource(utils.NewMCOMObservatoriumGVR()).Namespace(MCO_NAMESPACE).Get(crName, metav1.GetOptions{})
 				if err == nil {
 					replicasNew := cr.Object["spec"].(map[string]interface{})["rule"].(map[string]interface{})["replicas"].(int64)
-					resourceVersionNew := cr.Object["metadata"].(map[string]interface{})["resourceVersion"].(string)
-					if resourceVersionNew != resourceVersionOld &&
-						replicasNew == replicasOld {
+					newResourceVersion := cr.Object["metadata"].(map[string]interface{})["resourceVersion"].(string)
+					if newResourceVersion != oldResourceVersion &&
+						replicasNew != updateReplicas {
 						return true
 					}
 				}
 				return false
-			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*1).Should(BeTrue())
+			}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*1).Should(BeTrue())
 		})
 	})
 
