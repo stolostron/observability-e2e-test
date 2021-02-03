@@ -85,6 +85,13 @@ func NewMCOManagedClusterAddonsGVR() schema.GroupVersionResource {
 		Resource: "managedclusteraddons"}
 }
 
+func NewMCOMObservatoriumGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    "core.observatorium.io",
+		Version:  "v1alpha1",
+		Resource: "observatoria"}
+}
+
 func ModifyMCOAvailabilityConfig(opt TestOptions, availabilityConfig string) error {
 	clientDynamic := NewKubeClientDynamic(
 		opt.HubCluster.MasterURL,
