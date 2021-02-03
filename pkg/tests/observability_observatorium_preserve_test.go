@@ -22,7 +22,7 @@ var _ = Describe("Observability:", func() {
 	})
 
 	Context("[P1][Sev1][Observability] Should revert any manual changes on observatorium cr (observatorium_preserve/g0) -", func() {
-		It("Updating observatorium cr", func() {
+		It("Updating observatorium cr (spec.rule.replicas) should be automatically reverted", func() {
 			crName := "observability-observatorium"
 			oldResourceVersion := ""
 			updateReplicas := int64(2)
