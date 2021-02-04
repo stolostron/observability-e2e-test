@@ -91,8 +91,10 @@ func TestObservabilityE2E(t *testing.T) {
 var agoutiDriver *agouti.WebDriver
 
 var _ = BeforeSuite(func() {
+	testFailed = true
 	initVars()
 	installMCO()
+	testFailed = false
 })
 
 var _ = AfterSuite(func() {
