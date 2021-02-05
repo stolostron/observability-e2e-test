@@ -64,11 +64,14 @@ var _ = Describe("Observability:", func() {
 				return err
 			}
 			for _, pvc := range pvcList.Items {
-				pvcSize := pvc.Spec.Resources.Requests["storage"]
-				scName := *pvc.Spec.StorageClassName
-				statusPhase := pvc.Status.Phase
-				if pvcSize.String() != sizeInCR || scName != expectedSC || statusPhase != "Bound" {
-					return fmt.Errorf("PVC check failed, pvcSize = %s, sizeInCR = %s, scName = %s, expectedSC = %s, statusPhase = %s", pvcSize.String(), sizeInCR, scName, expectedSC, statusPhase)
+				//for KinD cluster, we use minio as object storage. the size is 1Gi.
+				if pvc.GetName() != "minio" {
+					pvcSize := pvc.Spec.Resources.Requests["storage"]
+					scName := *pvc.Spec.StorageClassName
+					statusPhase := pvc.Status.Phase
+					if pvcSize.String() != sizeInCR || scName != expectedSC || statusPhase != "Bound" {
+						return fmt.Errorf("PVC check failed, pvcSize = %s, sizeInCR = %s, scName = %s, expectedSC = %s, statusPhase = %s", pvcSize.String(), sizeInCR, scName, expectedSC, statusPhase)
+					}
 				}
 			}
 			return nil
