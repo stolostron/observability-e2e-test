@@ -31,6 +31,8 @@ func NewMCOInstanceYaml(name string) []byte {
 	instance := fmt.Sprintf(`apiVersion: observability.open-cluster-management.io/v1beta1
 kind: MultiClusterObservability
 metadata:
+  annotations:
+    mco-thanos-without-resources-requests: "true"
   name: %s
 spec:
   storageConfigObject:
