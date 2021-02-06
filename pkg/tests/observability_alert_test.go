@@ -83,7 +83,6 @@ var _ = Describe("Observability:", func() {
 	})
 
 	It("[P1][Sev1][Observability] Should have custom alert generated (alert/g0)", func() {
-		Skip("Should have custom alert generated (alert/g0)")
 		By("Creating custom alert rules")
 		yamlB, err := kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/alerts/custom_rules_valid"})
 		Expect(err).NotTo(HaveOccurred())
