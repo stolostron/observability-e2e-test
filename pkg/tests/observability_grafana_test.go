@@ -21,7 +21,6 @@ var _ = Describe("Observability:", func() {
 	})
 
 	It("[P1][Sev1][Observability] Should have metric data in grafana console (grafana/g0)", func() {
-		Skip("Should have metric data in grafana console (grafana/g0)")
 		Eventually(func() error {
 			err, _ = utils.ContainManagedClusterMetric(testOptions, "node_memory_MemAvailable_bytes", []string{`"__name__":"node_memory_MemAvailable_bytes"`})
 			return err
