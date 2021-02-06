@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	whitelistCMname = "observability-metrics-custom-whitelist"
+	whitelistCMname = "observability-metrics-custom-allowlist"
 )
 
 var _ = Describe("Observability:", func() {
