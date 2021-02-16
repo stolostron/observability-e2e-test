@@ -65,7 +65,7 @@ func installMCO() {
 			return allPodsIsReady
 		}
 		return false
-	}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
+	}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(BeTrue())
 
 	if !allPodsIsReady {
 		utils.PrintAllMCOPodsStatus(testOptions)
