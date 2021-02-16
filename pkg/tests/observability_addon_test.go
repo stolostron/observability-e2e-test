@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 
 	"github.com/open-cluster-management/observability-e2e-test/pkg/utils"
 )
@@ -152,6 +153,7 @@ var _ = Describe("Observability:", func() {
 			if strings.Contains(err.Error(), "Invalid value: 15") {
 				return true
 			}
+			klog.V(1).Infof("error message: <%s>\n", err.Error())
 			return false
 		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*1).Should(BeTrue())
 
@@ -161,6 +163,7 @@ var _ = Describe("Observability:", func() {
 			if strings.Contains(err.Error(), "Invalid value: 3600") {
 				return true
 			}
+			klog.V(1).Infof("error message: <%s>\n", err.Error())
 			return false
 		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*1).Should(BeTrue())
 	})
