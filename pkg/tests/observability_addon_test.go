@@ -150,7 +150,8 @@ var _ = Describe("Observability:", func() {
 		By("Set interval to 14")
 		Eventually(func() bool {
 			err := utils.ModifyMCOAddonSpecInterval(testOptions, int64(14))
-			if strings.Contains(err.Error(), "Invalid value: 15") {
+			if strings.Contains(err.Error(), "Invalid value") &&
+				strings.Contains(err.Error(), "15") {
 				return true
 			}
 			klog.V(1).Infof("error message: <%s>\n", err.Error())
@@ -160,7 +161,8 @@ var _ = Describe("Observability:", func() {
 		By("Set interval to 3601")
 		Eventually(func() bool {
 			err := utils.ModifyMCOAddonSpecInterval(testOptions, int64(3601))
-			if strings.Contains(err.Error(), "Invalid value: 3600") {
+			if strings.Contains(err.Error(), "Invalid value") &&
+				strings.Contains(err.Error(), "3600") {
 				return true
 			}
 			klog.V(1).Infof("error message: <%s>\n", err.Error())
