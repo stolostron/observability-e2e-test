@@ -97,7 +97,7 @@ var _ = Describe("Observability:", func() {
 
 		By("Checking alert generated")
 		Eventually(func() error {
-			err, _ := utils.ContainManagedClusterMetric(testOptions, `ALERTS{`+labelName+`="`+labelValue+`"} offset 2m`,
+			err, _ := utils.ContainManagedClusterMetric(testOptions, `ALERTS{`+labelName+`="`+labelValue+`"} offset 1m`,
 				[]string{`"__name__":"ALERTS"`, `"` + labelName + `":"` + labelValue + `"`})
 			return err
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
