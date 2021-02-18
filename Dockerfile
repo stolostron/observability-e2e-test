@@ -39,7 +39,6 @@ ENV GINKGO_NODES "1"
 ENV GINKGO_FLAGS=""
 ENV GINKGO_FOCUS=""
 ENV GINKGO_SKIP=""
-ENV SKIP_UNINSTALL_STEP="true"
 
 # install ginkgo into built image
 COPY --from=build /go/bin/ /usr/local/bin
