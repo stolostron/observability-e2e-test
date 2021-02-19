@@ -34,6 +34,7 @@ kubectl logs -n open-cluster-management-addon-observability $POD_NAME -c endpoin
 kubectl get observabilityaddon observability-addon -n open-cluster-management-addon-observability -o yaml
 kubectl get clusterrolebinding -A -o yaml|grep "name: klusterlet-work-sa"
 kubectl get clusterrolebinding -A|grep "open-cluster-management:klusterlet-work:agent"
+kubectl get clusterrolebinding open-cluster-management:klusterlet-work:agent -o yaml
 
 export KUBECONFIG=$HOME/.kube/kind-config-hub
 kubectl get manifestwork -A
