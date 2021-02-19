@@ -18,6 +18,41 @@ printf "\n  clusters:" >> resources/options.yaml
 printf "\n    - name: cluster1" >> resources/options.yaml
 printf "\n      masterURL: https://127.0.0.1:32807" >> resources/options.yaml
 
+cat >./tmp.yaml <<EOL
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: 'open-cluster-management:klusterlet-work:agent-addition1'
+subjects:
+  - kind: ServiceAccount
+    name: klusterlet-work-sa
+    namespace: open-cluster-management-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: 'open-cluster-management:klusterlet-work:agent1'
+
+---
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: 'open-cluster-management:klusterlet-work:agent1'
+rules:
+  - verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - update
+    apiGroups:
+      - observability.open-cluster-management.io
+    resources:
+      - observabilityaddons
+EOL
+
+kubectl apply -f ./tmp.yaml
 echo "To sleep 180s"
 sleep 180
 #curl -fksSL https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.6.3/openshift-client-linux-4.6.3.tar.gz | tar -xvz -C /usr/local/ oc
@@ -37,6 +72,7 @@ kubectl get clusterrolebinding -A|grep "open-cluster-management:klusterlet-work:
 kubectl get clusterrolebinding open-cluster-management:klusterlet-work:agent -o yaml
 
 export KUBECONFIG=$HOME/.kube/kind-config-hub
+kubectl get crd|grep observability
 kubectl get manifestwork -A
 kubectl get manifestwork -n cluster1 cluster1-observability-operator -o yaml
 kubectl get manifestwork -n cluster1 cluster1-observability-operator-res -o yaml
