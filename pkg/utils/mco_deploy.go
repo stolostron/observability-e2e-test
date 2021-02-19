@@ -35,6 +35,7 @@ metadata:
     mco-thanos-without-resources-requests: "true"
   name: %s
 spec:
+  observabilityAddonSpec: {}
   storageConfigObject:
     metricObjectStorage:
       name: thanos-object-storage
