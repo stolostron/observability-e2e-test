@@ -19,6 +19,7 @@ printf "\n    - name: cluster1" >> resources/options.yaml
 printf "\n      masterURL: https://127.0.0.1:32807" >> resources/options.yaml
 
 echo "To sleep 60s"
+curl -fksSL https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.6.3/openshift-client-linux-4.6.3.tar.gz | tar -xvz -C /usr/local/ oc
 export KUBECONFIG=$HOME/.kube/kind-config-spoke
 oc get pod -A
 oc get deployment -n open-cluster-management-addon-observability endpoint-observability-operator -o yaml
