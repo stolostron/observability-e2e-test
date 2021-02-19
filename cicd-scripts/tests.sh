@@ -19,18 +19,18 @@ printf "\n    - name: cluster1" >> resources/options.yaml
 printf "\n      masterURL: https://127.0.0.1:32807" >> resources/options.yaml
 
 echo "To sleep 60s"
-curl -fksSL https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.6.3/openshift-client-linux-4.6.3.tar.gz | tar -xvz -C /usr/local/ oc
+#curl -fksSL https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.6.3/openshift-client-linux-4.6.3.tar.gz | tar -xvz -C /usr/local/ oc
 export KUBECONFIG=$HOME/.kube/kind-config-spoke
-oc get pod -A
-oc get deployment -n open-cluster-management-addon-observability endpoint-observability-operator -o yaml
-POD_NAME=$(oc get po -n open-cluster-management-addon-observability|grep endpoint| awk '{split($0, a, " "); print a[1]}')
+kubectl get pod -A
+kubectl get deployment -n open-cluster-management-addon-observability endpoint-observability-operator -o yaml
+POD_NAME=$(kubectl get po -n open-cluster-management-addon-observability|grep endpoint| awk '{split($0, a, " "); print a[1]}')
 echo $POD_NAME
-oc logs -n open-cluster-management-addon-observability $POD_NAME -c endpoint-observability-operator
+kubectl logs -n open-cluster-management-addon-observability $POD_NAME -c endpoint-observability-operator
 export KUBECONFIG=$HOME/.kube/kind-config-hub
-oc get manifestwork -A
-WORK_NS=$(oc get manifestwork -A|grep "local-cluster-observability-operator "|awk '{split($0, a, " "); print a[1]}')
-WORK_NAME=$(oc get manifestwork -A|grep "local-cluster-observability-operator "|awk '{split($0, a, " "); print a[1]}')
-oc get manifestwork -n $WORK_NS $WORK_NAME -o yaml
+kubectl get manifestwork -A
+WORK_NS=$(kubectl get manifestwork -A|grep "local-cluster-observability-operator "|awk '{split($0, a, " "); print a[1]}')
+WORK_NAME=$(kubectl get manifestwork -A|grep "local-cluster-observability-operator "|awk '{split($0, a, " "); print a[1]}')
+kubectl get manifestwork -n $WORK_NS $WORK_NAME -o yaml
 
 ginkgo -debug -trace -v ./pkg/tests -- -options=../../resources/options.yaml -v=3
 
