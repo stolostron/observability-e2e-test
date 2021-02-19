@@ -35,6 +35,7 @@ kubectl get observabilityaddon observability-addon -n open-cluster-management-ad
 
 export KUBECONFIG=$HOME/.kube/kind-config-hub
 kubectl get manifestwork -A
+kubectl get manifestwork -n cluster1 cluster1-observability-operator -o yaml
 kubectl get manifestwork -n cluster1 cluster1-observability-operator-res -o yaml
 kubectl get mco observability -o yaml
 
