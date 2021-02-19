@@ -31,7 +31,7 @@ POD_NAME=$(kubectl get po -n open-cluster-management-addon-observability|grep me
 echo $POD_NAME
 kubectl logs -n open-cluster-management-addon-observability $POD_NAME -c endpoint-observability-operator
 
-kubectl get observabilityaddon observability-addon -o yaml
+kubectl get observabilityaddon observability-addon -n open-cluster-management-addon-observability -o yaml
 
 export KUBECONFIG=$HOME/.kube/kind-config-hub
 kubectl get manifestwork -A
