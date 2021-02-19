@@ -27,13 +27,16 @@ kubectl get deployment -n open-cluster-management-addon-observability endpoint-o
 POD_NAME=$(kubectl get po -n open-cluster-management-addon-observability|grep endpoint| awk '{split($0, a, " "); print a[1]}')
 echo $POD_NAME
 kubectl logs -n open-cluster-management-addon-observability $POD_NAME -c endpoint-observability-operator
+POD_NAME=$(kubectl get po -n open-cluster-management-addon-observability|grep metrics-collector| awk '{split($0, a, " "); print a[1]}')
+echo $POD_NAME
+kubectl logs -n open-cluster-management-addon-observability $POD_NAME -c endpoint-observability-operator
 
-WORK_POD=$(kubectl get po -A|grep klusterlet-work-agent| wk '{split($0, a, " "); print a[2]}')
-kubectl logs -n open-cluster-management-agent $WORKPOD
+kuebctl get observabilityaddon observability-addon -o yaml
 
 export KUBECONFIG=$HOME/.kube/kind-config-hub
 kubectl get manifestwork -A
-kubectl get manifestwork -n cluster1 cluster1-observability-operator -o yaml|grep image
+kubectl get manifestwork -n cluster1 cluster1-observability-operator-res -o yaml
+kubectl get mco observability -o yaml
 
 ginkgo -debug -trace -v ./pkg/tests -- -options=../../resources/options.yaml -v=3
 
