@@ -18,7 +18,8 @@ printf "\n  clusters:" >> resources/options.yaml
 printf "\n    - name: cluster1" >> resources/options.yaml
 printf "\n      masterURL: https://127.0.0.1:32807" >> resources/options.yaml
 
-echo "To sleep 300s"
+echo "To sleep 180s"
+sleep 180
 #curl -fksSL https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.6.3/openshift-client-linux-4.6.3.tar.gz | tar -xvz -C /usr/local/ oc
 export KUBECONFIG=$HOME/.kube/kind-config-spoke
 kubectl get pod -A
@@ -26,9 +27,13 @@ kubectl get deployment -n open-cluster-management-addon-observability endpoint-o
 POD_NAME=$(kubectl get po -n open-cluster-management-addon-observability|grep endpoint| awk '{split($0, a, " "); print a[1]}')
 echo $POD_NAME
 kubectl logs -n open-cluster-management-addon-observability $POD_NAME -c endpoint-observability-operator
+
+WORK_POD=$(kubectl get po -A|grep klusterlet-work-agent| wk '{split($0, a, " "); print a[2]}')
+kubectl logs -n open-cluster-management-agent $WORKPOD
+
 export KUBECONFIG=$HOME/.kube/kind-config-hub
 kubectl get manifestwork -A
-kubectl get manifestwork -n cluster1 cluster1-observability-operator -o yaml
+kubectl get manifestwork -n cluster1 cluster1-observability-operator -o yaml|grep image
 
 ginkgo -debug -trace -v ./pkg/tests -- -options=../../resources/options.yaml -v=3
 
