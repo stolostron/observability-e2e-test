@@ -52,11 +52,10 @@ rules:
       - observabilityaddons
 EOL
 
+export KUBECONFIG=$HOME/.kube/kind-config-spoke
 kubectl apply -f ./tmp.yaml
 echo "To sleep 180s"
 sleep 180
-#curl -fksSL https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.6.3/openshift-client-linux-4.6.3.tar.gz | tar -xvz -C /usr/local/ oc
-export KUBECONFIG=$HOME/.kube/kind-config-spoke
 kubectl get pod -A
 kubectl get deployment -n open-cluster-management-addon-observability endpoint-observability-operator -o yaml
 POD_NAME=$(kubectl get po -n open-cluster-management-addon-observability|grep endpoint| awk '{split($0, a, " "); print a[1]}')
