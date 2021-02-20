@@ -18,6 +18,44 @@ printf "\n  clusters:" >> resources/options.yaml
 printf "\n    - name: cluster1" >> resources/options.yaml
 printf "\n      masterURL: https://127.0.0.1:32807" >> resources/options.yaml
 
+# workaround to fix the manifestwork problem
+cat >./tmp.yaml <<EOL
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: 'open-cluster-management:klusterlet-work:agent-addition1'
+subjects:
+  - kind: ServiceAccount
+    name: klusterlet-work-sa
+    namespace: open-cluster-management-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: 'open-cluster-management:klusterlet-work:agent1'
+
+---
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: 'open-cluster-management:klusterlet-work:agent1'
+rules:
+  - verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - update
+    apiGroups:
+      - observability.open-cluster-management.io
+    resources:
+      - observabilityaddons
+EOL
+export KUBECONFIG=$HOME/.kube/kind-config-spoke
+kubectl apply -f ./tmp.yaml
+export KUBECONFIG=$HOME/.kube/kind-config-hub
+
 ginkgo -debug -trace -v ./pkg/tests -- -options=../../resources/options.yaml -v=3
 
 cat ./pkg/tests/results.xml | grep failures=\"0\" | grep errors=\"0\"
