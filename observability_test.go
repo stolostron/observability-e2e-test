@@ -89,8 +89,10 @@ var _ = Describe("Observability:", func() {
 
 	It("Case 05 - retentionResolutionRaw is modified", func() {
 		By("Modifying MCO retentionResolutionRaw filed")
-		err := utils.ModifyMCORetentionResolutionRaw(testOptions)
-		Expect(err).ToNot(HaveOccurred())
+		Eventually(func() error {
+			err := utils.ModifyMCORetentionResolutionRaw(testOptions)
+			return err
+		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
 
 		By("Waiting for MCO retentionResolutionRaw filed to take effect")
 		Eventually(func() error {
