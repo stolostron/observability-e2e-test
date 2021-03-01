@@ -31,7 +31,7 @@ var (
 	err       error
 )
 
-func testMCOReconcile() {
+var _ = Describe("Observability:", func() {
 
 	hubClient = utils.NewKubeClient(
 		testOptions.HubCluster.MasterURL,
@@ -107,7 +107,9 @@ func testMCOReconcile() {
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 	}
 
-	utils.PrintAllMCOPodsStatus(testOptions)
-	utils.PrintAllOBAPodsStatus(testOptions)
-	testFailed = testFailed || CurrentGinkgoTestDescription().Failed
-}
+	AfterEach(func() {
+		utils.PrintAllMCOPodsStatus(testOptions)
+		utils.PrintAllOBAPodsStatus(testOptions)
+		testFailed = testFailed || CurrentGinkgoTestDescription().Failed
+	})
+})
