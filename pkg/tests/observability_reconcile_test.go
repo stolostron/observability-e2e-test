@@ -51,6 +51,17 @@ var _ = Describe("Observability:", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	It("[P1][Sev1][Observability] Checking MCO components in Basic mode (reconcile/g0)", func() {
+		By("Checking MCO components in Basic mode")
+		Eventually(func() error {
+			err = utils.CheckMCOComponentsInBaiscMode(testOptions)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+	})
+
 	It("[P1][Sev1][Observability] Modifying retentionResolutionRaw (reconcile/g0)", func() {
 		By("Waiting for MCO retentionResolutionRaw filed to take effect")
 		Eventually(func() error {
@@ -84,17 +95,6 @@ var _ = Describe("Observability:", func() {
 		By("Checking podAntiAffinity for all pods")
 		Eventually(func() error {
 			err := utils.CheckAllPodsAffinity(testOptions)
-			if err != nil {
-				return err
-			}
-			return nil
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
-	})
-
-	It("[P1][Sev1][Observability] Checking MCO components in Basic mode (reconcile/g0)", func() {
-		By("Checking MCO components in Basic mode")
-		Eventually(func() error {
-			err = utils.CheckMCOComponentsInBaiscMode(testOptions)
 			if err != nil {
 				return err
 			}
