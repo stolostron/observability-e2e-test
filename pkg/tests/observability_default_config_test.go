@@ -79,8 +79,11 @@ var _ = Describe("Observability:", func() {
 	})
 
 	AfterEach(func() {
-		utils.PrintAllMCOPodsStatus(testOptions)
-		utils.PrintAllOBAPodsStatus(testOptions)
+		if testFailed {
+			utils.PrintMCOObject(testOptions)
+			utils.PrintAllMCOPodsStatus(testOptions)
+			utils.PrintAllOBAPodsStatus(testOptions)
+		}
 		testFailed = testFailed || CurrentGinkgoTestDescription().Failed
 	})
 })

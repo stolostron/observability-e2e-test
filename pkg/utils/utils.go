@@ -49,7 +49,7 @@ func NewUnversionedRestClient(url, kubeconfig, context string) *rest.RESTClient 
 }
 
 func NewKubeClient(url, kubeconfig, context string) kubernetes.Interface {
-	klog.V(1).Infof("Create kubeclient for url %s using kubeconfig path %s\n", url, kubeconfig)
+	klog.V(5).Infof("Create kubeclient for url %s using kubeconfig path %s\n", url, kubeconfig)
 	config, err := LoadConfig(url, kubeconfig, context)
 	if err != nil {
 		panic(err)

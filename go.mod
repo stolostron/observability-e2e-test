@@ -4,8 +4,8 @@ go 1.14
 
 require (
 	github.com/ghodss/yaml v1.0.0
-	github.com/onsi/ginkgo v1.12.0
-	github.com/onsi/gomega v1.9.0
+	github.com/onsi/ginkgo v1.15.1
+	github.com/onsi/gomega v1.10.1
 	github.com/prometheus/common v0.4.1
 	github.com/sclevine/agouti v3.0.0+incompatible
 	github.com/slack-go/slack v0.7.4
