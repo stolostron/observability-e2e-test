@@ -178,6 +178,19 @@ func PrintAllMCOPodsStatus(opt TestOptions) {
 	}
 }
 
+func PrintMCOObject(opt TestOptions) {
+	clientDynamic := NewKubeClientDynamic(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	if getErr != nil {
+		klog.V(1).Infof("Failed to get mco object")
+		return
+	}
+	klog.V(1).Infof("MCO spec and status: %+v", mco)
+}
+
 func GetAllOBAPods(opt TestOptions) ([]corev1.Pod, error) {
 	clientKube := getKubeClient(opt, false)
 
@@ -270,7 +283,9 @@ func CheckOBAComponents(opt TestOptions) error {
 		}
 
 		if deployment.Status.ReadyReplicas != 1 {
-			err = fmt.Errorf("Expect 1 but got %d ready replicas", deployment.Status.ReadyReplicas)
+			err = fmt.Errorf("Deployment %s should have 1 but got %d ready replicas",
+				deploymentName,
+				deployment.Status.ReadyReplicas)
 			return err
 		}
 	}
@@ -302,7 +317,9 @@ func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 		}
 
 		if deployment.Status.ReadyReplicas != 1 {
-			err = fmt.Errorf("Expect 1 but got %d ready replicas", deployment.Status.ReadyReplicas)
+			err = fmt.Errorf("Deployment %s should have 1 but got %d ready replicas",
+				deploymentName,
+				deployment.Status.ReadyReplicas)
 			return err
 		}
 	}
@@ -325,7 +342,9 @@ func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 		}
 
 		if statefulset.Status.ReadyReplicas != 1 {
-			err = fmt.Errorf("Expect 1 but got %d ready replicas", statefulset.Status.ReadyReplicas)
+			err = fmt.Errorf("Statefulset %s should have 1 but got %d ready replicas",
+				statefulsetName,
+				statefulset.Status.ReadyReplicas)
 			return err
 		}
 	}

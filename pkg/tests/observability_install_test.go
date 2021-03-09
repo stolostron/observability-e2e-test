@@ -79,5 +79,4 @@ func installMCO() {
 		}
 		return nil
 	}).Should(Succeed())
-
 }
