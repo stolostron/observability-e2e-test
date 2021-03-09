@@ -374,7 +374,9 @@ func CheckMCOComponentsInHighMode(opt TestOptions) error {
 		}
 
 		if deployment.Status.ReadyReplicas != 2 {
-			err = fmt.Errorf("Expect 2 but got %d ready replicas", deployment.Status.ReadyReplicas)
+			err = fmt.Errorf("Deployment %s should have 2 but got %d ready replicas",
+				deploymentName,
+				deployment.Status.ReadyReplicas)
 			return err
 		}
 	}
@@ -397,7 +399,9 @@ func CheckMCOComponentsInHighMode(opt TestOptions) error {
 		}
 
 		if statefulset.Status.ReadyReplicas != 3 {
-			err = fmt.Errorf("Expect 3 but got %d ready replicas", statefulset.Status.ReadyReplicas)
+			err = fmt.Errorf("Statefulset %s should have 3 but got %d ready replicas",
+				statefulsetName,
+				statefulset.Status.ReadyReplicas)
 			return err
 		}
 	}
@@ -417,7 +421,9 @@ func CheckMCOComponentsInHighMode(opt TestOptions) error {
 		}
 
 		if statefulset.Status.ReadyReplicas != 1 {
-			err = fmt.Errorf("Expect 1 but got %d ready replicas", statefulset.Status.ReadyReplicas)
+			err = fmt.Errorf("Statefulset %s should have 1 but got %d ready replicas",
+				statefulsetName,
+				statefulset.Status.ReadyReplicas)
 			return err
 		}
 	}
