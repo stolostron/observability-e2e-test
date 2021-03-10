@@ -1,3 +1,6 @@
+// Copyright (c) 2021 Red Hat, Inc.
+// Copyright Contributors to the Open Cluster Management project
+
 package utils
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

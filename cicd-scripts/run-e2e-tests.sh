@@ -1,3 +1,6 @@
+# Copyright (c) 2021 Red Hat, Inc.
+# Copyright Contributors to the Open Cluster Management project
+
 WORKDIR=`pwd`
 cd ${WORKDIR}/..
 git clone https://github.com/open-cluster-management/observability-kind-cluster.git
