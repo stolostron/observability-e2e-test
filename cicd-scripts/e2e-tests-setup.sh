@@ -49,6 +49,21 @@ if [[ -z "${ACTION}" ]]; then
   exit 1
 fi
 
+if [[ -z "${KUBECONFIG}" ]]; then
+  echo "Error: environment variable KUBECONFIG must be specified!"
+  exit 1
+fi
+
+if [[ -z "${QUAY_USER}" ]]; then
+  echo "Error: environment variable QUAY_USER must be specified!"
+  exit 1
+fi
+
+if [[ -z "${QUAY_PASS}" ]]; then
+  echo "Error: environment variable QUAY_PASS must be specified!"
+  exit 1
+fi
+
 TARGET_OS="$(uname)"
 XARGS_FLAGS="-r"
 SED_COMMAND='sed -i-e -e'
@@ -200,11 +215,6 @@ approve_csr_joinrequest() {
     done
 }
 
-delete_managed_cluster() {
-    # TODO(morvencao): removed the hard-coded cluster name
-    kubectl delete managedcluster cluster1 --ignore-not-found
-}
-
 print_mco_operator_log() {
     kubectl -n $DEFAULT_NS logs deploy/multicluster-observability-operator
 }
@@ -305,6 +315,22 @@ delete_grafana_test() {
 patch_placement_rule() {
     # Workaround for placementrules operator
     echo "Patch observability placementrule"
+    n=1
+    while true
+    do
+        if kubectl -n ${OBSERVABILITY_NS} get placementrule observability &> /dev/null; then
+            break
+        fi
+
+        if [[ $n -ge 100 ]]; then
+            print_mco_operator_log
+            exit 1
+        fi
+        n=$((n+1))
+        echo "Retrying in 10s..."
+        sleep 10
+    done
+
     # dump kubeconfig to local disk
     kubectl config view --raw --minify > ${HOME}/.kube/kubeconfig-hub
     cat ${HOME}/.kube/kubeconfig-hub|grep certificate-authority-data|awk '{split($0, a, ": "); print a[2]}'|base64 -d  >> ca
@@ -328,12 +354,13 @@ execute() {
         deploy_mco_operator "${IMAGE}"
         deploy_grafana_test "${IMAGE}"
         patch_placement_rule
+        echo "OCM and Observability are installed successfuly..."
     elif [[ "${ACTION}" == "uninstall" ]]; then
         delete_grafana_test
         delete_mco_operator
-        delete_managed_cluster
         delete_hub_spoke_core
         delete_cert_manager
+        echo "OCM and Observability are uninstalled successfuly..."
     else
         echo "This ACTION ${ACTION} isn't recognized/supported" && exit 1
     fi
