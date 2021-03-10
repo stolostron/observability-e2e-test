@@ -117,8 +117,7 @@ setup_jq() {
 }
 
 deploy_cert_manager() {
-    cd ${ROOTDIR}
-    if kubectl apply -f ./cert-manager/cert-manager-openshift.yaml ; then
+    if kubectl apply -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/cert-manager/cert-manager-openshift.yaml ; then
         echo "cert-manager was successfully deployed"
     else
         echo "Failed to deploy cert-manager"
@@ -132,9 +131,8 @@ deploy_cert_manager() {
 }
 
 delete_cert_manager() {
-    cd ${ROOTDIR}
     kubectl -n cert-manager delete secret multiclusterhub-operator-pull-secret
-    kubectl delete -f ./cert-manager/cert-manager-openshift.yaml
+    kubectl delete -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/cert-manager/cert-manager-openshift.yaml
 }
 
 deploy_hub_spoke_core() {
@@ -233,7 +231,7 @@ deploy_mco_operator() {
             $SED_COMMAND "s~image:.*$~image: $COMPONENT_REPO/multicluster-observability-operator:$LATEST_SNAPSHOT~g" deploy/operator.yaml
             # test the concrete component
             component_anno_name=`echo $component_name | sed 's/-/_/g'`
-            sed -i "/annotations.*/a \ \ \ \ mco-$component_anno_name-tag: ${1##*:}" ${ROOTDIR}/templates/multiclusterobservability_cr.yaml
+            sed -i "/annotations.*/a \ \ \ \ mco-$component_anno_name-tag: ${1##*:}" ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/multiclusterobservability_cr.yaml
         fi
     else
         git clone --depth 1 https://github.com/open-cluster-management/multicluster-observability-operator.git
@@ -241,34 +239,34 @@ deploy_mco_operator() {
         $SED_COMMAND "s~image:.*$~image: $COMPONENT_REPO/multicluster-observability-operator:$LATEST_SNAPSHOT~g" deploy/operator.yaml
     fi
     # Add mco-imageTagSuffix annotation
-    $SED_COMMAND "s~mco-imageTagSuffix:.*~mco-imageTagSuffix: $LATEST_SNAPSHOT~g" ${ROOTDIR}/templates/multiclusterobservability_cr.yaml
+    $SED_COMMAND "s~mco-imageTagSuffix:.*~mco-imageTagSuffix: $LATEST_SNAPSHOT~g" ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/multiclusterobservability_cr.yaml
 
     # Install the multicluster-observability-operator
     kubectl create ns ${OBSERVABILITY_NS} || true
     # create image pull secret
     kubectl -n ${OBSERVABILITY_NS} create secret docker-registry multiclusterhub-operator-pull-secret --docker-server=quay.io --docker-username=$QUAY_USER --docker-password=$QUAY_PASS
     # create api route
-    kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/templates/api-route.yaml
+    kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/api-route.yaml
     # create mco operator
     kubectl apply -f deploy/crds/observability.open-cluster-management.io_multiclusterobservabilities_crd.yaml
     kubectl apply -f deploy/req_crds
-    kubectl apply -f ${ROOTDIR}/req_crds
-    kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/minio
+    kubectl apply -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/req_crds
+    kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/minio
     sleep 4
     kubectl create ns ${OCM_DEFAULT_NS} || true
     kubectl -n ${OCM_DEFAULT_NS} create secret docker-registry multiclusterhub-operator-pull-secret --docker-server=quay.io --docker-username=$QUAY_USER --docker-password=$QUAY_PASS
     kubectl -n ${OCM_DEFAULT_NS} apply -f deploy
-    kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/templates/multiclusterobservability_cr.yaml
+    kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/multiclusterobservability_cr.yaml
 }
 
 delete_mco_operator() {
     cd ${ROOTDIR}/multicluster-observability-operator
-    kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/templates/multiclusterobservability_cr.yaml
+    kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/multiclusterobservability_cr.yaml
     kubectl -n ${OCM_DEFAULT_NS} delete -f deploy
     kubectl -n ${OCM_DEFAULT_NS} delete secret multiclusterhub-operator-pull-secret --ignore-not-found
-    kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/minio
+    kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/minio
     kubectl delete -f deploy/crds/observability.open-cluster-management.io_multiclusterobservabilities_crd.yaml
-    kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/templates/api-route.yaml
+    kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/api-route.yaml
     kubectl -n ${OBSERVABILITY_NS} delete secret multiclusterhub-operator-pull-secret --ignore-not-found
     kubectl delete ns ${OBSERVABILITY_NS}
     rm -rf ${ROOTDIR}/multicluster-observability-operator
@@ -293,7 +291,7 @@ deploy_grafana_test() {
 
     kubectl apply -f manifests/base/grafana/deployment.yaml
     kubectl apply -f manifests/base/grafana/service.yaml
-    kubectl apply -f ${ROOTDIR}/grafana
+    kubectl apply -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/grafana
 }
 
 # delete the grafana test
@@ -301,23 +299,22 @@ delete_grafana_test() {
     cd ${ROOTDIR}/multicluster-observability-operator
     kubectl delete -f manifests/base/grafana/service.yaml
     kubectl delete -f manifests/base/grafana/deployment.yaml
-    kubectl delete -f ${ROOTDIR}/grafana
+    kubectl delete -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/grafana
 }
 
 patch_placement_rule() {
-    cd ${ROOTDIR}
     # Workaround for placementrules operator
     echo "Patch observability placementrule"
     # dump kubeconfig to local disk
-    kubectl config view --raw --minify > ~/.kube/kubeconfig-hub
-    cat ~/.kube/kubeconfig-hub|grep certificate-authority-data|awk '{split($0, a, ": "); print a[2]}'|base64 -d  >> ca
-    cat ~/.kube/kubeconfig-hub|grep client-certificate-data|awk '{split($0, a, ": "); print a[2]}'|base64 -d >> crt
-    cat ~/.kube/kubeconfig-hub|grep client-key-data|awk '{split($0, a, ": "); print a[2]}'|base64 -d >> key
-    SERVER=$(cat ~/.kube/kubeconfig-hub|grep server|awk '{split($0, a, ": "); print a[2]}')
+    kubectl config view --raw --minify > ${HOME}/.kube/kubeconfig-hub
+    cat ${HOME}/.kube/kubeconfig-hub|grep certificate-authority-data|awk '{split($0, a, ": "); print a[2]}'|base64 -d  >> ca
+    cat ${HOME}/.kube/kubeconfig-hub|grep client-certificate-data|awk '{split($0, a, ": "); print a[2]}'|base64 -d >> crt
+    cat ${HOME}/.kube/kubeconfig-hub|grep client-key-data|awk '{split($0, a, ": "); print a[2]}'|base64 -d >> key
+    SERVER=$(cat ${HOME}/.kube/kubeconfig-hub|grep server|awk '{split($0, a, ": "); print a[2]}')
     curl --cert ./crt --key ./key --cacert ./ca -X PATCH -H "Content-Type:application/merge-patch+json" \
         $SERVER/apis/apps.open-cluster-management.io/v1/namespaces/$OBSERVABILITY_NS/placementrules/observability/status \
-        -d @./templates/status.json
-    rm ca crt key
+        -d @${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/status.json
+    rm -f ca crt key
 }
 
 # function execute is the main routine to do the actual work
