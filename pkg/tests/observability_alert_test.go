@@ -8,9 +8,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/slack-go/slack"
-
-	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
@@ -131,78 +128,6 @@ var _ = Describe("Observability:", func() {
 				[]string{`"__name__":"ALERTS"`, `"` + labelName + `":"` + labelValue + `"`})
 			return err
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
-	})
-
-	It("[P1][Sev1][Observability] Should verify that the alerts are created (alert/g0)", func() {
-		//This is 3rd-party functionality, it is supposed to be working
-		Skip("should verify that the alerts are created")
-		By("Checking that alertmanager and thanos-rule pods are running")
-		podList, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).List(metav1.ListOptions{})
-		Expect(err).NotTo(HaveOccurred())
-
-		for _, pod := range podList.Items {
-			if strings.Contains(pod.GetName(), "alertmanager") || strings.Contains(pod.GetName(), "thanos-rule") {
-				Eventually(func() error {
-					p, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).Get(pod.GetName(), metav1.GetOptions{})
-					Expect(err).NotTo(HaveOccurred())
-
-					if string(p.Status.Phase) != "Running" {
-						klog.V(3).Infof("%s is (%s)", p.GetName(), string(p.Status.Phase))
-						return fmt.Errorf("%s is waiting to run", p.GetName())
-					}
-
-					Expect(string(p.Status.Phase)).To(Equal("Running"))
-					klog.V(3).Infof("%s is (%s)", p.GetName(), string(p.Status.Phase))
-					return nil
-				}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
-			}
-		}
-
-		By("Viewing the channel that will hold the alert notifications")
-		slackAPI := slack.New("xoxb-2253118358-1363717104599-GwMY2cdUV5Z1OZRu23egTuyf")
-
-		bot, err := slackAPI.GetBotInfo("B01F7TM3692")
-		Expect(err).NotTo(HaveOccurred())
-		Expect(bot.Name).Should(Equal("TestingObserv"))
-		klog.V(3).Infof("Found slack bot: %s", bot.Name)
-
-		channel, err := slackAPI.GetConversationInfo("C01B4EK1JH1", false)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(channel.Name).Should(Equal("team-observability-test"))
-		klog.V(3).Infof("Found slack channel for testing: %s", channel.Name)
-
-		history, err := slackAPI.GetConversationHistory(&slack.GetConversationHistoryParameters{ChannelID: "C01B4EK1JH1", Limit: 10})
-		Expect(err).NotTo(HaveOccurred())
-		Expect(history.Ok).Should(Equal(true))
-
-		Expect(len(history.Messages)).Should(BeNumerically(">", 0))
-		klog.V(3).Infof("Found slack messages")
-		for _, msg := range history.Messages {
-			klog.Info(msg.Attachments[0].Text)
-		}
-
-		alertNotFound := true
-
-		Eventually(func() error {
-			history, err := slackAPI.GetConversationHistory(&slack.GetConversationHistoryParameters{ChannelID: "C01B4EK1JH1", Limit: 10})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(history.Ok).Should(Equal(true))
-
-			for _, alert := range history.Messages {
-				if strings.Contains(alert.Attachments[0].TitleLink, baseDomain) {
-					klog.V(3).Infof("Viewing alert (%s): "+alert.Attachments[0].Text, alert.Timestamp)
-					Expect(alert.Attachments[0].Title).Should(Equal("[FIRING] NodeOutOfMemory (warning)"))
-					alertNotFound = false
-				}
-			}
-
-			if alertNotFound {
-				klog.V(3).Infoln("Waiting for targeted alert..")
-				return fmt.Errorf("no new slack alerts has been created")
-			}
-
-			return nil
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
 	It("[P2][Sev2][Observability] Should delete the created configmap (alert/g0)", func() {
