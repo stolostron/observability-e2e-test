@@ -1,3 +1,6 @@
+# Copyright (c) 2021 Red Hat, Inc.
+# Copyright Contributors to the Open Cluster Management project
+
 # the tests.sh is designed to run in KinD cluster
 
 go get -u github.com/onsi/ginkgo/ginkgo
