@@ -15,10 +15,10 @@ function usage() {
   echo '  -a: Specifies the ACTION name, required, the value could be "install" or "uninstall".'
   # shellcheck disable=SC2016
   echo '  -i: Specifies the desired IMAGE, optional, the support image includes:
-    quay.io/open-cluster-management/multicluster-observability-operator:<tag>
-    quay.io/open-cluster-management/rbac-query-proxy:<tag>
-    quay.io/open-cluster-management/metrics-collector:<tag>
-    quay.io/open-cluster-management/endpoint-monitoring-operator:<tag>'
+        quay.io/open-cluster-management/multicluster-observability-operator:<tag>
+        quay.io/open-cluster-management/rbac-query-proxy:<tag>
+        quay.io/open-cluster-management/metrics-collector:<tag>
+        quay.io/open-cluster-management/endpoint-monitoring-operator:<tag>'
   echo ''
 }
 
@@ -106,7 +106,7 @@ fi
 # trim the leading and tailing quotes
 LATEST_SNAPSHOT="${LATEST_SNAPSHOT#\"}"
 LATEST_SNAPSHOT="${LATEST_SNAPSHOT%\"}"
-echo ${LATEST_SNAPSHOT}
+echo "The e2e test will use the image with tag: ${LATEST_SNAPSHOT}"
 
 setup_kubectl() {
     if ! command -v kubectl &> /dev/null; then
@@ -168,6 +168,7 @@ delete_hub_spoke_core() {
     # uninstall hub and spoke via OLM
     make clean-deploy
     rm -rf ${ROOTDIR}/registration-operator
+    oc delete ns ${OCM_DEFAULT_NS} --ignore-not-found
 }
 
 approve_csr_joinrequest() {
@@ -272,6 +273,9 @@ deploy_mco_operator() {
 delete_mco_operator() {
     cd ${ROOTDIR}/multicluster-observability-operator
     kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/multiclusterobservability_cr.yaml
+    # wait until all resources are deleted
+    # TODO(morvencao): remove the hard-coded wait time
+    sleep 60
     kubectl -n ${OCM_DEFAULT_NS} delete -f deploy
     kubectl -n ${OCM_DEFAULT_NS} delete secret multiclusterhub-operator-pull-secret --ignore-not-found
     kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/minio
@@ -299,17 +303,17 @@ deploy_grafana_test() {
     $SED_COMMAND "s~name: grafana$~name: grafana-test~g; s~app: multicluster-observability-grafana$~app: multicluster-observability-grafana-test~g" manifests/base/grafana/service.yaml
     $SED_COMMAND "s~namespace: open-cluster-management$~namespace: open-cluster-management-observability~g" manifests/base/grafana/deployment.yaml manifests/base/grafana/service.yaml
 
-    kubectl apply -f manifests/base/grafana/deployment.yaml
-    kubectl apply -f manifests/base/grafana/service.yaml
-    kubectl apply -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/grafana
+    kubectl -n ${OBSERVABILITY_NS} apply -f manifests/base/grafana/deployment.yaml
+    kubectl -n ${OBSERVABILITY_NS} apply -f manifests/base/grafana/service.yaml
+    kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/grafana
 }
 
 # delete the grafana test
 delete_grafana_test() {
     cd ${ROOTDIR}/multicluster-observability-operator
-    kubectl delete -f manifests/base/grafana/service.yaml
-    kubectl delete -f manifests/base/grafana/deployment.yaml
-    kubectl delete -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/grafana
+    kubectl -n ${OBSERVABILITY_NS} delete -f manifests/base/grafana/service.yaml
+    kubectl -n ${OBSERVABILITY_NS} delete -f manifests/base/grafana/deployment.yaml
+    kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/grafana
 }
 
 patch_placement_rule() {
