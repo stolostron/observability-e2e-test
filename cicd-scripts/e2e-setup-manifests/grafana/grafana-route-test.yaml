@@ -1,0 +1,10 @@
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: grafana-test
+spec:
+  host: grafana-test
+  wildcardPolicy: None
+  to:
+    kind: Service
+    name: grafana-test
