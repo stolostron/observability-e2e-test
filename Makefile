@@ -16,6 +16,9 @@ build:
 
 test-unit:
 	@echo "Running Unit Tests.."
+	@oc version
+	@oc cluster-info
 
 test-e2e:
-	@echo "TODO: Running E2E Tests.."
+	@echo "Running E2E Tests.."
+	./cicd-scripts/run-e2e-tests.sh
