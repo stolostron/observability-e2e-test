@@ -3,9 +3,7 @@
 
 WORKDIR=`pwd`
 cd ${WORKDIR}/..
-git clone https://github.com/open-cluster-management/observability-kind-cluster.git
-cd observability-kind-cluster
-./setup.sh
+./cicd-scripts/e2e-tests-setup.sh -a install
 if [ $? -ne 0 ]; then
     echo "Cannot setup environment successfully."
     exit 1

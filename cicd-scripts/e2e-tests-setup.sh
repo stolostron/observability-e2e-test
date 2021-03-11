@@ -310,6 +310,10 @@ deploy_grafana_test() {
 
     kubectl -n ${OBSERVABILITY_NS} apply -f manifests/base/grafana/deployment.yaml
     kubectl -n ${OBSERVABILITY_NS} apply -f manifests/base/grafana/service.yaml
+
+    # set up dedicated host for grafana-test
+    app_domain=`kubectl -n openshift-ingress-operator get ingresscontrollers default -o jsonpath='{.status.domain}'`
+    $SED_COMMAND "s~host: grafana-test$~host: grafana-test.$app_domain~g" ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/grafana/grafana-route-test.yaml
     kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/grafana
 }
 
