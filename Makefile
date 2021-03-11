@@ -16,9 +16,7 @@ build:
 
 test-unit:
 	@echo "Running Unit Tests.."
-	@echo "Running E2E Tests.."
-	@./cicd-scripts/run-e2e-tests.sh
 
 test-e2e:
 	@echo "Running E2E Tests.."
-	./cicd-scripts/run-e2e-tests.sh
+	@./cicd-scripts/run-e2e-tests.sh
