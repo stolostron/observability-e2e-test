@@ -216,6 +216,11 @@ approve_csr_joinrequest() {
     done
 }
 
+delete_csr() {
+    # TODO(morvencao): remove the hard-coded cluster label
+    kubectl delete csr -lopen-cluster-management.io/cluster-name=cluster1
+}
+
 print_mco_operator_log() {
     kubectl -n $DEFAULT_NS logs deploy/multicluster-observability-operator
 }
@@ -363,6 +368,7 @@ execute() {
         delete_grafana_test
         delete_mco_operator
         delete_hub_spoke_core
+        delete_csr
         delete_cert_manager
         echo "OCM and Observability are uninstalled successfuly..."
     else
