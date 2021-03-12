@@ -334,6 +334,29 @@ patch_placement_rule() {
     rm -f ca crt key
 }
 
+wait_for_all_service_ready() {
+    echo "Wait for all services are starting and runing..."
+    n=1
+    while true
+    do
+        if kubectl get ns ${OBSERVABILITYG_ADDON_NS} &> /dev/null; then
+            if kubectl -n ${OBSERVABILITYG_ADDON_NS} get deploy endpoint-observability-operator metrics-collector-deployment &> /dev/null; then
+                echo "Wait for all deploy endpoint-observability-operator metrics-collector-deployment are ready..."
+                kubectl -n ${OBSERVABILITYG_ADDON_NS} wait --timeout=240s --for=condition=Available deploy endpoint-observability-operator metrics-collector-deployment
+                break
+            fi
+        fi
+
+        if [[ $n -ge 100 ]]; then
+            print_mco_operator_log
+            exit 1
+        fi
+        n=$((n+1))
+        echo "Retrying in 10s..."
+        sleep 10
+    done
+}
+
 # function execute is the main routine to do the actual work
 execute() {
     setup_kubectl
@@ -345,6 +368,7 @@ execute() {
         deploy_mco_operator "${IMAGE}"
         deploy_grafana_test "${IMAGE}"
         patch_placement_rule
+        wait_for_all_service_ready
         echo "OCM and Observability are installed successfuly..."
     elif [[ "${ACTION}" == "uninstall" ]]; then
         delete_grafana_test
