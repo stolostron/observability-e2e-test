@@ -69,6 +69,7 @@ mkdir -p ${HOME}/bin
 export PATH=${PATH}:${HOME}/bin
 
 ROOTDIR="$(cd "$(dirname "$0")/.." ; pwd -P)"
+CERT_MANAGER_NS="cert-manager"
 OBSERVABILITY_NS="open-cluster-management-observability"
 OBSERVABILITYG_ADDON_NS="open-cluster-management-addon-observability"
 OCM_DEFAULT_NS="open-cluster-management"
@@ -125,6 +126,35 @@ deploy_cert_manager() {
         echo "Failed to deploy cert-manager"
         exit 1
     fi
+
+    echo "Wait for cert-manager are starting up and runing..."
+    n=1
+    while true
+    do
+        if kubectl get ns ${CERT_MANAGER_NS} &> /dev/null; then
+            if kubectl -n ${CERT_MANAGER_NS} get deploy cert-manager-cainjector cert-manager cert-manager-webhook &> /dev/null; then
+                echo "Wait for all deploy cert-manager-cainjector cert-manager cert-manager-webhook are ready..."
+                kubectl -n ${CERT_MANAGER_NS} wait --timeout=60s --for=condition=Available deploy cert-manager-cainjector cert-manager cert-manager-webhook && break
+            fi
+        fi
+
+        if [[ $n -ge 10 ]]; then
+            echo "Timeout wait for cert-manager are starting up and runing."
+            cert_manager_cainjector_pod=`kubectl -n ${CERT_MANAGER_NS} get pod -l app=cainjector` -o jsonpath='{.items..metadata.name}'
+            kubectl -n ${CERT_MANAGER_NS} describe pod ${cert_manager_cainjector_pod}
+            kubectl -n ${CERT_MANAGER_NS} logs ${cert_manager_cainjector_pod}
+            cert_manager_pod=`kubectl -n ${CERT_MANAGER_NS} get pod -l app=cert-manager` -o jsonpath='{.items..metadata.name}'
+            kubectl -n ${CERT_MANAGER_NS} describe pod ${cert_manager_pod}
+            kubectl -n ${CERT_MANAGER_NS} logs ${cert_manager_pod}
+            cert_manager_webhook_pod=`kubectl -n ${CERT_MANAGER_NS} get pod -l app=webhook` -o jsonpath='{.items..metadata.name}'
+            kubectl -n ${CERT_MANAGER_NS} describe pod ${cert_manager_webhook_pod}
+            kubectl -n ${CERT_MANAGER_NS} logs ${cert_manager_webhook_pod}
+            exit 1
+        fi
+        n=$((n+1))
+        echo "Retrying in 10s..."
+        sleep 10
+    done
 }
 
 delete_cert_manager() {
