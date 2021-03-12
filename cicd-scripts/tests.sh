@@ -19,8 +19,7 @@ git clone --depth 1 https://github.com/open-cluster-management/observability-git
 printf "options:" >> resources/options.yaml
 printf "\n  hub:" >> resources/options.yaml
 printf "\n    baseDomain: ${base_domain}" >> resources/options.yaml
-printf "\n    grafanaURL: grafana-test.${app_domain}" >> resources/options.yaml
-printf "\n    grafanaHost: grafana-test" >> resources/options.yaml
+printf "\n    grafanaURL: http://grafana-test.${app_domain}" >> resources/options.yaml
 printf "\n  clusters:" >> resources/options.yaml
 printf "\n    - name: cluster1" >> resources/options.yaml
 printf "\n      baseDomain: ${base_domain}" >> resources/options.yaml

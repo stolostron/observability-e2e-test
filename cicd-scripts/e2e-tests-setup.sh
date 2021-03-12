@@ -241,6 +241,8 @@ deploy_mco_operator() {
     # Install the multicluster-observability-operator
     kubectl create ns ${OBSERVABILITY_NS} || true
     # create api route
+    app_domain=`kubectl -n openshift-ingress-operator get ingresscontrollers default -o jsonpath='{.status.domain}'`
+    $SED_COMMAND "s~host: observatorium-api$~host: observatorium-api.$app_domain~g" ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/api-route.yaml
     kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/api-route.yaml
     # create mco operator
     kubectl apply -f deploy/crds/observability.open-cluster-management.io_multiclusterobservabilities_crd.yaml
