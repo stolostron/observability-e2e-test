@@ -64,7 +64,7 @@ $ export REGION=YOUR_S3_REGION
 $ export AWS_ACCESS_KEY_ID=YOUR_S3_AWS_ACCESS_KEY_ID
 $ export AWS_SECRET_ACCESS_KEY=YOUR_S3_AWS_SECRET_ACCESS_KEY
 $ export KUBECONFIG=~/.kube/config
-$ ginkgo -v pkg/tests/ -- -options=resources/options.yaml -v=3
+$ ginkgo -v pkg/tests/ -- -options=../../resources/options.yaml -v=3
 ```
 
 (optional) If there is an imported cluster in the test environment, need to set more environment.
