@@ -1,5 +1,5 @@
 options:
+  identityProvider: kube:admin
   hub:
+    name: HUB_CLUSTER_NAME
     baseDomain: BASE_DOMAIN
-    user: BASE_USER
-    password: BASE_PASSWORD

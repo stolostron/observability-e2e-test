@@ -23,32 +23,40 @@ The tests in this container will:
 $ git clone git@github.com:open-cluster-management/observability-e2e-test.git
 ```
 
-2. copy `resources/options.yaml.template` to `resources/options.yaml`, and update values specific to your environment:
+2. install [ginkgo](https://github.com/onsi/ginkgo):
+  
+```
+$ go get -u github.com/onsi/ginkgo/ginkgo
+```
+
+3. copy `resources/options.yaml.template` to `resources/options.yaml`, and update values specific to your environment:
 
 ```
 $ cp resources/options.yaml.template resources/options.yaml
 $ cat resources/options.yaml
 options:
+  identityProvider: kube:admin
   hub:
+    name: HUB_CLUSTER_NAME
     baseDomain: BASE_DOMAIN
-    user: BASE_USER
-    password: BASE_PASSWORD
 ```
-(optional)If there is an imported cluster in the test environment, need to add the cluster info into options.yaml
+
+(optional) If there is an imported cluster in the test environment, need to add the cluster info into options.yaml
+
 ```
 $ cat resources/options.yaml
 options:
+  identityProvider: kube:admin
   hub:
+    name: HUB_CLUSTER_NAME
     baseDomain: BASE_DOMAIN
-    user: BASE_USER
-    password: BASE_PASSWORD
   clusters:
   - name: IMPORT_CLUSTER_NAME
     baseDomain: IMPORT_CLUSTER_BASE_DOMAIN
-    kubecontext: IMPORT_CLUSTER_KUBE_CONTEXT 
+    kubecontext: IMPORT_CLUSTER_KUBE_CONTEXT
 ```
 
-3. run testing:
+4. run testing:
 
 ```
 $ export BUCKET=YOUR_S3_BUCKET
@@ -56,11 +64,13 @@ $ export REGION=YOUR_S3_REGION
 $ export AWS_ACCESS_KEY_ID=YOUR_S3_AWS_ACCESS_KEY_ID
 $ export AWS_SECRET_ACCESS_KEY=YOUR_S3_AWS_SECRET_ACCESS_KEY
 $ export KUBECONFIG=~/.kube/config
-$ ginkgo -v -- -options=resources/options.yaml -v=3
+$ ginkgo -v pkg/tests/ -- -options=../../resources/options.yaml -v=3
 ```
-(optional)If there is an imported cluster in the test environment, need to set more environment
+
+(optional) If there is an imported cluster in the test environment, need to set more environment.
+
 ```
-$ export KUBECONFIG=~/.kube/import-cluster-config
+$ export IMPORT_KUBECONFIG=~/.kube/import-cluster-config
 ```
 
 ## Running with Docker
@@ -77,19 +87,19 @@ $ git clone git@github.com:open-cluster-management/observability-e2e-test.git
 $ cp resources/options.yaml.template resources/options.yaml
 $ cat resources/options.yaml
 options:
+  identityProvider: kube:admin
   hub:
+    name: HUB_CLUSTER_NAME
     baseDomain: BASE_DOMAIN
-    user: BASE_USER
-    password: BASE_PASSWORD
 ```
 (optional)If there is an imported cluster in the test environment, need to add the cluster info into options.yaml
 ```
 $ cat resources/options.yaml
 options:
+  identityProvider: kube:admin
   hub:
+    name: HUB_CLUSTER_NAME
     baseDomain: BASE_DOMAIN
-    user: BASE_USER
-    password: BASE_PASSWORD
   clusters:
   - name: IMPORT_CLUSTER_NAME
     baseDomain: IMPORT_CLUSTER_BASE_DOMAIN
@@ -114,19 +124,13 @@ $ kubectl config current-context
 open-cluster-management-observability/api-demo-dev05-red-chesterfield-com:6443/kube:admin
 ```
 
-5. run `make build`. This will create a docker image:
+5. build docker image:
 
 ```
-$ make build
+$ docker build -t observability-e2e-test:latest .
 ```
 
-6. run the following command to get docker image ID, we will use this in the next step:
-
-```
-$ docker_image_id=`docker images | grep observability-e2e-test | sed -n '1p' | awk '{print $3}'`
-```
-
-7. (optional)If there is an imported cluster in the test environment, need to copy its' kubeconfig file into as ~/.kube/ as import-kubeconfig
+6. (optional) If there is an imported cluster in the test environment, need to copy its' kubeconfig file into as ~/.kube/ as import-kubeconfig
 
 ```
 $ cp {IMPORT_CLUSTER_KUBE_CONFIG_PATH} ~/.kube/import-kubeconfig
@@ -135,7 +139,7 @@ $ cp {IMPORT_CLUSTER_KUBE_CONFIG_PATH} ~/.kube/import-kubeconfig
 7. run testing:
 
 ```
-$ docker run -v ~/.kube/:/opt/.kube -v $(pwd)/results:/results -v $(pwd)/resources:/resources --env-file $(pwd)/resources/env.list  $docker_image_id
+$ docker run -v ~/.kube/:/opt/.kube -v $(pwd)/results:/results -v $(pwd)/resources:/resources --env-file $(pwd)/resources/env.list observability-e2e-test:latest
 ```
 
 In Canary environment, this is the container that will be run - and all the volumes etc will passed on while starting the docker container using a helper script.
