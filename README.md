@@ -130,13 +130,7 @@ open-cluster-management-observability/api-demo-dev05-red-chesterfield-com:6443/k
 $ docker build -t observability-e2e-test:latest .
 ```
 
-6. run the following command to get docker image ID, we will use this in the next step:
-
-```
-$ docker_image_id=`docker images | grep observability-e2e-test | sed -n '1p' | awk '{print $3}'`
-```
-
-7. (optional) If there is an imported cluster in the test environment, need to copy its' kubeconfig file into as ~/.kube/ as import-kubeconfig
+6. (optional) If there is an imported cluster in the test environment, need to copy its' kubeconfig file into as ~/.kube/ as import-kubeconfig
 
 ```
 $ cp {IMPORT_CLUSTER_KUBE_CONFIG_PATH} ~/.kube/import-kubeconfig
