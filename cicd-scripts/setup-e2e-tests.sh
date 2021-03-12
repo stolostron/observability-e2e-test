@@ -203,7 +203,13 @@ delete_csr() {
 }
 
 print_mco_operator_log() {
-    kubectl -n $DEFAULT_NS logs deploy/multicluster-observability-operator
+    echo "========================================================================"
+    echo "multicluster-observability-operator start"
+    echo "========================================================================"
+    kubectl -n ${OCM_DEFAULT_NS} logs deploy/multicluster-observability-operator
+    echo "========================================================================"
+    echo "multicluster-observability-operator end"
+    echo "========================================================================"
 }
 
 deploy_mco_operator() {
