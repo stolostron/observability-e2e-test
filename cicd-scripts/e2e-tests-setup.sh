@@ -1,10 +1,7 @@
 #!/bin/bash
 # Copyright (c) 2020 Red Hat, Inc.
 
-# Required environments to run this script:
-#   KUBECONFIG
-#   QUAY_USER
-#   QUAY_PASS
+# Required KUBECONFIG environment variable to run this script:
 
 # set -eo pipefail
 
@@ -51,16 +48,6 @@ fi
 
 if [[ -z "${KUBECONFIG}" ]]; then
   echo "Error: environment variable KUBECONFIG must be specified!"
-  exit 1
-fi
-
-if [[ -z "${QUAY_USER}" ]]; then
-  echo "Error: environment variable QUAY_USER must be specified!"
-  exit 1
-fi
-
-if [[ -z "${QUAY_PASS}" ]]; then
-  echo "Error: environment variable QUAY_PASS must be specified!"
   exit 1
 fi
 
@@ -138,15 +125,9 @@ deploy_cert_manager() {
         echo "Failed to deploy cert-manager"
         exit 1
     fi
-    kubectl -n cert-manager get secret multiclusterhub-operator-pull-secret || echo "image pull secret doesn't exist in namespace -n cert-manager, creating..." && kubectl -n cert-manager create secret docker-registry multiclusterhub-operator-pull-secret --docker-server=quay.io --docker-username=$QUAY_USER --docker-password=$QUAY_PASS
-    kubectl -n cert-manager patch sa cert-manager --patch '{"imagePullSecrets":[{"name":"multiclusterhub-operator-pull-secret"}]}' --type=merge
-    kubectl -n cert-manager patch sa cert-manager-cainjector --patch '{"imagePullSecrets":[{"name":"multiclusterhub-operator-pull-secret"}]}' --type=merge
-    kubectl -n cert-manager patch sa cert-manager-webhook --patch '{"imagePullSecrets":[{"name":"multiclusterhub-operator-pull-secret"}]}' --type=merge
-    kubectl -n cert-manager delete --all pods
 }
 
 delete_cert_manager() {
-    kubectl -n cert-manager delete secret multiclusterhub-operator-pull-secret
     kubectl delete -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/cert-manager/cert-manager-openshift.yaml
 }
 
@@ -259,8 +240,6 @@ deploy_mco_operator() {
 
     # Install the multicluster-observability-operator
     kubectl create ns ${OBSERVABILITY_NS} || true
-    # create image pull secret
-    kubectl -n ${OBSERVABILITY_NS} create secret docker-registry multiclusterhub-operator-pull-secret --docker-server=quay.io --docker-username=$QUAY_USER --docker-password=$QUAY_PASS
     # create api route
     kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/api-route.yaml
     # create mco operator
@@ -270,7 +249,6 @@ deploy_mco_operator() {
     kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/minio
     sleep 4
     kubectl create ns ${OCM_DEFAULT_NS} || true
-    kubectl -n ${OCM_DEFAULT_NS} create secret docker-registry multiclusterhub-operator-pull-secret --docker-server=quay.io --docker-username=$QUAY_USER --docker-password=$QUAY_PASS
     kubectl -n ${OCM_DEFAULT_NS} apply -f deploy
     kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/multiclusterobservability_cr.yaml
 }
@@ -282,11 +260,9 @@ delete_mco_operator() {
     # TODO(morvencao): remove the hard-coded wait time
     sleep 60
     kubectl -n ${OCM_DEFAULT_NS} delete -f deploy
-    kubectl -n ${OCM_DEFAULT_NS} delete secret multiclusterhub-operator-pull-secret --ignore-not-found
     kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/minio
     kubectl delete -f deploy/crds/observability.open-cluster-management.io_multiclusterobservabilities_crd.yaml
     kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/api-route.yaml
-    kubectl -n ${OBSERVABILITY_NS} delete secret multiclusterhub-operator-pull-secret --ignore-not-found
     kubectl delete ns ${OBSERVABILITY_NS}
     rm -rf ${ROOTDIR}/multicluster-observability-operator
 }
