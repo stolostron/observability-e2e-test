@@ -331,6 +331,8 @@ patch_placement_rule() {
     curl --cert ./crt --key ./key --cacert ./ca -X PATCH -H "Content-Type:application/merge-patch+json" \
         $SERVER/apis/apps.open-cluster-management.io/v1/namespaces/$OBSERVABILITY_NS/placementrules/observability/status \
         -d @${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/status.json
+    # print new line to make sure the output is not messed up
+    echo
     rm -f ca crt key
 }
 
