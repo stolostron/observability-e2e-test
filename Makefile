@@ -18,4 +18,4 @@ test-unit:
 	@echo "Running Unit Tests.."
 
 test-e2e:
-	@echo "Running E2E Tests.."
+	@echo "TODO: Running E2E Tests.."
