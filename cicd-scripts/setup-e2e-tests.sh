@@ -140,15 +140,12 @@ deploy_cert_manager() {
 
         if [[ $n -ge 10 ]]; then
             echo "Timeout wait for cert-manager are starting up and runing."
-            cert_manager_cainjector_pod=`kubectl -n ${CERT_MANAGER_NS} get pod -l app=cainjector` -o jsonpath='{.items..metadata.name}'
+            cert_manager_cainjector_pod=`kubectl -n ${CERT_MANAGER_NS} get pod -l app=cainjector -o jsonpath='{.items..metadata.name}'`
             kubectl -n ${CERT_MANAGER_NS} describe pod ${cert_manager_cainjector_pod}
-            kubectl -n ${CERT_MANAGER_NS} logs ${cert_manager_cainjector_pod}
-            cert_manager_pod=`kubectl -n ${CERT_MANAGER_NS} get pod -l app=cert-manager` -o jsonpath='{.items..metadata.name}'
+            cert_manager_pod=`kubectl -n ${CERT_MANAGER_NS} get pod -l app=cert-manager -o jsonpath='{.items..metadata.name}'`
             kubectl -n ${CERT_MANAGER_NS} describe pod ${cert_manager_pod}
-            kubectl -n ${CERT_MANAGER_NS} logs ${cert_manager_pod}
-            cert_manager_webhook_pod=`kubectl -n ${CERT_MANAGER_NS} get pod -l app=webhook` -o jsonpath='{.items..metadata.name}'
+            cert_manager_webhook_pod=`kubectl -n ${CERT_MANAGER_NS} get pod -l app=webhook -o jsonpath='{.items..metadata.name}'`
             kubectl -n ${CERT_MANAGER_NS} describe pod ${cert_manager_webhook_pod}
-            kubectl -n ${CERT_MANAGER_NS} logs ${cert_manager_webhook_pod}
             exit 1
         fi
         n=$((n+1))
