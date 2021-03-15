@@ -273,14 +273,20 @@ deploy_mco_operator() {
 
     # Install the multicluster-observability-operator
     kubectl create ns ${OBSERVABILITY_NS} || true
-    # create api route
-    app_domain=`kubectl -n openshift-ingress-operator get ingresscontrollers default -o jsonpath='{.status.domain}'`
-    $SED_COMMAND "s~host: observatorium-api$~host: observatorium-api.$app_domain~g" ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/api-route.yaml
-    kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/api-route.yaml
     # create mco operator
     kubectl apply -f deploy/crds/observability.open-cluster-management.io_multiclusterobservabilities_crd.yaml
     kubectl apply -f deploy/req_crds
-    kubectl apply -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/req_crds
+
+    # create the two CRDs: clustermanagementaddons and managedclusteraddons
+    latest_release_branch=`git ls-remote --heads https://github.com/open-cluster-management/api.git release\* | tail -1 | cut -f 2 | cut -d '/' -f 3`
+    git clone --depth 1 -b ${latest_release_branch} https://github.com/open-cluster-management/api.git ocm-api
+    kubectl apply -f ocm-api/addon/v1alpha1/
+
+    # create the CRDs: placementrules
+    latest_release_branch=`git ls-remote --heads https://github.com/open-cluster-management/multicloud-operators-placementrule.git release\* | tail -1 | cut -f 2 | cut -d '/' -f 3`
+    git clone --depth 1 -b ${latest_release_branch} https://github.com/open-cluster-management/multicloud-operators-placementrule.git
+    kubectl apply -f multicloud-operators-placementrule/deploy/crds/apps.open-cluster-management.io_placementrules_crd.yaml
+
     kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/minio
     sleep 4
     kubectl create ns ${OCM_DEFAULT_NS} || true
