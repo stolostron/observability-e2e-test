@@ -251,7 +251,7 @@ deploy_mco_operator() {
         done
         if [[ $component_name == "multicluster-observability-operator" ]]; then
             # copy the current multicluster-observability-operator commits to ROOTDIR for testing
-            cp -r ${ROOTDIR}/../multicluster-observability-operator ${ROOTDIR}
+            cp -r ${ROOTDIR}/../../multicluster-observability-operator ${ROOTDIR}
             cd multicluster-observability-operator/
             $SED_COMMAND "s~image:.*$~image: $1~g" deploy/operator.yaml
         else
