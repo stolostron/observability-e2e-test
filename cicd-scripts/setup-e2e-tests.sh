@@ -4,6 +4,7 @@
 # Required KUBECONFIG environment variable to run this script:
 
 # set -eo pipefail
+set -x
 
 function usage() {
   echo "${0} -a ACTION [-i IMAGE]"
@@ -94,7 +95,6 @@ fi
 # trim the leading and tailing quotes
 LATEST_SNAPSHOT="${LATEST_SNAPSHOT#\"}"
 LATEST_SNAPSHOT="${LATEST_SNAPSHOT%\"}"
-echo "The e2e test will use the image with tag: ${LATEST_SNAPSHOT}"
 
 setup_kubectl() {
     if ! command -v kubectl &> /dev/null; then
