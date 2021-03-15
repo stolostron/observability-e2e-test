@@ -278,8 +278,7 @@ deploy_mco_operator() {
     kubectl apply -f deploy/req_crds
 
     # create the two CRDs: clustermanagementaddons and managedclusteraddons
-    latest_release_branch=`git ls-remote --heads https://github.com/open-cluster-management/api.git release\* | tail -1 | cut -f 2 | cut -d '/' -f 3`
-    git clone --depth 1 -b ${latest_release_branch} https://github.com/open-cluster-management/api.git ocm-api
+    git clone --depth 1 https://github.com/open-cluster-management/api.git ocm-api
     kubectl apply -f ocm-api/addon/v1alpha1/
 
     # create the CRDs: placementrules
