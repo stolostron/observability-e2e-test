@@ -250,7 +250,7 @@ deploy_mco_operator() {
             fi
         done
         if [[ $component_name == "multicluster-observability-operator" ]]; then
-            cd ${ROOTDIR}/../multicluster-observability-operator/
+            cd ${ROOTDIR}/../../multicluster-observability-operator/
             $SED_COMMAND "s~image:.*$~image: $1~g" deploy/operator.yaml
         else
             git clone --depth 1 https://github.com/open-cluster-management/multicluster-observability-operator.git
