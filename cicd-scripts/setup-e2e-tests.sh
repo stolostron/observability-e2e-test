@@ -250,9 +250,7 @@ deploy_mco_operator() {
             fi
         done
         if [[ $component_name == "multicluster-observability-operator" ]]; then
-            # copy the current multicluster-observability-operator commits to ROOTDIR for testing
-            cp -r ${ROOTDIR}/../../multicluster-observability-operator ${ROOTDIR}
-            cd multicluster-observability-operator/
+            cd ${ROOTDIR}/../multicluster-observability-operator/
             $SED_COMMAND "s~image:.*$~image: $1~g" deploy/operator.yaml
         else
             git clone --depth 1 https://github.com/open-cluster-management/multicluster-observability-operator.git
@@ -261,7 +259,7 @@ deploy_mco_operator() {
             $SED_COMMAND "s~image:.*$~image: $COMPONENT_REPO/multicluster-observability-operator:$LATEST_SNAPSHOT~g" deploy/operator.yaml
             # test the concrete component
             component_anno_name=`echo $component_name | sed 's/-/_/g'`
-            sed -i "/annotations.*/a \ \ \ \ mco-$component_anno_name-tag: ${1##*:}" ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/multiclusterobservability_cr.yaml
+            sed -i "/annotations.*/a \ \ \ \ mco-$component_anno_name-image: ${1}" ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/multiclusterobservability_cr.yaml
         fi
     else
         git clone --depth 1 https://github.com/open-cluster-management/multicluster-observability-operator.git
