@@ -7,15 +7,15 @@ This is a container which will be called from:
 1. Canary Tests
 2. Regular Build PRs
 
-This will be called after Observability is installed - both Hub and Addon in real OCP clusters or Kind.
-
 The tests in this container will:
 
 1. Create the MCO CR . The Object store to be already in place for CR to work.
 2. Wait for the installation to complete.
 3. Then check the entire Observability suite (Hub and Addon) is working as expected including disable/enable, Grafana etc.
 
-## Running E2E
+## Setup E2E Testing Environment
+
+If you only have an OCP cluster and haven't installed Observability yet, then you can install the Observability (both Hub and Addon) by the following steps:
 
 1. clone this repo:
 
@@ -23,13 +23,51 @@ The tests in this container will:
 $ git clone git@github.com:open-cluster-management/observability-e2e-test.git
 ```
 
-2. install [ginkgo](https://github.com/onsi/ginkgo):
-  
+2. export `KUBECONFIG` environment to the kubeconfig of your OCP cluster:
+
+```
+$ export KUBECONFIG=<kubeconfig-file-of-your-ocp-cluster>
+```
+
+3. Then simply execute the following command to install the Observability and its dependencies:
+
+```
+$ make test-e2e-setup
+```
+
+By default, the command will try to install the Observability and its dependencies with images of latest snapshot from `quay.io/repository/open-cluster-management` image registry. You may want to override the specified component image to test specified component is working with other components, you can simply implement that by exporting `COMPONENT_IMAGE_NAME` environment, for example, if you want to test metrics-collector image `quay.io/open-cluster-management/metrics-collector:test` with other images of latest snapshot, then execute the following command before running command in step 2:
+
+```
+$ COMPONENT_IMAGE_NAME=quay.io/open-cluster-management/metrics-collector:test
+```
+
+The supported component images include:
+
+- multicluster-observability-operator
+- rbac-query-proxy
+- metrics-collector
+- endpoint-monitoring-operator
+- grafana-dashboard-loader
+
+> Note: the component image override is useful when you want to test each stockholder repositories, you only need to export the `COMPONENT_IMAGE_NAME` environment if running the e2e testing locally. For the CICD pipeline, the prow will take care of entirely process, that means that when you raise a PR to the stockholder repositories, the prow will build the image based the source code of your commit and then install the Observability accordingly.
+
+## Running E2E Testing
+
+Before you run the E2E, make sure [ginkgo](https://github.com/onsi/ginkgo) is installed:
+
 ```
 $ go get -u github.com/onsi/ginkgo/ginkgo
 ```
 
-3. copy `resources/options.yaml.template` to `resources/options.yaml`, and update values specific to your environment:
+then, depending on how your E2E environment is set up, you can choose the following exclusive methods to run the e2e testing:
+
+1. If your E2E environment is set up with steps in the last stanza, then simply run the e2e testing with the following command:
+
+```
+# make test-e2e
+```
+
+2. If you set up the E2E environment manually, then you need to copy `resources/options.yaml.template` to `resources/options.yaml`, and update values specific to your environment:
 
 ```
 $ cp resources/options.yaml.template resources/options.yaml
@@ -41,7 +79,7 @@ options:
     baseDomain: BASE_DOMAIN
 ```
 
-(optional) If there is an imported cluster in the test environment, need to add the cluster info into options.yaml
+(optional) If there is an imported cluster in the test environment, need to add the cluster info into `options.yaml`:
 
 ```
 $ cat resources/options.yaml
@@ -56,7 +94,7 @@ options:
     kubecontext: IMPORT_CLUSTER_KUBE_CONTEXT
 ```
 
-4. run testing:
+then start to run e2e testing manually by the following command:
 
 ```
 $ export BUCKET=YOUR_S3_BUCKET
