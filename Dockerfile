@@ -18,7 +18,7 @@ COPY . /go/src/github.com/open-cluster-management/observability-e2e-test/
 WORKDIR "/go/src/github.com/open-cluster-management/observability-e2e-test/"
 
 # compile go tests in build image
-RUN go get -u github.com/onsi/ginkgo/ginkgo && ginkgo build
+RUN go get github.com/onsi/ginkgo/ginkgo@v1.14.2 && ginkgo build
 
 # create new docker image to hold built artifacts
 FROM registry.fedoraproject.org/fedora-minimal:32
