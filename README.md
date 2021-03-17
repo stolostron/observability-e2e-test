@@ -15,7 +15,7 @@ The tests in this container will:
 
 ## Setup E2E Testing Environment
 
-If you only have an OCP cluster and haven't installed Observability yet, then you can install the Observability(both Hub and Addon) by the following steps:
+If you only have an OCP cluster and haven't installed Observability yet, then you can install the Observability (both Hub and Addon) by the following steps:
 
 1. clone this repo:
 
@@ -49,7 +49,7 @@ The supported component images include:
 - endpoint-monitoring-operator
 - grafana-dashboard-loader
 
-> Note: the component image override is useful when you want to test each stockholder repositories, you only need to export the `COMPONENT_IMAGE_NAME` environment if running the e2e testing locally. For the CICD pipeline, the prow will take care of entirely process, thet means that when you raise a PR to the stockholder repositories, the prow will build the image based the source code of your commit and then install the Observability accordingly.
+> Note: the component image override is useful when you want to test each stockholder repositories, you only need to export the `COMPONENT_IMAGE_NAME` environment if running the e2e testing locally. For the CICD pipeline, the prow will take care of entirely process, that means that when you raise a PR to the stockholder repositories, the prow will build the image based the source code of your commit and then install the Observability accordingly.
 
 ## Running E2E Testing
 
