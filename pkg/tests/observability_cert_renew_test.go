@@ -28,7 +28,7 @@ var _ = Describe("Observability:", func() {
 
 	It("[P1][Sev1][Observability] Should have metrics collector pod restart if cert secret re-generated (certrenew/g0)", func() {
 		Skip("[P1][Sev1][Observability] Should have metrics collector pod restart if cert secret re-generated (certrenew/g0)")
-		By("Waiting for pods ready: observability-observatorium-observatorium-api, metrics-collector-deployment")
+		By("Waiting for pods ready: observability-observatorium-api, metrics-collector-deployment")
 		collectorPodName := ""
 		apiPodsName := map[string]bool{}
 		Eventually(func() bool {
@@ -94,7 +94,7 @@ var _ = Describe("Observability:", func() {
 			}
 
 			// debug code to check label "certmanager.k8s.io/time-restarted"
-			err, deployment := utils.GetDeployment(testOptions, true, MCO_CR_NAME+"-observatorium-observatorium-api", MCO_NAMESPACE)
+			err, deployment := utils.GetDeployment(testOptions, true, MCO_CR_NAME+"-observatorium-api", MCO_NAMESPACE)
 			if err == nil {
 				klog.V(1).Infof("labels: <%v>", deployment.ObjectMeta.Labels)
 			}
