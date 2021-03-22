@@ -90,7 +90,7 @@ var _ = Describe("Observability:", func() {
 					} else {
 						return ""
 					}
-				}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Equal("enableMetrics is set to False"))
+				}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Equal(ManagedClusterAddOnMessage))
 
 				Eventually(func() string {
 					mco, err := dynClient.Resource(utils.NewMCOManagedClusterAddonsGVR()).Namespace(string(clusterName)).Get("observability-controller", metav1.GetOptions{})
@@ -139,12 +139,12 @@ var _ = Describe("Observability:", func() {
 					Expect(err).ToNot(HaveOccurred())
 					conditions := mco.Object["status"].(map[string]interface{})["conditions"].([]interface{})
 					for _, condition := range conditions {
-						if condition.(map[string]interface{})["message"].(string) == ManagedClusterAddOnMessage {
+						if condition.(map[string]interface{})["message"].(string) == "Send metrics successfully" {
 							return condition.(map[string]interface{})["status"].(string)
 						}
 					}
 					return ""
-				}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Equal("False"))
+				}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Equal("True"))
 			}
 		})
 	})
