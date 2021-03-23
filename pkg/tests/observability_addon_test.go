@@ -68,9 +68,8 @@ var _ = Describe("Observability:", func() {
 
 			By("Waiting for MCO addon components scales to 0")
 			Eventually(func() error {
-				addonLabel := "component=metrics-collector"
-				var podList, _ = hubClient.CoreV1().Pods(MCO_ADDON_NAMESPACE).List(metav1.ListOptions{LabelSelector: addonLabel})
-				if len(podList.Items) != 0 {
+				err, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
+				if len(podList.Items) != 0 || err != nil {
 					return fmt.Errorf("Failed to disable observability addon")
 				}
 				return nil
