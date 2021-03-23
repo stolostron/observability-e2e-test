@@ -307,7 +307,11 @@ delete_mco_operator() {
 
 # deploy the new grafana to check the dashboards from browsers
 deploy_grafana_test() {
-    cd ${ROOTDIR}/multicluster-observability-operator
+    if [[ "$1" == *"multicluster-observability-operator"* ]]; then
+        cd ${ROOTDIR}/../multicluster-observability-operator
+    else
+        cd ${ROOTDIR}/multicluster-observability-operator
+    fi
     $SED_COMMAND "s~name: grafana$~name: grafana-test~g; s~app: multicluster-observability-grafana$~app: multicluster-observability-grafana-test~g; s~secretName: grafana-config$~secretName: grafana-config-test~g; s~secretName: grafana-datasources$~secretName: grafana-datasources-test~g; /MULTICLUSTEROBSERVABILITY_CR_NAME/d" manifests/base/grafana/deployment.yaml
     # replace with latest grafana-dashboard-loader image
     if [[ ! -z "$1" ]]; then
