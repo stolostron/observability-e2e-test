@@ -108,6 +108,19 @@ setup_kubectl() {
     fi
 }
 
+setup_kustomize() {
+    if ! command -v kustomize &> /dev/null; then
+        echo "This script will install kustomize (sigs.k8s.io/kustomize/kustomize) on your machine"
+        if [[ "$(uname)" == "Linux" ]]; then
+            curl -o kustomize_v3.8.7.tar.gz -L https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv3.8.7/kustomize_v3.8.7_linux_amd64.tar.gz
+        elif [[ "$(uname)" == "Darwin" ]]; then
+            curl -o kustomize_v3.8.7.tar.gz -L  https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv3.8.7/kustomize_v3.8.7_darwin_amd64.tar.gz
+        fi
+        tar xzvf kustomize_v3.8.7.tar.gz
+        chmod +x ./kustomize && mv ./kustomize ${HOME}/bin/kustomize
+    fi
+}
+
 setup_jq() {
     if ! command -v jq &> /dev/null; then
         if [[ "$(uname)" == "Linux" ]]; then
@@ -241,6 +254,7 @@ print_mco_operator_log() {
 
 deploy_mco_operator() {
     cd ${ROOTDIR}
+    git clone --depth 1 https://github.com/open-cluster-management/observability-gitops.git
     component_name=""
     if [[ ! -z "$1" ]]; then
         for comp in ${COMPONENTS}; do
@@ -251,29 +265,26 @@ deploy_mco_operator() {
         done
         if [[ $component_name == "multicluster-observability-operator" ]]; then
             cd ${ROOTDIR}/../../multicluster-observability-operator/
-            $SED_COMMAND "s~image:.*$~image: $1~g" deploy/operator.yaml
+            cd config/manager && kustomize edit set image $1 && cd ../..
         else
             git clone --depth 1 https://github.com/open-cluster-management/multicluster-observability-operator.git
             cd multicluster-observability-operator/
             # use latest snapshot for mco operator
-            $SED_COMMAND "s~image:.*$~image: $COMPONENT_REPO/multicluster-observability-operator:$LATEST_SNAPSHOT~g" deploy/operator.yaml
+            cd config/manager && kustomize edit set image $COMPONENT_REPO/multicluster-observability-operator:$LATEST_SNAPSHOT && cd ../..
             # test the concrete component
             component_anno_name=`echo $component_name | sed 's/-/_/g'`
-            sed -i "/annotations.*/a \ \ \ \ mco-$component_anno_name-image: ${1}" ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/multiclusterobservability_cr.yaml
+            sed -i "/annotations.*/a \ \ \ \ mco-$component_anno_name-image: ${1}" ${ROOTDIR}//observability-gitops/mco/func/observability.yaml
         fi
     else
         git clone --depth 1 https://github.com/open-cluster-management/multicluster-observability-operator.git
         cd multicluster-observability-operator/
-        $SED_COMMAND "s~image:.*$~image: $COMPONENT_REPO/multicluster-observability-operator:$LATEST_SNAPSHOT~g" deploy/operator.yaml
+        cd config/manager && kustomize edit set image $COMPONENT_REPO/multicluster-observability-operator:$LATEST_SNAPSHOT && cd ../..
     fi
     # Add mco-imageTagSuffix annotation
-    $SED_COMMAND "s~mco-imageTagSuffix:.*~mco-imageTagSuffix: $LATEST_SNAPSHOT~g" ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/multiclusterobservability_cr.yaml
+    $SED_COMMAND "s~mco-imageTagSuffix:.*~mco-imageTagSuffix: $LATEST_SNAPSHOT~g" ${ROOTDIR}/observability-gitops/mco/func/observability.yaml
 
     # Install the multicluster-observability-operator
     kubectl create ns ${OBSERVABILITY_NS} || true
-    # create mco operator
-    kubectl apply -f deploy/crds/observability.open-cluster-management.io_multiclusterobservabilities_crd.yaml
-    kubectl apply -f deploy/req_crds
 
     # create the two CRDs: clustermanagementaddons and managedclusteraddons
     git clone --depth 1 https://github.com/open-cluster-management/api.git ocm-api
@@ -287,20 +298,20 @@ deploy_mco_operator() {
     kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/minio
     sleep 4
     kubectl create ns ${OCM_DEFAULT_NS} || true
-    kubectl -n ${OCM_DEFAULT_NS} apply -f deploy
-    kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/multiclusterobservability_cr.yaml
+    # create mco operator
+	kustomize build config/default | kubectl apply -n ${OCM_DEFAULT_NS} -f -
+    kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/observability-gitops/mco/func/observability.yaml
 }
 
 delete_mco_operator() {
     cd ${ROOTDIR}/multicluster-observability-operator
-    kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/multiclusterobservability_cr.yaml
+    kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/observability-gitops/mco/func/observability.yaml
     # wait until all resources are deleted
     # TODO(morvencao): remove the hard-coded wait time
     sleep 60
-    kubectl -n ${OCM_DEFAULT_NS} delete -f deploy
     kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/minio
-    kubectl delete -f deploy/crds/observability.open-cluster-management.io_multiclusterobservabilities_crd.yaml
     kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/templates/api-route.yaml
+    kustomize build config/default | kubectl delete -f -
     kubectl delete ns ${OBSERVABILITY_NS}
     rm -rf ${ROOTDIR}/multicluster-observability-operator
 }
@@ -402,6 +413,7 @@ wait_for_all_service_ready() {
 # function execute is the main routine to do the actual work
 execute() {
     setup_kubectl
+    setup_kustomize
     setup_jq
     if [[ "${ACTION}" == "install" ]]; then
         deploy_cert_manager
