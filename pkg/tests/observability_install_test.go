@@ -56,8 +56,9 @@ func installMCO() {
 	Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
 
 	By("Creating MCO instance")
-	mco := utils.NewMCOInstanceYaml(MCO_CR_NAME)
-	Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, mco)).NotTo(HaveOccurred())
+	yamlB, err = kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/mco/e2e"})
+	Expect(err).NotTo(HaveOccurred())
+	Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
 
 	By("Waiting for MCO ready status")
 	allPodsIsReady := false

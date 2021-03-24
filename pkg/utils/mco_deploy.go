@@ -30,25 +30,6 @@ const (
 	OCM_ADDON_GROUP               = "addon.open-cluster-management.io"
 )
 
-func NewMCOInstanceYaml(name string) []byte {
-	instance := fmt.Sprintf(`apiVersion: observability.open-cluster-management.io/v1beta1
-kind: MultiClusterObservability
-metadata:
-  annotations:
-    mco-thanos-without-resources-requests: "true"
-  name: %s
-spec:
-  observabilityAddonSpec: {}
-  storageConfigObject:
-    metricObjectStorage:
-      name: thanos-object-storage
-      key: thanos.yaml
-    statefulSetSize: 4Gi`,
-		name)
-
-	return []byte(instance)
-}
-
 func NewMCOGVR() schema.GroupVersionResource {
 	return schema.GroupVersionResource{
 		Group:    MCO_GROUP,
