@@ -265,12 +265,12 @@ deploy_mco_operator() {
         done
         if [[ $component_name == "multicluster-observability-operator" ]]; then
             cd ${ROOTDIR}/../../multicluster-observability-operator/
-            cd config/manager && kustomize edit set image $1 && cd ../..
+            cd config/manager && kustomize edit set image quay.io/open-cluster-management/multicluster-observability-operator=$1 && cd ../..
         else
             git clone --depth 1 https://github.com/open-cluster-management/multicluster-observability-operator.git
             cd multicluster-observability-operator/
             # use latest snapshot for mco operator
-            cd config/manager && kustomize edit set image $COMPONENT_REPO/multicluster-observability-operator:$LATEST_SNAPSHOT && cd ../..
+            cd config/manager && kustomize edit set image quay.io/open-cluster-management/multicluster-observability-operator=$COMPONENT_REPO/multicluster-observability-operator:$LATEST_SNAPSHOT && cd ../..
             # test the concrete component
             component_anno_name=`echo $component_name | sed 's/-/_/g'`
             sed -i "/annotations.*/a \ \ \ \ mco-$component_anno_name-image: ${1}" ${ROOTDIR}//observability-gitops/mco/func/observability.yaml
@@ -278,7 +278,7 @@ deploy_mco_operator() {
     else
         git clone --depth 1 https://github.com/open-cluster-management/multicluster-observability-operator.git
         cd multicluster-observability-operator/
-        cd config/manager && kustomize edit set image $COMPONENT_REPO/multicluster-observability-operator:$LATEST_SNAPSHOT && cd ../..
+        cd config/manager && kustomize edit set image quay.io/open-cluster-management/multicluster-observability-operator=$COMPONENT_REPO/multicluster-observability-operator:$LATEST_SNAPSHOT && cd ../..
     fi
     # Add mco-imageTagSuffix annotation
     $SED_COMMAND "s~mco-imageTagSuffix:.*~mco-imageTagSuffix: $LATEST_SNAPSHOT~g" ${ROOTDIR}/observability-gitops/mco/func/observability.yaml
@@ -300,6 +300,7 @@ deploy_mco_operator() {
     kubectl create ns ${OCM_DEFAULT_NS} || true
     # create mco operator
 	kustomize build config/default | kubectl apply -n ${OCM_DEFAULT_NS} -f -
+    sleep 4
     kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/observability-gitops/mco/func/observability.yaml
 }
 

@@ -671,10 +671,6 @@ func UninstallMCO(opt TestOptions) error {
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
-	deletePullSecretErr := clientKube.CoreV1().Secrets(MCO_NAMESPACE).Delete(MCO_PULL_SECRET_NAME, &metav1.DeleteOptions{})
-	if deletePullSecretErr != nil {
-		return deletePullSecretErr
-	}
 
 	klog.V(1).Infof("Delete MCO object storage secret")
 	deleteObjSecretErr := clientKube.CoreV1().Secrets(MCO_NAMESPACE).Delete(OBJ_SECRET_NAME, &metav1.DeleteOptions{})
