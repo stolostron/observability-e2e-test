@@ -93,20 +93,24 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P1][Sev1][Observability] Revert MCO CR changes (reconcile/g0)", func() {
-		By("Revert MCO CR changes")
-		err := utils.RevertMCOCRModification(testOptions)
-		Expect(err).ToNot(HaveOccurred())
+	// TODO: clyang82 add it back.
+	// It("[P1][Sev1][Observability] Revert MCO CR changes (reconcile/g0)", func() {
+	// 	if !utils.IsCanaryEnvironment(testOptions) {
+	// 		Skip("should skip the high basic mode (reconcile/g0)")
+	// 	}
+	// 	By("Revert MCO CR changes")
+	// 	err := utils.RevertMCOCRModification(testOptions)
+	// 	Expect(err).ToNot(HaveOccurred())
 
-		By("Checking MCO components in default HA mode")
-		Eventually(func() error {
-			err = utils.CheckMCOComponentsInHighMode(testOptions)
-			if err != nil {
-				return err
-			}
-			return nil
-		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
-	})
+	// 	By("Checking MCO components in default HA mode")
+	// 	Eventually(func() error {
+	// 		err = utils.CheckMCOComponentsInHighMode(testOptions)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 		return nil
+	// 	}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
+	// })
 
 	AfterEach(func() {
 		if testFailed {

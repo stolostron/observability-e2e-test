@@ -572,12 +572,3 @@ func IsOpenshift(client *rest.RESTClient) bool {
 	klog.V(5).Infof("fail to GET openshift version, assuming not OpenShift: %s", err.Error())
 	return false
 }
-
-// IsCanaryEnvironment returns true for canary enviornment. return false for kind environment
-func IsCanaryEnvironment(testOptions TestOptions) bool {
-	if testOptions.HubCluster.BaseDomain != "placeholder" {
-		return true
-	} else {
-		return false
-	}
-}

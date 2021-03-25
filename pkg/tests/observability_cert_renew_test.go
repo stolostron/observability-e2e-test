@@ -57,15 +57,6 @@ var _ = Describe("Observability:", func() {
 		err := utils.DeleteCertSecret(testOptions)
 		Expect(err).ToNot(HaveOccurred())
 
-		if !utils.IsCanaryEnvironment(testOptions) {
-			//When a secret currently consumed in a volume is updated, projected keys are eventually updated as well. The kubelet checks whether the mounted secret is fresh on every periodic sync. However, the kubelet uses its local cache for getting the current value of the Secret. The type of the cache is configurable using the ConfigMapAndSecretChangeDetectionStrategy field in the KubeletConfiguration struct. A Secret can be either propagated by watch (default), ttl-based, or simply redirecting all requests directly to the API server. As a result, the total delay from the moment when the Secret is updated to the moment when new keys are projected to the Pod can be as long as the kubelet sync period + cache propagation delay, where the cache propagation delay depends on the chosen cache type (it equals to watch propagation delay, ttl of cache, or zero correspondingly).
-			// in KinD cluster, the observatorium-api won't be restarted, it may due to cert-manager webhook or the kubelet sync period + cache propagation delay
-			// so manually delete the pod to force it restart
-			for apiPodName := range apiPodsName {
-				utils.DeletePod(testOptions, true, MCO_NAMESPACE, apiPodName)
-			}
-		}
-
 		By(fmt.Sprintf("Waiting for old pods removed: %v and new pods created", apiPodsName))
 		Eventually(func() bool {
 			err, podList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, "app.kubernetes.io/name=observatorium-api")

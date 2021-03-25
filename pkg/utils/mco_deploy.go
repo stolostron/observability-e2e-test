@@ -469,10 +469,6 @@ func RevertMCOCRModification(opt TestOptions) error {
 	spec := mco.Object["spec"].(map[string]interface{})
 	//spec["retentionResolutionRaw"] = "5d"
 	spec["nodeSelector"] = map[string]string{}
-	if IsCanaryEnvironment(opt) {
-		//KinD cluster does not have enough resource to support High mode
-		//spec["availabilityConfig"] = "High"
-	}
 
 	_, updateErr := clientDynamic.Resource(NewMCOGVR()).Update(mco, metav1.UpdateOptions{})
 	if updateErr != nil {
