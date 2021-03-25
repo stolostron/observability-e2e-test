@@ -33,7 +33,7 @@ const (
 func NewMCOGVR() schema.GroupVersionResource {
 	return schema.GroupVersionResource{
 		Group:    MCO_GROUP,
-		Version:  "v1beta1",
+		Version:  "v1beta2",
 		Resource: "multiclusterobservabilities"}
 }
 
