@@ -9,9 +9,9 @@ This is a container which will be called from:
 
 The tests in this container will:
 
-1. Create the MCO CR . The Object store to be already in place for CR to work.
-2. Wait for the installation to complete.
-3. Then check the entire Observability suite (Hub and Addon) is working as expected including disable/enable, Grafana etc.
+1. Create the MCO CR. The Object store to be already in place for CR to work.
+2. Wait for the the entire Observability suite (Hub and Addon) has been installed.
+3. Then check the Observability suite (Hub and Addon) is working as expected including disable/enable, Grafana etc.
 
 ## Setup E2E Testing Environment
 
@@ -38,10 +38,10 @@ $ make test-e2e-setup
 By default, the command will try to install the Observability and its dependencies with images of latest snapshot from `quay.io/repository/open-cluster-management` image registry. You may want to override the specified component image to test specified component is working with other components, you can simply implement that by exporting `COMPONENT_IMAGE_NAME` environment, for example, if you want to test metrics-collector image `quay.io/open-cluster-management/metrics-collector:test` with other images of latest snapshot, then execute the following command before running command in step 2:
 
 ```
-$ COMPONENT_IMAGE_NAME=quay.io/open-cluster-management/metrics-collector:test
+$ export COMPONENT_IMAGE_NAME=quay.io/open-cluster-management/metrics-collector:test
 ```
 
-The supported component images include:
+The supported component images include the following **keywords**:
 
 - multicluster-observability-operator
 - rbac-query-proxy
@@ -49,7 +49,7 @@ The supported component images include:
 - endpoint-monitoring-operator
 - grafana-dashboard-loader
 
-> Note: the component image override is useful when you want to test each stockholder repositories, you only need to export the `COMPONENT_IMAGE_NAME` environment if running the e2e testing locally. For the CICD pipeline, the prow will take care of entirely process, that means that when you raise a PR to the stockholder repositories, the prow will build the image based the source code of your commit and then install the Observability accordingly.
+> Note: the component image override is useful when you want to test each stockholder repositories, you only need to export the `COMPONENT_IMAGE_NAME` environment if running the e2e testing locally. For the CICD pipeline, the prow will take care of export work, that means that when you raise a PR to the stockholder repositories, the prow will build the image based the source code of your PR and then install the Observability accordingly.
 
 ## Running E2E Testing
 
