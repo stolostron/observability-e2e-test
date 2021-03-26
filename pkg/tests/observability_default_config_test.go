@@ -4,6 +4,8 @@
 package tests
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -35,50 +37,47 @@ var _ = Describe("Observability:", func() {
 		Expect(observabilityAddonSpec["interval"]).To(Equal(int64(30)))
 	})
 
-	// TODO: @clyang82 need to renable it after moving to v1beta2
-	// It("[P1][Sev1][Observability] Checking default value of PVC and StorageClass (config/g0)", func() {
-	// 	mcoSC, err := dynClient.Resource(utils.NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
-	// 	Expect(err).NotTo(HaveOccurred())
+	It("[P1][Sev1][Observability] Checking default value of PVC and StorageClass (config/g0)", func() {
+		mcoSC, err := dynClient.Resource(utils.NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
 
-	// 	spec := mcoSC.Object["spec"].(map[string]interface{})
-	// 	sizeInCR := spec["storageConfigObject"].(map[string]interface{})["statefulSetSize"].(string)
-	// 	scInCR := spec["storageConfigObject"].(map[string]interface{})["statefulSetStorageClass"].(string)
+		spec := mcoSC.Object["spec"].(map[string]interface{})
+		scInCR := spec["storageConfig"].(map[string]interface{})["storageClass"].(string)
 
-	// 	scList, err := hubClient.StorageV1().StorageClasses().List(metav1.ListOptions{})
-	// 	scMatch := false
-	// 	defaultSC := ""
-	// 	for _, sc := range scList.Items {
-	// 		if sc.Annotations["storageclass.kubernetes.io/is-default-class"] == "true" {
-	// 			defaultSC = sc.Name
-	// 		}
-	// 		if sc.Name == scInCR {
-	// 			scMatch = true
-	// 		}
-	// 	}
-	// 	expectedSC := defaultSC
-	// 	if scMatch {
-	// 		expectedSC = scInCR
-	// 	}
+		scList, err := hubClient.StorageV1().StorageClasses().List(metav1.ListOptions{})
+		scMatch := false
+		defaultSC := ""
+		for _, sc := range scList.Items {
+			if sc.Annotations["storageclass.kubernetes.io/is-default-class"] == "true" {
+				defaultSC = sc.Name
+			}
+			if sc.Name == scInCR {
+				scMatch = true
+			}
+		}
+		expectedSC := defaultSC
+		if scMatch {
+			expectedSC = scInCR
+		}
 
-	// 	Eventually(func() error {
-	// 		pvcList, err := hubClient.CoreV1().PersistentVolumeClaims(MCO_NAMESPACE).List(metav1.ListOptions{})
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 		for _, pvc := range pvcList.Items {
-	// 			//for KinD cluster, we use minio as object storage. the size is 1Gi.
-	// 			if pvc.GetName() != "minio" {
-	// 				pvcSize := pvc.Spec.Resources.Requests["storage"]
-	// 				scName := *pvc.Spec.StorageClassName
-	// 				statusPhase := pvc.Status.Phase
-	// 				if pvcSize.String() != sizeInCR || scName != expectedSC || statusPhase != "Bound" {
-	// 					return fmt.Errorf("PVC check failed, pvcSize = %s, sizeInCR = %s, scName = %s, expectedSC = %s, statusPhase = %s", pvcSize.String(), sizeInCR, scName, expectedSC, statusPhase)
-	// 				}
-	// 			}
-	// 		}
-	// 		return nil
-	// 	}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
-	// })
+		Eventually(func() error {
+			pvcList, err := hubClient.CoreV1().PersistentVolumeClaims(MCO_NAMESPACE).List(metav1.ListOptions{})
+			if err != nil {
+				return err
+			}
+			for _, pvc := range pvcList.Items {
+				//for KinD cluster, we use minio as object storage. the size is 1Gi.
+				if pvc.GetName() != "minio" {
+					scName := *pvc.Spec.StorageClassName
+					statusPhase := pvc.Status.Phase
+					if scName != expectedSC || statusPhase != "Bound" {
+						return fmt.Errorf("PVC check failed, scName = %s, expectedSC = %s, statusPhase = %s", scName, expectedSC, statusPhase)
+					}
+				}
+			}
+			return nil
+		}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
+	})
 
 	AfterEach(func() {
 		if testFailed {

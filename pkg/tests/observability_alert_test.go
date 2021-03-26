@@ -73,7 +73,7 @@ var _ = Describe("Observability:", func() {
 		klog.V(3).Infof("Configmap %s does not exist", configmap[1])
 	})
 
-	It("[P2][Sev2][Observability] Should have the expected secret (alert/g0)", func() {
+	It("[P1][Sev1][Observability] Should have the expected secret (alert/g0)", func() {
 		By("Checking if SECRETS: alertmanager-config is existed")
 		secret, err := hubClient.CoreV1().Secrets(MCO_NAMESPACE).Get(secret, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -82,7 +82,7 @@ var _ = Describe("Observability:", func() {
 		klog.V(3).Infof("Successfully got secret: %s", secret.GetName())
 	})
 
-	It("[P1][Sev1][Observability] Should have custom alert generated (alert/g0)", func() {
+	It("[P2][Sev2][Observability] Should have custom alert generated (alert/g0)", func() {
 		By("Creating custom alert rules")
 		yamlB, err := kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/alerts/custom_rules_valid"})
 		Expect(err).NotTo(HaveOccurred())
@@ -103,7 +103,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P1][Sev1][Observability] Should modify the SECRET: alertmanager-config (alert/g0)", func() {
+	It("[P2][Sev2][Observability] Should modify the SECRET: alertmanager-config (alert/g0)", func() {
 		By("Editing the secret, we should be able to add the third partying tools integrations")
 		secret := utils.CreateCustomAlertConfigYaml(testOptions.HubCluster.BaseDomain)
 
@@ -111,7 +111,7 @@ var _ = Describe("Observability:", func() {
 		klog.V(3).Infof("Successfully modified the secret: alertmanager-config")
 	})
 
-	It("[P1][Sev1][Observability] Should have custom alert updated (alert/g0)", func() {
+	It("[P2][Sev2][Observability] Should have custom alert updated (alert/g0)", func() {
 		By("Updating custom alert rules")
 		yamlB, _ := kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/alerts/custom_rules_invalid"})
 		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
