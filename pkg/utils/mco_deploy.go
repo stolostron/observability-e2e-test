@@ -99,26 +99,6 @@ func ModifyMCOAvailabilityConfig(opt TestOptions, availabilityConfig string) err
 	return nil
 }
 
-func ModifyMCONodeSelector(opt TestOptions, nodeSelector map[string]string) error {
-	clientDynamic := NewKubeClientDynamic(
-		opt.HubCluster.MasterURL,
-		opt.KubeConfig,
-		opt.HubCluster.KubeContext)
-
-	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
-	if getErr != nil {
-		return getErr
-	}
-
-	spec := mco.Object["spec"].(map[string]interface{})
-	spec["nodeSelector"] = nodeSelector
-	_, updateErr := clientDynamic.Resource(NewMCOGVR()).Update(mco, metav1.UpdateOptions{})
-	if updateErr != nil {
-		return updateErr
-	}
-	return nil
-}
-
 func GetAllMCOPods(opt TestOptions) ([]corev1.Pod, error) {
 	hubClient := NewKubeClient(
 		opt.HubCluster.MasterURL,
@@ -426,9 +406,8 @@ func ModifyMCOCR(opt TestOptions) error {
 		return getErr
 	}
 	spec := mco.Object["spec"].(map[string]interface{})
-	//TODO: @clyang82 add it back after moving to v1beta2
-	//spec["retentionResolutionRaw"] = "3d"
-	spec["nodeSelector"] = map[string]string{"kubernetes.io/os": "linux"}
+	retentionConfig := spec["retentionConfig"].(map[string]interface{})
+	retentionConfig["retentionResolutionRaw"] = "3d"
 
 	_, updateErr := clientDynamic.Resource(NewMCOGVR()).Update(mco, metav1.UpdateOptions{})
 	if updateErr != nil {
@@ -448,8 +427,8 @@ func RevertMCOCRModification(opt TestOptions) error {
 		return getErr
 	}
 	spec := mco.Object["spec"].(map[string]interface{})
-	//spec["retentionResolutionRaw"] = "5d"
-	spec["nodeSelector"] = map[string]string{}
+	retentionConfig := spec["retentionConfig"].(map[string]interface{})
+	retentionConfig["retentionResolutionRaw"] = "5d"
 
 	_, updateErr := clientDynamic.Resource(NewMCOGVR()).Update(mco, metav1.UpdateOptions{})
 	if updateErr != nil {
