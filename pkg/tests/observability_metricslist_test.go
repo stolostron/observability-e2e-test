@@ -64,7 +64,6 @@ var _ = Describe("Observability:", func() {
 	})
 
 	It("[P1][Sev1][Observability] Should have metrics which defined in metrics allowlist (metricslist/g0)", func() {
-		Skip("Skip the test for default metrics allowlist")
 		runDuration := 30
 		runCount := 30
 
