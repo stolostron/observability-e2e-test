@@ -34,7 +34,7 @@ var _ = Describe("Observability:", func() {
 				if err != nil {
 					return err
 				}
-				cr.Object["spec"].(map[string]interface{})["rule"].(map[string]interface{})["replicas"] = updateReplicas
+				cr.Object["spec"].(map[string]interface{})["thanos"].(map[string]interface{})["rule"].(map[string]interface{})["replicas"] = updateReplicas
 				oldResourceVersion = cr.Object["metadata"].(map[string]interface{})["resourceVersion"].(string)
 				_, err = dynClient.Resource(utils.NewMCOMObservatoriumGVR()).Namespace(MCO_NAMESPACE).Update(cr, metav1.UpdateOptions{})
 				return err
@@ -43,7 +43,7 @@ var _ = Describe("Observability:", func() {
 			Eventually(func() bool {
 				cr, err := dynClient.Resource(utils.NewMCOMObservatoriumGVR()).Namespace(MCO_NAMESPACE).Get(crName, metav1.GetOptions{})
 				if err == nil {
-					replicasNew := cr.Object["spec"].(map[string]interface{})["rule"].(map[string]interface{})["replicas"].(int64)
+					replicasNew := cr.Object["spec"].(map[string]interface{})["thanos"].(map[string]interface{})["rule"].(map[string]interface{})["replicas"].(int64)
 					newResourceVersion := cr.Object["metadata"].(map[string]interface{})["resourceVersion"].(string)
 					if newResourceVersion != oldResourceVersion &&
 						replicasNew != updateReplicas {
