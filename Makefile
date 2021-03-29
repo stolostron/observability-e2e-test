@@ -33,4 +33,8 @@ endif
 
 test-e2e-clean:
 	@echo "Clean E2E Tests environment..."
+ifdef COMPONENT_IMAGE_NAME
+	@./cicd-scripts/setup-e2e-tests.sh -a uninstall -i $(COMPONENT_IMAGE_NAME)
+else
 	@./cicd-scripts/setup-e2e-tests.sh -a uninstall
+endif
