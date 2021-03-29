@@ -137,7 +137,7 @@ deploy_cert_manager() {
     echo "cert-manager is successfully deployed."
 
     # wait until cert-manager is ready
-    wait_for_deployment_ready 10 60 ${CERT_MANAGER_NS} cert-manager-cainjector cert-manager cert-manager-webhook
+    wait_for_deployment_ready 10 60s ${CERT_MANAGER_NS} cert-manager-cainjector cert-manager cert-manager-webhook
 }
 
 delete_cert_manager() {
@@ -146,21 +146,28 @@ delete_cert_manager() {
 
 deploy_hub_spoke_core() {
     cd ${ROOTDIR}
+    if [ -d "registration-operator" ]; then
+        rm -rf registration-operator
+    fi
     latest_release_branch=$(git ls-remote --heads https://github.com/open-cluster-management/registration-operator.git release\* | tail -1 | cut -f 2 | cut -d '/' -f 3)
     git clone --depth 1 -b ${latest_release_branch} https://github.com/open-cluster-management/registration-operator.git && cd registration-operator
 
     # deploy hub and spoke via OLM
+    set +e
     make deploy
+    set -e
 
     # wait until hub and spoke are ready
-    wait_for_deployment_ready 10 60 ${HUB_NS} cluster-manager-registration-controller cluster-manager-registration-webhook cluster-manager-work-webhook
-    wait_for_deployment_ready 10 60 ${AGENT_NS} klusterlet-registration-agent klusterlet-work-agent
+    wait_for_deployment_ready 10 60s ${HUB_NS} cluster-manager-registration-controller cluster-manager-registration-webhook cluster-manager-work-webhook
+    wait_for_deployment_ready 10 60s ${AGENT_NS} klusterlet-registration-agent klusterlet-work-agent
 }
 
 delete_hub_spoke_core() {
     cd ${ROOTDIR}/registration-operator
     # uninstall hub and spoke via OLM
+    set +e
     make clean-deploy
+    set -e
     rm -rf ${ROOTDIR}/registration-operator
     oc delete ns ${OCM_DEFAULT_NS} --ignore-not-found
 }
@@ -220,6 +227,9 @@ print_mco_operator_log() {
 
 deploy_mco_operator() {
     cd ${ROOTDIR}
+    if [ -d "observability-gitops" ]; then
+        rm -rf observability-gitops
+    fi
     git clone --depth 1 https://github.com/open-cluster-management/observability-gitops.git
     component_name=""
     if [[ ! -z "${1}" ]]; then
@@ -233,6 +243,9 @@ deploy_mco_operator() {
             cd ${ROOTDIR}/../../multicluster-observability-operator/
             cd config/manager && kustomize edit set image quay.io/open-cluster-management/multicluster-observability-operator=${1} && cd ../..
         else
+            if [ -d "multicluster-observability-operator" ]; then
+                rm -rf multicluster-observability-operator
+            fi
             git clone --depth 1 https://github.com/open-cluster-management/multicluster-observability-operator.git
             cd multicluster-observability-operator/
             # use latest snapshot for mco operator
@@ -242,6 +255,9 @@ deploy_mco_operator() {
             sed -i "/annotations.*/a \ \ \ \ mco-${component_anno_name}-image: ${1}" ${ROOTDIR}//observability-gitops/mco/func/observability.yaml
         fi
     else
+        if [ -d "multicluster-observability-operator" ]; then
+            rm -rf multicluster-observability-operator
+        fi
         git clone --depth 1 https://github.com/open-cluster-management/multicluster-observability-operator.git
         cd multicluster-observability-operator/
         cd config/manager && kustomize edit set image quay.io/open-cluster-management/multicluster-observability-operator=${COMPONENT_REPO}/multicluster-observability-operator:${LATEST_SNAPSHOT} && cd ../..
@@ -250,10 +266,16 @@ deploy_mco_operator() {
     ${SED_COMMAND} "s~mco-imageTagSuffix:.*~mco-imageTagSuffix: ${LATEST_SNAPSHOT}~g" ${ROOTDIR}/observability-gitops/mco/func/observability.yaml
 
     # create the two CRDs: clustermanagementaddons and managedclusteraddons
+    if [ -d "ocm-api" ]; then
+        rm -rf ocm-api
+    fi
     git clone --depth 1 https://github.com/open-cluster-management/api.git ocm-api
     kubectl apply -f ocm-api/addon/v1alpha1/
 
     # create the CRDs: placementrules
+    if [ -d "multicloud-operators-placementrule" ]; then
+        rm -rf multicloud-operators-placementrule
+    fi
     latest_release_branch=$(git ls-remote --heads https://github.com/open-cluster-management/multicloud-operators-placementrule.git release\* | tail -1 | cut -f 2 | cut -d '/' -f 3)
     git clone --depth 1 -b ${latest_release_branch} https://github.com/open-cluster-management/multicloud-operators-placementrule.git
     kubectl apply -f multicloud-operators-placementrule/deploy/crds/apps.open-cluster-management.io_placementrules_crd.yaml
@@ -264,7 +286,7 @@ deploy_mco_operator() {
     echo "mco operator is deployed successfully."
 
     # wait until mco is ready
-    wait_for_deployment_ready 10 60 ${OCM_DEFAULT_NS} multicluster-observability-operator
+    wait_for_deployment_ready 10 60s ${OCM_DEFAULT_NS} multicluster-observability-operator
 
     # install minio service
     kubectl create ns ${OBSERVABILITY_NS} || true
@@ -273,7 +295,7 @@ deploy_mco_operator() {
     echo "minio is deployed successfully."
 
     # wait until minio is ready
-    wait_for_deployment_ready 10 60 ${OBSERVABILITY_NS} minio
+    wait_for_deployment_ready 10 60s ${OBSERVABILITY_NS} minio
 
     # create the mco CR
     kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/observability-gitops/mco/func/observability.yaml
@@ -281,7 +303,11 @@ deploy_mco_operator() {
 }
 
 delete_mco_operator() {
-    cd ${ROOTDIR}/multicluster-observability-operator
+    if [[ "${1}" == *"multicluster-observability-operator"* ]]; then
+        cd ${ROOTDIR}/../../multicluster-observability-operator
+    else
+        cd ${ROOTDIR}/multicluster-observability-operator
+    fi
     kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/observability-gitops/mco/func/observability.yaml --ignore-not-found
     kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/minio --ignore-not-found
 
@@ -300,6 +326,8 @@ delete_mco_operator() {
     done
 
     # delete the mco
+    # don't delete the ${OCM_DEFAULT_NS} namespace at this step, since ACM is there
+    ${SED_COMMAND} '0,/^---$/d' config/manager/manager.yaml
     kustomize build config/default | kubectl delete --ignore-not-found -f -
     kubectl delete ns ${OBSERVABILITY_NS}
 }
@@ -307,7 +335,7 @@ delete_mco_operator() {
 # deploy the new grafana to check the dashboards from browsers
 deploy_grafana_test() {
     if [[ "${1}" == *"multicluster-observability-operator"* ]]; then
-        cd ${ROOTDIR}/../multicluster-observability-operator
+        cd ${ROOTDIR}/../../multicluster-observability-operator
     else
         cd ${ROOTDIR}/multicluster-observability-operator
     fi
@@ -328,18 +356,22 @@ deploy_grafana_test() {
     kubectl -n ${OBSERVABILITY_NS} apply -f manifests/base/grafana/deployment.yaml
     kubectl -n ${OBSERVABILITY_NS} apply -f manifests/base/grafana/service.yaml
 
-    # wait until minio is ready
-    wait_for_deployment_ready 10 60 ${OBSERVABILITY_NS} grafana-test
-
     # set up dedicated host for grafana-test
     app_domain=$(kubectl -n openshift-ingress-operator get ingresscontrollers default -o jsonpath='{.status.domain}')
     ${SED_COMMAND} "s~host: grafana-test$~host: grafana-test.$app_domain~g" ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/grafana/grafana-route-test.yaml
     kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/grafana
+
+    # wait until minio is ready
+    wait_for_deployment_ready 10 60s ${OBSERVABILITY_NS} grafana-test
 }
 
 # delete the grafana test
 delete_grafana_test() {
-    cd ${ROOTDIR}/multicluster-observability-operator
+    if [[ "${1}" == *"multicluster-observability-operator"* ]]; then
+        cd ${ROOTDIR}/../../multicluster-observability-operator
+    else
+        cd ${ROOTDIR}/multicluster-observability-operator
+    fi
     kubectl delete -n ${OBSERVABILITY_NS} -f manifests/base/grafana/service.yaml --ignore-not-found
     kubectl delete -n ${OBSERVABILITY_NS} -f manifests/base/grafana/deployment.yaml --ignore-not-found
     kubectl delete -n ${OBSERVABILITY_NS} -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/grafana --ignore-not-found
@@ -391,7 +423,7 @@ EOF
 }
 
 wait_for_observabilityaddons_ready() {
-    if ! wait_for_deployment_ready 10 60 ${OBSERVABILITYG_ADDON_NS} endpoint-observability-operator metrics-collector-deployment ; then
+    if ! wait_for_deployment_ready 10 60s ${OBSERVABILITYG_ADDON_NS} endpoint-observability-operator metrics-collector-deployment ; then
         echo "error waiting for observabilityaddons are ready."
         print_mco_operator_log
     fi
@@ -417,7 +449,7 @@ wait_for_deployment_ready() {
     fi
 
     echo "wait for deployment ${@:4} in namespace ${ns} are starting up and runing..."
-    for i in {1..${retry_number}}; do
+    for (( i = 1; i <= ${retry_number}; i++ )) ; do
         if ! kubectl get ns ${ns} &> /dev/null; then
             echo "namespace ${ns} is not created, retry in 10s...."
             sleep 10
@@ -460,8 +492,8 @@ execute() {
         wait_for_observabilityaddons_ready
         echo "OCM and Observability are installed successfuly..."
     elif [[ "${ACTION}" == "uninstall" ]]; then
-        delete_grafana_test
-        delete_mco_operator
+        delete_grafana_test "${IMAGE}"
+        delete_mco_operator "${IMAGE}"
         delete_hub_spoke_core
         delete_csr
         delete_cert_manager
