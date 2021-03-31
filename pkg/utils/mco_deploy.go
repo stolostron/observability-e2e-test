@@ -418,7 +418,6 @@ func ModifyMCOCR(opt TestOptions) error {
 	spec := mco.Object["spec"].(map[string]interface{})
 	spec["retentionResolutionRaw"] = "3d"
 	spec["nodeSelector"] = map[string]string{"kubernetes.io/os": "linux"}
-	spec["availabilityConfig"] = "Basic"
 
 	_, updateErr := clientDynamic.Resource(NewMCOGVR()).Update(mco, metav1.UpdateOptions{})
 	if updateErr != nil {
