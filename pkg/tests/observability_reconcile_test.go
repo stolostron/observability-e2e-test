@@ -54,7 +54,7 @@ var _ = Describe("Observability:", func() {
 	It("[P1][Sev1][Observability] Modifying retentionResolutionRaw (reconcile/g0)", func() {
 		By("Waiting for MCO retentionResolutionRaw filed to take effect")
 		Eventually(func() error {
-			name := MCO_CR_NAME + "-thanos-compact"
+			name := MCO_CR_NAME + "-observatorium-thanos-compact"
 			compact, getError := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
 			if getError != nil {
 				return getError
