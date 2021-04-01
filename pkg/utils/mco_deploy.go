@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -254,6 +255,24 @@ func CheckAllPodsAffinity(opt TestOptions) error {
 	return nil
 }
 
+func CheckStorageResize(opt TestOptions) error {
+	client := getKubeClient(opt, true)
+	statefulsets := client.AppsV1().StatefulSets(MCO_NAMESPACE)
+	statefulset, err := statefulsets.Get(MCO_CR_NAME+"-alertmanager", metav1.GetOptions{})
+	if err != nil {
+		klog.V(1).Infof("Error while retrieving statefulset %s: %s", MCO_CR_NAME+"-alertmanager", err.Error())
+		return err
+	}
+	vct := statefulset.Spec.VolumeClaimTemplates[0]
+	if vct.Spec.Resources.Requests["storage"].Equal(resource.MustParse("2Gi")) {
+		err = fmt.Errorf("the storage size of statefulset %s should have %v but got %d",
+			MCO_CR_NAME+"-alertmanager", "2Gi",
+			vct.Spec.Resources.Requests["storage"])
+		return err
+	}
+	return nil
+}
+
 func CheckOBAComponents(opt TestOptions) error {
 	client := getKubeClient(opt, false)
 	deployments := client.AppsV1().Deployments(MCO_ADDON_NAMESPACE)
@@ -454,6 +473,8 @@ func ModifyMCOCR(opt TestOptions) error {
 	spec := mco.Object["spec"].(map[string]interface{})
 	retentionConfig := spec["retentionConfig"].(map[string]interface{})
 	retentionConfig["retentionResolutionRaw"] = "3d"
+	storageConfig := spec["storageConfig"].(map[string]interface{})
+	storageConfig["alertmanagerStorageSize"] = "2Gi"
 
 	_, updateErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Update(mco, metav1.UpdateOptions{})
 	if updateErr != nil {

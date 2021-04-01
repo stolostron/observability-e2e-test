@@ -104,6 +104,35 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
+	It("[P2][Sev2][Observability] Checking alertmanager storage resize (reconcile/g0)", func() {
+		By("Resizing alertmanager storage")
+		Eventually(func() error {
+			err := utils.CheckStorageResize(testOptions)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+	})
+
+	It("[P2][Sev2][Observability] Customize the replicas for thanos query (reconcile/g0)", func() {
+		Eventually(func() error {
+			err := utils.UpdateDeploymentReplicas(testOptions, MCO_CR_NAME+"-thanos-query", "query", 3, 3)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+
+		Eventually(func() error {
+			err := utils.UpdateDeploymentReplicas(testOptions, MCO_CR_NAME+"-thanos-query", "query", 0, 3)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+	})
+
 	It("[P2][Sev2][Observability] Revert MCO CR changes (reconcile/g0)", func() {
 
 		By("Revert MCO CR changes")
