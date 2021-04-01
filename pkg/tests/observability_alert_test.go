@@ -28,7 +28,7 @@ var _ = Describe("Observability:", func() {
 			testOptions.KubeConfig,
 			testOptions.HubCluster.KubeContext)
 	})
-	statefulset := [...]string{"alertmanager", MCO_CR_NAME + "-thanos-rule"}
+	statefulset := [...]string{MCO_CR_NAME + "-alertmanager", MCO_CR_NAME + "-thanos-rule"}
 	configmap := [...]string{"thanos-ruler-default-rules", "thanos-ruler-custom-rules"}
 	secret := "alertmanager-config"
 
@@ -39,7 +39,7 @@ var _ = Describe("Observability:", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(sts.Spec.Template.Spec.Volumes)).Should(BeNumerically(">", 0))
 
-			if sts.GetName() == "alertmanager" {
+			if sts.GetName() == MCO_CR_NAME+"-alertmanager" {
 				By("The statefulset: " + sts.GetName() + " should have the appropriate secret mounted")
 				Expect(sts.Spec.Template.Spec.Volumes[0].Secret.SecretName).To(Equal("alertmanager-config"))
 			}

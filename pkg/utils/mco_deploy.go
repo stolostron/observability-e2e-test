@@ -264,13 +264,13 @@ func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 		opt.HubCluster.KubeContext)
 	deployments := client.AppsV1().Deployments(MCO_NAMESPACE)
 	expectedDeploymentNames := []string{
-		"grafana",
-		"observability-observatorium-api",
-		"observability-thanos-query",
-		"observability-thanos-query-frontend",
-		"observability-thanos-receive-controller",
-		"observatorium-operator",
-		"rbac-query-proxy",
+		MCO_CR_NAME + "-grafana",
+		MCO_CR_NAME + "-observatorium-api",
+		MCO_CR_NAME + "-thanos-query",
+		MCO_CR_NAME + "-thanos-query-frontend",
+		MCO_CR_NAME + "-thanos-receive-controller",
+		MCO_CR_NAME + "-observatorium-operator",
+		MCO_CR_NAME + "-rbac-query-proxy",
 	}
 
 	for _, deploymentName := range expectedDeploymentNames {
@@ -290,12 +290,12 @@ func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 
 	statefulsets := client.AppsV1().StatefulSets(MCO_NAMESPACE)
 	expectedStatefulSetNames := []string{
-		"alertmanager",
-		"observability-thanos-compact",
-		"observability-thanos-receive-default",
-		"observability-thanos-rule",
-		"observability-thanos-store-memcached",
-		"observability-thanos-store-shard-0",
+		MCO_CR_NAME + "-alertmanager",
+		MCO_CR_NAME + "-thanos-compact",
+		MCO_CR_NAME + "-thanos-receive-default",
+		MCO_CR_NAME + "-thanos-rule",
+		MCO_CR_NAME + "-thanos-store-memcached",
+		MCO_CR_NAME + "-thanos-store-shard-0",
 	}
 
 	for _, statefulsetName := range expectedStatefulSetNames {
@@ -323,11 +323,11 @@ func CheckMCOComponentsInHighMode(opt TestOptions) error {
 		opt.HubCluster.KubeContext)
 	deployments := client.AppsV1().Deployments(MCO_NAMESPACE)
 	expectedDeploymentNames := []string{
-		"grafana",
-		"observability-observatorium-api",
-		"observability-thanos-query",
-		"observability-thanos-query-frontend",
-		"rbac-query-proxy",
+		MCO_CR_NAME + "-grafana",
+		MCO_CR_NAME + "-observatorium-api",
+		MCO_CR_NAME + "-thanos-query",
+		MCO_CR_NAME + "-thanos-query-frontend",
+		MCO_CR_NAME + "-rbac-query-proxy",
 	}
 
 	for _, deploymentName := range expectedDeploymentNames {
@@ -347,10 +347,10 @@ func CheckMCOComponentsInHighMode(opt TestOptions) error {
 
 	statefulsets := client.AppsV1().StatefulSets(MCO_NAMESPACE)
 	expectedStatefulSetNames := []string{
-		"alertmanager",
-		"observability-thanos-receive-default",
-		"observability-thanos-rule",
-		"observability-thanos-store-memcached",
+		MCO_CR_NAME + "-alertmanager",
+		MCO_CR_NAME + "-thanos-receive-default",
+		MCO_CR_NAME + "-thanos-rule",
+		MCO_CR_NAME + "-thanos-store-memcached",
 		// TODO: https://github.com/open-cluster-management/backlog/issues/6532
 		// "observability-observatorium-thanos-store-shard-0",
 	}
@@ -371,10 +371,10 @@ func CheckMCOComponentsInHighMode(opt TestOptions) error {
 	}
 
 	expectedStatefulSetNames = []string{
-		"observability-thanos-compact",
-		"observability-thanos-store-shard-0",
-		"observability-thanos-store-shard-1",
-		"observability-thanos-store-shard-2",
+		MCO_CR_NAME + "-thanos-compact",
+		MCO_CR_NAME + "-thanos-store-shard-0",
+		MCO_CR_NAME + "-thanos-store-shard-1",
+		MCO_CR_NAME + "-thanos-store-shard-2",
 	}
 
 	for _, statefulsetName := range expectedStatefulSetNames {
