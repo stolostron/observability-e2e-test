@@ -186,6 +186,14 @@ func Apply(url string, kubeconfig string, context string, yamlB []byte) error {
 
 		klog.V(5).Infof("kind: %s\n", kind)
 
+		var apiVersion string
+		if v, ok := obj.Object["apiVersion"]; !ok {
+			return fmt.Errorf("apiVersion attribute not found in %s", f)
+		} else {
+			apiVersion = v.(string)
+		}
+		klog.V(5).Infof("apiVersion: %s\n", apiVersion)
+
 		clientKube := NewKubeClient(url, kubeconfig, context)
 		clientAPIExtension := NewKubeClientAPIExtension(url, kubeconfig, context)
 		// now use switch over the type of the object
@@ -368,7 +376,11 @@ func Apply(url string, kubeconfig string, context string, yamlB []byte) error {
 				return fmt.Errorf("Resource %s not supported", kind)
 			}
 
-			gvr := NewMCOGVR()
+			gvr := NewMCOGVRV1BETA2()
+			if apiVersion == "observability.open-cluster-management.io/v1beta1" {
+				gvr = NewMCOGVRV1BETA1()
+			}
+
 			clientDynamic := NewKubeClientDynamic(url, kubeconfig, context)
 			if ns := obj.GetNamespace(); ns != "" {
 				existingObject, errGet := clientDynamic.Resource(gvr).Namespace(ns).Get(obj.GetName(), metav1.GetOptions{})

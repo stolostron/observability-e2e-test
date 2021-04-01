@@ -28,7 +28,7 @@ var _ = Describe("Observability:", func() {
 	})
 
 	It("[P1][Sev1][Observability] Checking metrics default values on managed cluster (config/g0)", func() {
-		mcoRes, err := dynClient.Resource(utils.NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+		mcoRes, err := dynClient.Resource(utils.NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
 		if err != nil {
 			panic(err.Error())
 		}
@@ -38,7 +38,7 @@ var _ = Describe("Observability:", func() {
 	})
 
 	It("[P1][Sev1][Observability] Checking default value of PVC and StorageClass (config/g0)", func() {
-		mcoSC, err := dynClient.Resource(utils.NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+		mcoSC, err := dynClient.Resource(utils.NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		spec := mcoSC.Object["spec"].(map[string]interface{})

@@ -6,12 +6,16 @@ package utils
 import (
 	b64 "encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"reflect"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"k8s.io/klog"
 )
 
@@ -30,7 +34,14 @@ const (
 	OCM_ADDON_GROUP               = "addon.open-cluster-management.io"
 )
 
-func NewMCOGVR() schema.GroupVersionResource {
+func NewMCOGVRV1BETA1() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    MCO_GROUP,
+		Version:  "v1beta1",
+		Resource: "multiclusterobservabilities"}
+}
+
+func NewMCOGVRV1BETA2() schema.GroupVersionResource {
 	return schema.GroupVersionResource{
 		Group:    MCO_GROUP,
 		Version:  "v1beta2",
@@ -85,14 +96,14 @@ func ModifyMCOAvailabilityConfig(opt TestOptions, availabilityConfig string) err
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
 
-	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	mco, getErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
 	if getErr != nil {
 		return getErr
 	}
 
 	spec := mco.Object["spec"].(map[string]interface{})
 	spec["availabilityConfig"] = availabilityConfig
-	_, updateErr := clientDynamic.Resource(NewMCOGVR()).Update(mco, metav1.UpdateOptions{})
+	_, updateErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Update(mco, metav1.UpdateOptions{})
 	if updateErr != nil {
 		return updateErr
 	}
@@ -147,7 +158,7 @@ func PrintMCOObject(opt TestOptions) {
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
-	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	mco, getErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
 	if getErr != nil {
 		klog.V(1).Infof("Failed to get mco object")
 		return
@@ -401,7 +412,7 @@ func ModifyMCOCR(opt TestOptions) error {
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
-	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	mco, getErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
 	if getErr != nil {
 		return getErr
 	}
@@ -409,7 +420,7 @@ func ModifyMCOCR(opt TestOptions) error {
 	retentionConfig := spec["retentionConfig"].(map[string]interface{})
 	retentionConfig["retentionResolutionRaw"] = "3d"
 
-	_, updateErr := clientDynamic.Resource(NewMCOGVR()).Update(mco, metav1.UpdateOptions{})
+	_, updateErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Update(mco, metav1.UpdateOptions{})
 	if updateErr != nil {
 		return updateErr
 	}
@@ -422,7 +433,7 @@ func RevertMCOCRModification(opt TestOptions) error {
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
-	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	mco, getErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
 	if getErr != nil {
 		return getErr
 	}
@@ -430,7 +441,7 @@ func RevertMCOCRModification(opt TestOptions) error {
 	retentionConfig := spec["retentionConfig"].(map[string]interface{})
 	retentionConfig["retentionResolutionRaw"] = "5d"
 
-	_, updateErr := clientDynamic.Resource(NewMCOGVR()).Update(mco, metav1.UpdateOptions{})
+	_, updateErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Update(mco, metav1.UpdateOptions{})
 	if updateErr != nil {
 		return updateErr
 	}
@@ -479,14 +490,14 @@ func ModifyMCORetentionResolutionRaw(opt TestOptions) error {
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
-	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	mco, getErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
 	if getErr != nil {
 		return getErr
 	}
 
 	spec := mco.Object["spec"].(map[string]interface{})
 	spec["retentionResolutionRaw"] = "3d"
-	_, updateErr := clientDynamic.Resource(NewMCOGVR()).Update(mco, metav1.UpdateOptions{})
+	_, updateErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Update(mco, metav1.UpdateOptions{})
 	if updateErr != nil {
 		return updateErr
 	}
@@ -498,7 +509,7 @@ func GetMCOAddonSpecMetrics(opt TestOptions) (bool, error) {
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
-	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	mco, getErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
 	if getErr != nil {
 		return false, getErr
 	}
@@ -512,14 +523,14 @@ func ModifyMCOAddonSpecMetrics(opt TestOptions, enable bool) error {
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
-	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	mco, getErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
 	if getErr != nil {
 		return getErr
 	}
 
 	observabilityAddonSpec := mco.Object["spec"].(map[string]interface{})["observabilityAddonSpec"].(map[string]interface{})
 	observabilityAddonSpec["enableMetrics"] = enable
-	_, updateErr := clientDynamic.Resource(NewMCOGVR()).Update(mco, metav1.UpdateOptions{})
+	_, updateErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Update(mco, metav1.UpdateOptions{})
 	if updateErr != nil {
 		return updateErr
 	}
@@ -531,14 +542,14 @@ func ModifyMCOAddonSpecInterval(opt TestOptions, interval int64) error {
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
-	mco, getErr := clientDynamic.Resource(NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	mco, getErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
 	if getErr != nil {
 		return getErr
 	}
 
 	observabilityAddonSpec := mco.Object["spec"].(map[string]interface{})["observabilityAddonSpec"].(map[string]interface{})
 	observabilityAddonSpec["interval"] = interval
-	_, updateErr := clientDynamic.Resource(NewMCOGVR()).Update(mco, metav1.UpdateOptions{})
+	_, updateErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Update(mco, metav1.UpdateOptions{})
 	if updateErr != nil {
 		return updateErr
 	}
@@ -549,7 +560,44 @@ func DeleteMCOInstance(opt TestOptions) error {
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
-	return clientDynamic.Resource(NewMCOGVR()).Delete("observability", &metav1.DeleteOptions{})
+	return clientDynamic.Resource(NewMCOGVRV1BETA2()).Delete(MCO_CR_NAME, &metav1.DeleteOptions{})
+}
+
+func CheckMCOConversion(opt TestOptions, v1beta1tov1beta2GoldenPath string) error {
+	clientDynamic := NewKubeClientDynamic(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+	getMCO, err := clientDynamic.Resource(NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+	yamlB, err := ioutil.ReadFile(v1beta1tov1beta2GoldenPath)
+	if err != nil {
+		return err
+	}
+
+	expectedMCO := &unstructured.Unstructured{}
+	_, _, err = decUnstructured.Decode(yamlB, nil, expectedMCO)
+	if err != nil {
+		return err
+	}
+
+	getMCOSpec := getMCO.Object["spec"].(map[string]interface{})
+	expectedMCOSpec := expectedMCO.Object["spec"].(map[string]interface{})
+
+	for k, v := range expectedMCOSpec {
+		val, ok := getMCOSpec[k]
+		if !ok {
+			return fmt.Errorf("%s not found in ", k)
+		}
+		if !reflect.DeepEqual(val, v) {
+			return fmt.Errorf("%+v and %+v are not equal!", val, v)
+		}
+	}
+	return nil
 }
 
 func CreatePullSecret(opt TestOptions) error {
