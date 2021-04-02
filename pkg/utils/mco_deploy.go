@@ -221,6 +221,11 @@ func CheckAllPodsAffinity(opt TestOptions) error {
 	}
 
 	for _, pod := range podList {
+
+		if pod.Spec.Affinity == nil {
+			return fmt.Errorf("Failed to ckeck affinity for pod: %v" + pod.GetName())
+		}
+
 		weightedPodAffinityTerms := pod.Spec.Affinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution
 		for _, weightedPodAffinityTerm := range weightedPodAffinityTerms {
 			topologyKey := weightedPodAffinityTerm.PodAffinityTerm.TopologyKey
