@@ -4,6 +4,7 @@
 package tests
 
 import (
+	"fmt"
 	"os"
 
 	. "github.com/onsi/ginkgo"
@@ -63,18 +64,16 @@ func installMCO() {
 
 	By("Waiting for MCO ready status")
 	allPodsIsReady := false
-	Eventually(func() bool {
+	Eventually(func() error {
 		instance, err := dynClient.Resource(utils.NewMCOGVRV1BETA1()).Get(MCO_CR_NAME, metav1.GetOptions{})
 		if err == nil {
 			allPodsIsReady = utils.StatusContainsTypeEqualTo(instance, "Ready")
-			return allPodsIsReady
+			if allPodsIsReady {
+				return nil
+			}
 		}
-		return false
-	}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(BeTrue())
-
-	if !allPodsIsReady {
-		utils.PrintAllMCOPodsStatus(testOptions)
-	}
+		return fmt.Errorf("MCO componnets cannot be running in 20 minutes. check the MCO CR status for the details: %v", instance.Object["status"])
+	}, EventuallyTimeoutMinute*20, EventuallyIntervalSecond*5).Should(Succeed())
 
 	By("Check clustermanagementaddon CR is created")
 	Eventually(func() error {
@@ -98,14 +97,16 @@ func installMCO() {
 
 	By("Waiting for MCO ready status")
 	allPodsIsReady = false
-	Eventually(func() bool {
+	Eventually(func() error {
 		instance, err := dynClient.Resource(utils.NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
 		if err == nil {
 			allPodsIsReady = utils.StatusContainsTypeEqualTo(instance, "Ready")
-			return allPodsIsReady
+			if allPodsIsReady {
+				return nil
+			}
 		}
-		return false
-	}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(BeTrue())
+		return fmt.Errorf("MCO componnets cannot be running in 20 minutes. check the MCO CR status for the details: %v", instance.Object["status"])
+	}, EventuallyTimeoutMinute*20, EventuallyIntervalSecond*5).Should(Succeed())
 
 	if !allPodsIsReady {
 		utils.PrintAllMCOPodsStatus(testOptions)
