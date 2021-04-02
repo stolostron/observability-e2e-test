@@ -418,7 +418,6 @@ func ModifyMCOCR(opt TestOptions) error {
 		return getErr
 	}
 	spec := mco.Object["spec"].(map[string]interface{})
-	spec["nodeSelector"] = map[string]string{"kubernetes.io/os": "linux"}
 	retentionConfig := spec["retentionConfig"].(map[string]interface{})
 	retentionConfig["retentionResolutionRaw"] = "3d"
 
@@ -441,7 +440,6 @@ func RevertMCOCRModification(opt TestOptions) error {
 	}
 	spec := mco.Object["spec"].(map[string]interface{})
 	retentionConfig := spec["retentionConfig"].(map[string]interface{})
-	spec["nodeSelector"] = map[string]string{}
 	retentionConfig["retentionResolutionRaw"] = "5d"
 
 	_, updateErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Update(mco, metav1.UpdateOptions{})
