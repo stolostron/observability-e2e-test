@@ -206,6 +206,10 @@ func CheckAllPodNodeSelector(opt TestOptions) error {
 			continue
 		}
 
+		if strings.Contains("grafana-test", pod.GetName()) {
+			continue
+		}
+
 		selecterValue, ok := pod.Spec.NodeSelector["kubernetes.io/os"]
 		if !ok || selecterValue != "linux" {
 			return fmt.Errorf("Failed to check node selector for pod: %v", pod.GetName())
