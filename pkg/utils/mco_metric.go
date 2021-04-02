@@ -18,7 +18,7 @@ func ContainManagedClusterMetric(opt TestOptions, query string, matchedLabels []
 	grafanaConsoleURL := GetGrafanaURL(opt)
 	path := "/api/datasources/proxy/1/api/v1/query?"
 	queryParams := url.PathEscape(fmt.Sprintf("query=%s", query))
-	klog.V(1).Infof("request url is: %s\n", grafanaConsoleURL+path+queryParams)
+	klog.V(5).Infof("request url is: %s\n", grafanaConsoleURL+path+queryParams)
 	req, err := http.NewRequest(
 		"GET",
 		grafanaConsoleURL+path+queryParams,
@@ -52,7 +52,7 @@ func ContainManagedClusterMetric(opt TestOptions, query string, matchedLabels []
 	}
 
 	metricResult, err := ioutil.ReadAll(resp.Body)
-	klog.V(1).Infof("metricResult: %s\n", metricResult)
+	klog.V(5).Infof("metricResult: %s\n", metricResult)
 	if err != nil {
 		return err, false
 	}
