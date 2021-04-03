@@ -88,6 +88,15 @@ var _ = Describe("Observability:", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
 
+		// ensure the thanos rule pods are restarted successfully before processing
+		Eventually(func() error {
+			err = utils.CheckThanosRulePodReady(testOptions)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
+
 		var labelName, labelValue string
 		labels, err := kustomize.GetLabels(yamlB)
 		Expect(err).NotTo(HaveOccurred())
@@ -122,6 +131,15 @@ var _ = Describe("Observability:", func() {
 			labelValue = labels.(map[string]interface{})[labelName].(string)
 		}
 
+		// ensure the thanos rule pods are restarted successfully before processing
+		Eventually(func() error {
+			err = utils.CheckThanosRulePodReady(testOptions)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
+
 		By("Checking alert generated")
 		Eventually(func() error {
 			err, _ := utils.ContainManagedClusterMetric(testOptions, `ALERTS{`+labelName+`="`+labelValue+`"} offset 1m`,
@@ -130,11 +148,20 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
 	})
 
-	It("[P2][Sev2][Observability] Should delete the created configmap (alert/g0)", func() {
+	It("[P2][Sev2][Observability] delete the customized rules (alert/g0)", func() {
 		Eventually(func() error {
 			err := hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Delete(configmap[1], &metav1.DeleteOptions{})
 			return err
 		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*1).Should(Succeed())
+
+		// ensure the thanos rule pods are restarted successfully before processing
+		Eventually(func() error {
+			err = utils.CheckThanosRulePodReady(testOptions)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 
 		klog.V(3).Infof("Successfully deleted CM: thanos-ruler-custom-rules")
 	})
