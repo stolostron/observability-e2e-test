@@ -340,7 +340,7 @@ func CheckThanosRulePodReady(opt TestOptions) error {
 		return err
 	}
 
-	if statefulset.Status.ReadyReplicas != 3 {
+	if statefulset.Status.ReadyReplicas != 3 && statefulset.Status.UpdatedReplicas != 3 {
 		err = fmt.Errorf("Statefulset %s should have 3 but got %d ready replicas",
 			ruleSTSName,
 			statefulset.Status.ReadyReplicas)

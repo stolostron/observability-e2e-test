@@ -16,7 +16,10 @@ import (
 	"github.com/open-cluster-management/observability-e2e-test/pkg/utils"
 )
 
-var ThanosRuleName = MCO_CR_NAME + "-thanos-rule"
+var (
+	ThanosRuleName  = MCO_CR_NAME + "-thanos-rule"
+	ThanosRuleLabel = "app.kubernetes.io/name=thanos-rule"
+)
 
 var _ = Describe("Observability:", func() {
 	BeforeEach(func() {
@@ -86,17 +89,22 @@ var _ = Describe("Observability:", func() {
 
 	It("[P2][Sev2][Observability] Should have custom alert generated (alert/g0)", func() {
 		By("Creating custom alert rules")
-		_, oldSts := utils.GetStatefulSet(testOptions, true, ThanosRuleName, MCO_NAMESPACE)
+		_, oldPodList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, ThanosRuleLabel)
 
 		yamlB, err := kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/alerts/custom_rules_valid"})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
 
-		Eventually(func() error {
-			_, newSts := utils.GetStatefulSet(testOptions, true, ThanosRuleName, MCO_NAMESPACE)
+		err, newPodList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, ThanosRuleLabel)
 
-			if oldSts.GetResourceVersion() != newSts.GetResourceVersion() {
-				return nil
+		Eventually(func() error {
+			if err == nil && len(newPodList.Items) != 0 {
+				for _, oldPod := range oldPodList.Items {
+					if oldPod.GetName() == newPodList.Items[0].GetName() &&
+						oldPod.GetResourceVersion() != newPodList.Items[0].GetResourceVersion() {
+						return nil
+					}
+				}
 			}
 			return fmt.Errorf("The %s cannot be restarted in 3 minutes", ThanosRuleName)
 		}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
@@ -154,18 +162,23 @@ var _ = Describe("Observability:", func() {
 	})
 
 	It("[P2][Sev2][Observability] delete the customized rules (alert/g0)", func() {
-		_, oldSts := utils.GetStatefulSet(testOptions, true, ThanosRuleName, MCO_NAMESPACE)
+		_, oldPodList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, ThanosRuleLabel)
 
 		Eventually(func() error {
 			err := hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Delete(configmap[1], &metav1.DeleteOptions{})
 			return err
 		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*1).Should(Succeed())
 
-		Eventually(func() error {
-			_, newSts := utils.GetStatefulSet(testOptions, true, ThanosRuleName, MCO_NAMESPACE)
+		err, newPodList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, ThanosRuleLabel)
 
-			if oldSts.GetResourceVersion() != newSts.GetResourceVersion() {
-				return nil
+		Eventually(func() error {
+			if err == nil && len(newPodList.Items) != 0 {
+				for _, oldPod := range oldPodList.Items {
+					if oldPod.GetName() == newPodList.Items[0].GetName() &&
+						oldPod.GetResourceVersion() != newPodList.Items[0].GetResourceVersion() {
+						return nil
+					}
+				}
 			}
 			return fmt.Errorf("The %s cannot be restarted in 3 minutes", ThanosRuleName)
 		}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
