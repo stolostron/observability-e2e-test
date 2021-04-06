@@ -131,6 +131,14 @@ var _ = Describe("Observability:", func() {
 			}
 			return nil
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+
+		Eventually(func() error {
+			err := utils.UpdateDeploymentReplicas(testOptions, MCO_CR_NAME+"-thanos-query", "query", 2, 2)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
 	It("[P2][Sev2][Observability] Revert MCO CR changes (reconcile/g0)", func() {

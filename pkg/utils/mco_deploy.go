@@ -264,8 +264,8 @@ func CheckStorageResize(opt TestOptions) error {
 		return err
 	}
 	vct := statefulset.Spec.VolumeClaimTemplates[0]
-	if vct.Spec.Resources.Requests["storage"].Equal(resource.MustParse("2Gi")) {
-		err = fmt.Errorf("the storage size of statefulset %s should have %v but got %d",
+	if !vct.Spec.Resources.Requests["storage"].Equal(resource.MustParse("2Gi")) {
+		err = fmt.Errorf("the storage size of statefulset %s should have %s but got %v",
 			MCO_CR_NAME+"-alertmanager", "2Gi",
 			vct.Spec.Resources.Requests["storage"])
 		return err
