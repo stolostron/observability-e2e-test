@@ -54,8 +54,8 @@ func UpdateDeploymentReplicas(opt TestOptions, deployName, crProperty string, de
 		return err
 	}
 	thanos := obs.Object["spec"].(map[string]interface{})["thanos"]
-	currentReplicas := thanos.(map[string]interface{})[crProperty].(map[string]interface{})["replicas"]
-	if currentReplicas != &expectedReplicas {
+	currentReplicas := thanos.(map[string]interface{})[crProperty].(map[string]interface{})["replicas"].(int64)
+	if int(currentReplicas) != int(expectedReplicas) {
 		klog.Errorf("Failed to update deployment %s replicas to %v", deployName, expectedReplicas)
 		return errors.New("The replicas was not updated successfully")
 	}

@@ -373,9 +373,32 @@ func CheckStatefulSetPodReady(opt TestOptions, stsName string, number int32) err
 	if statefulset.Status.ReadyReplicas != number ||
 		statefulset.Status.UpdatedReplicas != number ||
 		statefulset.Status.UpdateRevision != statefulset.Status.CurrentRevision {
-		err = fmt.Errorf("Statefulset %s should have 3 but got %d ready replicas",
-			stsName,
+		err = fmt.Errorf("Statefulset %s should have %d but got %d ready replicas",
+			stsName, number,
 			statefulset.Status.ReadyReplicas)
+		return err
+	}
+	return nil
+}
+
+func CheckDeploymentPodReady(opt TestOptions, deployName string, number int32) error {
+	client := NewKubeClient(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+	deploys := client.AppsV1().Deployments(MCO_NAMESPACE)
+	deploy, err := deploys.Get(deployName, metav1.GetOptions{})
+	if err != nil {
+		klog.V(1).Infof("Error while retrieving statefulset %s: %s", deployName, err.Error())
+		return err
+	}
+
+	if deploy.Status.ReadyReplicas != number ||
+		deploy.Status.UpdatedReplicas != number ||
+		deploy.Status.AvailableReplicas != number {
+		err = fmt.Errorf("Statefulset %s should have %d but got %d ready replicas",
+			deployName, number,
+			deploy.Status.ReadyReplicas)
 		return err
 	}
 	return nil
