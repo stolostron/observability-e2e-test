@@ -116,11 +116,26 @@ func GetAllMCOPods(opt TestOptions) ([]corev1.Pod, error) {
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
 
-	mcoPods, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).List(metav1.ListOptions{})
+	podList, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).List(metav1.ListOptions{})
 	if err != nil {
 		return []corev1.Pod{}, err
 	}
-	return mcoPods.Items, nil
+
+	// ignore non-mco pods
+	mcoPods := []corev1.Pod{}
+	for _, p := range podList.Items {
+		if strings.Contains(p.GetName(), "grafana-test") {
+			continue
+		}
+
+		if strings.Contains(p.GetName(), "minio") {
+			continue
+		}
+
+		mcoPods = append(mcoPods, p)
+	}
+
+	return mcoPods, nil
 }
 
 func PrintAllMCOPodsStatus(opt TestOptions) {
@@ -203,10 +218,6 @@ func CheckAllPodNodeSelector(opt TestOptions) error {
 
 	for _, pod := range podList {
 		if strings.Contains(ignorePods, pod.GetName()) {
-			continue
-		}
-
-		if strings.Contains("grafana-test", pod.GetName()) {
 			continue
 		}
 
