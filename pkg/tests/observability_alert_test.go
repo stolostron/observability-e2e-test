@@ -17,8 +17,8 @@ import (
 )
 
 var (
-	ThanosRuleName  = MCO_CR_NAME + "-thanos-rule"
-	ThanosRuleLabel = "app.kubernetes.io/name=thanos-rule"
+	ThanosRuleName       = MCO_CR_NAME + "-thanos-rule"
+	ThanosRuleRestarting = false
 )
 
 var _ = Describe("Observability:", func() {
@@ -89,28 +89,25 @@ var _ = Describe("Observability:", func() {
 
 	It("[P2][Sev2][Observability] Should have custom alert generated (alert/g0)", func() {
 		By("Creating custom alert rules")
-		_, oldPodList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, ThanosRuleLabel)
+		_, oldSts := utils.GetStatefulSet(testOptions, true, ThanosRuleName, MCO_NAMESPACE)
 
 		yamlB, err := kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/alerts/custom_rules_valid"})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
 
-		err, newPodList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, ThanosRuleLabel)
-
-		Eventually(func() error {
-			if err == nil && len(newPodList.Items) != 0 {
-				for _, oldPod := range oldPodList.Items {
-					if oldPod.GetName() == newPodList.Items[0].GetName() &&
-						oldPod.GetResourceVersion() != newPodList.Items[0].GetResourceVersion() {
-						return nil
-					}
-				}
-			}
-			return fmt.Errorf("The %s cannot be restarted in 3 minutes", ThanosRuleName)
-		}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
-
+		By("Wait for thanos rule pods are restarted and ready")
 		// ensure the thanos rule pods are restarted successfully before processing
 		Eventually(func() error {
+			if !ThanosRuleRestarting {
+				_, newSts := utils.GetStatefulSet(testOptions, true, ThanosRuleName, MCO_NAMESPACE)
+
+				if oldSts.GetResourceVersion() == newSts.GetResourceVersion() {
+					return fmt.Errorf("The %s is not being restarted in 3 minutes", ThanosRuleName)
+				} else {
+					ThanosRuleRestarting = true
+				}
+			}
+
 			err = utils.CheckThanosRulePodReady(testOptions)
 			if err != nil {
 				return err
@@ -162,29 +159,27 @@ var _ = Describe("Observability:", func() {
 	})
 
 	It("[P2][Sev2][Observability] delete the customized rules (alert/g0)", func() {
-		_, oldPodList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, ThanosRuleLabel)
+		_, oldSts := utils.GetStatefulSet(testOptions, true, ThanosRuleName, MCO_NAMESPACE)
 
 		Eventually(func() error {
 			err := hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Delete(configmap[1], &metav1.DeleteOptions{})
 			return err
 		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*1).Should(Succeed())
 
-		err, newPodList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, ThanosRuleLabel)
-
-		Eventually(func() error {
-			if err == nil && len(newPodList.Items) != 0 {
-				for _, oldPod := range oldPodList.Items {
-					if oldPod.GetName() == newPodList.Items[0].GetName() &&
-						oldPod.GetResourceVersion() != newPodList.Items[0].GetResourceVersion() {
-						return nil
-					}
-				}
-			}
-			return fmt.Errorf("The %s cannot be restarted in 3 minutes", ThanosRuleName)
-		}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
-
+		ThanosRuleRestarting = false
+		By("Wait for thanos rule pods are restarted and ready")
 		// ensure the thanos rule pods are restarted successfully before processing
 		Eventually(func() error {
+			if !ThanosRuleRestarting {
+				_, newSts := utils.GetStatefulSet(testOptions, true, ThanosRuleName, MCO_NAMESPACE)
+
+				if oldSts.GetResourceVersion() == newSts.GetResourceVersion() {
+					return fmt.Errorf("The %s is not being restarted in 3 minutes", ThanosRuleName)
+				} else {
+					ThanosRuleRestarting = true
+				}
+			}
+
 			err = utils.CheckThanosRulePodReady(testOptions)
 			if err != nil {
 				return err

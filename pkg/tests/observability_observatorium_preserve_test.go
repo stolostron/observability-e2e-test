@@ -25,28 +25,27 @@ var _ = Describe("Observability:", func() {
 	})
 
 	Context("[P1][Sev1][Observability] Should revert any manual changes on observatorium cr (observatorium_preserve/g0) -", func() {
-		It("Updating observatorium cr (spec.rule.replicas) should be automatically reverted", func() {
-			crName := "observability"
+		It("Updating observatorium cr (spec.thanos.compact.retentionResolution1h) should be automatically reverted", func() {
 			oldResourceVersion := ""
-			updateReplicas := int64(2)
+			updateRetention := "10d"
 			Eventually(func() error {
-				cr, err := dynClient.Resource(utils.NewMCOMObservatoriumGVR()).Namespace(MCO_NAMESPACE).Get(crName, metav1.GetOptions{})
+				cr, err := dynClient.Resource(utils.NewMCOMObservatoriumGVR()).Namespace(MCO_NAMESPACE).Get(MCO_CR_NAME, metav1.GetOptions{})
 				if err != nil {
 					return err
 				}
-				cr.Object["spec"].(map[string]interface{})["thanos"].(map[string]interface{})["rule"].(map[string]interface{})["replicas"] = updateReplicas
+				cr.Object["spec"].(map[string]interface{})["thanos"].(map[string]interface{})["compact"].(map[string]interface{})["retentionResolution1h"] = updateRetention
 				oldResourceVersion = cr.Object["metadata"].(map[string]interface{})["resourceVersion"].(string)
 				_, err = dynClient.Resource(utils.NewMCOMObservatoriumGVR()).Namespace(MCO_NAMESPACE).Update(cr, metav1.UpdateOptions{})
 				return err
 			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*1).Should(Succeed())
 
 			Eventually(func() bool {
-				cr, err := dynClient.Resource(utils.NewMCOMObservatoriumGVR()).Namespace(MCO_NAMESPACE).Get(crName, metav1.GetOptions{})
+				cr, err := dynClient.Resource(utils.NewMCOMObservatoriumGVR()).Namespace(MCO_NAMESPACE).Get(MCO_CR_NAME, metav1.GetOptions{})
 				if err == nil {
-					replicasNew := cr.Object["spec"].(map[string]interface{})["thanos"].(map[string]interface{})["rule"].(map[string]interface{})["replicas"].(int64)
+					replicasNewRetention := cr.Object["spec"].(map[string]interface{})["thanos"].(map[string]interface{})["compact"].(map[string]interface{})["retentionResolution1h"]
 					newResourceVersion := cr.Object["metadata"].(map[string]interface{})["resourceVersion"].(string)
 					if newResourceVersion != oldResourceVersion &&
-						replicasNew != updateReplicas {
+						replicasNewRetention != updateRetention {
 						return true
 					}
 				}
