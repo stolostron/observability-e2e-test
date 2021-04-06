@@ -60,8 +60,9 @@ var _ = Describe("Observability:", func() {
 			}
 
 			By("Check endpoint-operator and metrics-collector pods are created")
-			err = utils.CheckMCOAddon(testOptions)
-			Expect(err).ToNot(HaveOccurred())
+			Eventually(func() error {
+				return utils.CheckMCOAddon(testOptions)
+			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 		})
 
 		It("Should not have the expected MCO addon pods when disable observabilityaddon", func() {

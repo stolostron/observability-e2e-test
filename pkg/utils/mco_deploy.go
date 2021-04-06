@@ -116,19 +116,26 @@ func GetAllMCOPods(opt TestOptions) ([]corev1.Pod, error) {
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
 
-	mcoOpt := metav1.ListOptions{LabelSelector: MCO_COMPONENT_LABEL}
-	mcoPods, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).List(mcoOpt)
+	podList, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).List(metav1.ListOptions{})
 	if err != nil {
 		return []corev1.Pod{}, err
 	}
 
-	obsOpt := metav1.ListOptions{LabelSelector: OBSERVATORIUM_COMPONENT_LABEL}
-	obsPods, err := hubClient.CoreV1().Pods(MCO_NAMESPACE).List(obsOpt)
-	if err != nil {
-		return []corev1.Pod{}, err
+	// ignore non-mco pods
+	mcoPods := []corev1.Pod{}
+	for _, p := range podList.Items {
+		if strings.Contains(p.GetName(), "grafana-test") {
+			continue
+		}
+
+		if strings.Contains(p.GetName(), "minio") {
+			continue
+		}
+
+		mcoPods = append(mcoPods, p)
 	}
 
-	return append(mcoPods.Items, obsPods.Items...), nil
+	return mcoPods, nil
 }
 
 func PrintAllMCOPodsStatus(opt TestOptions) {
@@ -141,12 +148,12 @@ func PrintAllMCOPodsStatus(opt TestOptions) {
 		isReady := false
 		for _, cond := range pod.Status.Conditions {
 			if cond.Type == "Ready" {
-				klog.V(1).Infof("Pod <%s> is <Ready> on <%s> status\n", pod.Name, pod.Status.Phase)
 				isReady = true
 				break
 			}
 		}
 
+		// only print not ready pod status
 		if !isReady {
 			klog.V(1).Infof("Pod <%s> is not <Ready> on <%s> status due to %#v\n", pod.Name, pod.Status.Phase, pod.Status)
 		}
@@ -163,7 +170,8 @@ func PrintMCOObject(opt TestOptions) {
 		klog.V(1).Infof("Failed to get mco object")
 		return
 	}
-	klog.V(1).Infof("MCO spec and status: %+v", mco)
+	klog.V(1).Infof("MCO spec: %+v\n", mco.Object["spec"])
+	klog.V(1).Infof("MCO status: %+v\n", mco.Object["status"])
 }
 
 func GetAllOBAPods(opt TestOptions) ([]corev1.Pod, error) {
@@ -187,12 +195,11 @@ func PrintAllOBAPodsStatus(opt TestOptions) {
 		isReady := false
 		for _, cond := range pod.Status.Conditions {
 			if cond.Type == "Ready" {
-				klog.V(1).Infof("Pod <%s> is <Ready> on <%s> status\n", pod.Name, pod.Status.Phase)
 				isReady = true
 				break
 			}
 		}
-
+		// only print not ready pod status
 		if !isReady {
 			klog.V(1).Infof("Pod <%s> is not <Ready> on <%s> status due to %#v\n", pod.Name, pod.Status.Phase, pod.Status)
 		}
@@ -229,6 +236,11 @@ func CheckAllPodsAffinity(opt TestOptions) error {
 	}
 
 	for _, pod := range podList {
+
+		if pod.Spec.Affinity == nil {
+			return fmt.Errorf("Failed to ckeck affinity for pod: %v" + pod.GetName())
+		}
+
 		weightedPodAffinityTerms := pod.Spec.Affinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution
 		for _, weightedPodAffinityTerm := range weightedPodAffinityTerms {
 			topologyKey := weightedPodAffinityTerm.PodAffinityTerm.TopologyKey
