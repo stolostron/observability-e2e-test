@@ -339,6 +339,29 @@ func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 	return nil
 }
 
+func CheckStatefulSetPodReady(opt TestOptions, stsName string, number int32) error {
+	client := NewKubeClient(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+	statefulsets := client.AppsV1().StatefulSets(MCO_NAMESPACE)
+	statefulset, err := statefulsets.Get(stsName, metav1.GetOptions{})
+	if err != nil {
+		klog.V(1).Infof("Error while retrieving statefulset %s: %s", stsName, err.Error())
+		return err
+	}
+
+	if statefulset.Status.ReadyReplicas != number ||
+		statefulset.Status.UpdatedReplicas != number ||
+		statefulset.Status.UpdateRevision != statefulset.Status.CurrentRevision {
+		err = fmt.Errorf("Statefulset %s should have 3 but got %d ready replicas",
+			stsName,
+			statefulset.Status.ReadyReplicas)
+		return err
+	}
+	return nil
+}
+
 func CheckMCOComponentsInHighMode(opt TestOptions) error {
 	client := NewKubeClient(
 		opt.HubCluster.MasterURL,

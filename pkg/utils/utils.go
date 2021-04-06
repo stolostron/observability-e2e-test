@@ -584,3 +584,8 @@ func IsOpenshift(client *rest.RESTClient) bool {
 	klog.V(5).Infof("fail to GET openshift version, assuming not OpenShift: %s", err.Error())
 	return false
 }
+
+// IntegrityChecking checks to ensure all required conditions are met when completing the specs
+func IntegrityChecking(opt TestOptions) error {
+	return CheckMCOComponentsInHighMode(opt)
+}

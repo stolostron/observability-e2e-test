@@ -70,6 +70,16 @@ var _ = Describe("Observability:", func() {
 			}
 			return fmt.Errorf("Failed to find modified retention field")
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+		By("Wait for thanos compact pods are ready")
+		// ensure the thanos rule pods are restarted successfully before processing
+		Eventually(func() error {
+			err = utils.CheckStatefulSetPodReady(testOptions, MCO_CR_NAME+"-thanos-compact", 1)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
+
 	})
 
 	It("[P2][Sev2][Observability] Checking node selector for all pods (reconcile/g0)", func() {
@@ -100,6 +110,16 @@ var _ = Describe("Observability:", func() {
 		err := utils.RevertMCOCRModification(testOptions)
 		Expect(err).ToNot(HaveOccurred())
 
+		By("Wait for thanos compact pods are ready")
+		// ensure the thanos rule pods are restarted successfully before processing
+		Eventually(func() error {
+			err = utils.CheckStatefulSetPodReady(testOptions, MCO_CR_NAME+"-thanos-compact", 1)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
+
 		By("Checking MCO components in default HA mode")
 		Eventually(func() error {
 			err = utils.CheckMCOComponentsInHighMode(testOptions)
@@ -115,6 +135,8 @@ var _ = Describe("Observability:", func() {
 			utils.PrintMCOObject(testOptions)
 			utils.PrintAllMCOPodsStatus(testOptions)
 			utils.PrintAllOBAPodsStatus(testOptions)
+		} else {
+			Expect(utils.IntegrityChecking(testOptions)).NotTo(HaveOccurred())
 		}
 		testFailed = testFailed || CurrentGinkgoTestDescription().Failed
 	})
