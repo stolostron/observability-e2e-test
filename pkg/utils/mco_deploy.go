@@ -327,22 +327,23 @@ func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 	return nil
 }
 
-func CheckThanosRulePodReady(opt TestOptions) error {
+func CheckStatefulSetPodReady(opt TestOptions, stsName string, number int32) error {
 	client := NewKubeClient(
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
-	ruleSTSName := MCO_CR_NAME + "-thanos-rule"
 	statefulsets := client.AppsV1().StatefulSets(MCO_NAMESPACE)
-	statefulset, err := statefulsets.Get(ruleSTSName, metav1.GetOptions{})
+	statefulset, err := statefulsets.Get(stsName, metav1.GetOptions{})
 	if err != nil {
-		klog.V(1).Infof("Error while retrieving statefulset %s: %s", ruleSTSName, err.Error())
+		klog.V(1).Infof("Error while retrieving statefulset %s: %s", stsName, err.Error())
 		return err
 	}
 
-	if statefulset.Status.ReadyReplicas != 3 || statefulset.Status.UpdatedReplicas != 3 || statefulset.Status.UpdateRevision != statefulset.Status.CurrentRevision {
+	if statefulset.Status.ReadyReplicas != number ||
+		statefulset.Status.UpdatedReplicas != number ||
+		statefulset.Status.UpdateRevision != statefulset.Status.CurrentRevision {
 		err = fmt.Errorf("Statefulset %s should have 3 but got %d ready replicas",
-			ruleSTSName,
+			stsName,
 			statefulset.Status.ReadyReplicas)
 		return err
 	}

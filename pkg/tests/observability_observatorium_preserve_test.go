@@ -51,6 +51,16 @@ var _ = Describe("Observability:", func() {
 				}
 				return false
 			}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*1).Should(BeTrue())
+
+			By("Wait for thanos compact pods are ready")
+			// ensure the thanos rule pods are restarted successfully before processing
+			Eventually(func() error {
+				err = utils.CheckStatefulSetPodReady(testOptions, MCO_CR_NAME+"-thanos-compact", 1)
+				if err != nil {
+					return err
+				}
+				return nil
+			}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 		})
 	})
 

@@ -299,6 +299,7 @@ deploy_mco_operator() {
 
     # create the mco CR
     kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/observability-gitops/mco/func/observability.yaml
+    wait_for_observability_ready
     echo "mco CR is created successfully."
 }
 
@@ -429,6 +430,27 @@ wait_for_observabilityaddons_ready() {
     fi
 }
 
+wait_for_observability_ready() {
+    echo "wait for mco is ready and running..."
+    retry_number=10
+    timeout=60s
+    for (( i = 1; i <= ${retry_number}; i++ )) ; do
+
+        if kubectl wait --timeout=${timeout} --for=condition=Ready mco/observability &> /dev/null; then
+            echo "Observability has been started up and is runing."
+            break
+        else
+            echo "timeout wait for mco are ready, retry in 10s...."
+            sleep 10
+            continue
+        fi
+        if [[ ${i} -eq ${retry_number} ]]; then
+            echo "timeout wait for mco is ready."
+            exit 1
+        fi
+    done
+}
+
 wait_for_deployment_ready() {
     if [[ -z "${1}" ]]; then
         echo "retry number is empty, exiting..."
@@ -448,7 +470,7 @@ wait_for_deployment_ready() {
         exit 1
     fi
 
-    echo "wait for deployment ${@:4} in namespace ${ns} are starting up and runing..."
+    echo "wait for deployment ${@:4} in namespace ${ns} are starting up and running..."
     for (( i = 1; i <= ${retry_number}; i++ )) ; do
         if ! kubectl get ns ${ns} &> /dev/null; then
             echo "namespace ${ns} is not created, retry in 10s...."

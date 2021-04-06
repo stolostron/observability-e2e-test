@@ -102,13 +102,13 @@ var _ = Describe("Observability:", func() {
 				_, newSts := utils.GetStatefulSet(testOptions, true, ThanosRuleName, MCO_NAMESPACE)
 
 				if oldSts.GetResourceVersion() == newSts.GetResourceVersion() {
-					return fmt.Errorf("The %s is not being restarted in 3 minutes", ThanosRuleName)
+					return fmt.Errorf("The %s is not being restarted in 10 minutes", ThanosRuleName)
 				} else {
 					ThanosRuleRestarting = true
 				}
 			}
 
-			err = utils.CheckThanosRulePodReady(testOptions)
+			err = utils.CheckStatefulSetPodReady(testOptions, MCO_CR_NAME+"-thanos-rule", 3)
 			if err != nil {
 				return err
 			}
@@ -174,13 +174,13 @@ var _ = Describe("Observability:", func() {
 				_, newSts := utils.GetStatefulSet(testOptions, true, ThanosRuleName, MCO_NAMESPACE)
 
 				if oldSts.GetResourceVersion() == newSts.GetResourceVersion() {
-					return fmt.Errorf("The %s is not being restarted in 3 minutes", ThanosRuleName)
+					return fmt.Errorf("The %s is not being restarted in 10 minutes", ThanosRuleName)
 				} else {
 					ThanosRuleRestarting = true
 				}
 			}
 
-			err = utils.CheckThanosRulePodReady(testOptions)
+			err = utils.CheckStatefulSetPodReady(testOptions, MCO_CR_NAME+"-thanos-rule", 3)
 			if err != nil {
 				return err
 			}
