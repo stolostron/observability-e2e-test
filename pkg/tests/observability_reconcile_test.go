@@ -52,9 +52,7 @@ var _ = Describe("Observability:", func() {
 		By("Modifying MCO CR for reconciling")
 		err := utils.ModifyMCOCR(testOptions)
 		Expect(err).ToNot(HaveOccurred())
-	})
 
-	It("[P2][Sev2][Observability] Modifying retentionResolutionRaw (reconcile/g0)", func() {
 		By("Waiting for MCO retentionResolutionRaw filed to take effect")
 		Eventually(func() error {
 			name := MCO_CR_NAME + "-thanos-compact"
@@ -70,6 +68,7 @@ var _ = Describe("Observability:", func() {
 			}
 			return fmt.Errorf("Failed to find modified retention field")
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+
 		By("Wait for thanos compact pods are ready")
 		// ensure the thanos rule pods are restarted successfully before processing
 		Eventually(func() error {
@@ -80,6 +79,15 @@ var _ = Describe("Observability:", func() {
 			return nil
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 
+		By("Wait for alertmanager pods are ready")
+		// ensure the thanos rule pods are restarted successfully before processing
+		Eventually(func() error {
+			err = utils.CheckStatefulSetPodReady(testOptions, MCO_CR_NAME+"-alertmanager", 3)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
 	It("[P2][Sev2][Observability] Checking node selector for all pods (reconcile/g0)", func() {
@@ -104,11 +112,74 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
+	It("[P2][Sev2][Observability] Checking alertmanager storage resize (reconcile/g0)", func() {
+		By("Resizing alertmanager storage")
+		Eventually(func() error {
+			err := utils.CheckStorageResize(testOptions)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+	})
+
+	It("[P2][Sev2][Observability] Customize the replicas for thanos query (reconcile/g0)", func() {
+		Eventually(func() error {
+			err := utils.UpdateDeploymentReplicas(testOptions, MCO_CR_NAME+"-thanos-query", "query", 3, 3)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+
+		Eventually(func() error {
+			err := utils.UpdateDeploymentReplicas(testOptions, MCO_CR_NAME+"-thanos-query", "query", 0, 3)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+
+		Eventually(func() error {
+			err := utils.UpdateDeploymentReplicas(testOptions, MCO_CR_NAME+"-thanos-query", "query", 2, 2)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+
+		By("Wait for thanos query pods are ready")
+		Eventually(func() error {
+			err = utils.CheckDeploymentPodReady(testOptions, MCO_CR_NAME+"-thanos-query", 2)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
+
+	})
+
 	It("[P2][Sev2][Observability] Revert MCO CR changes (reconcile/g0)", func() {
 
 		By("Revert MCO CR changes")
 		err := utils.RevertMCOCRModification(testOptions)
 		Expect(err).ToNot(HaveOccurred())
+
+		By("Waiting for MCO retentionResolutionRaw filed to take effect")
+		Eventually(func() error {
+			name := MCO_CR_NAME + "-thanos-compact"
+			compact, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			argList := compact.Spec.Template.Spec.Containers[0].Args
+			for _, arg := range argList {
+				if arg == "--retention.resolution-raw=5d" {
+					return nil
+				}
+			}
+			return fmt.Errorf("Failed to find modified retention field")
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 
 		By("Wait for thanos compact pods are ready")
 		// ensure the thanos rule pods are restarted successfully before processing

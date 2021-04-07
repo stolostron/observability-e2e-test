@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -254,6 +255,24 @@ func CheckAllPodsAffinity(opt TestOptions) error {
 	return nil
 }
 
+func CheckStorageResize(opt TestOptions) error {
+	client := getKubeClient(opt, true)
+	statefulsets := client.AppsV1().StatefulSets(MCO_NAMESPACE)
+	statefulset, err := statefulsets.Get(MCO_CR_NAME+"-alertmanager", metav1.GetOptions{})
+	if err != nil {
+		klog.V(1).Infof("Error while retrieving statefulset %s: %s", MCO_CR_NAME+"-alertmanager", err.Error())
+		return err
+	}
+	vct := statefulset.Spec.VolumeClaimTemplates[0]
+	if !vct.Spec.Resources.Requests["storage"].Equal(resource.MustParse("2Gi")) {
+		err = fmt.Errorf("the storage size of statefulset %s should have %s but got %v",
+			MCO_CR_NAME+"-alertmanager", "2Gi",
+			vct.Spec.Resources.Requests["storage"])
+		return err
+	}
+	return nil
+}
+
 func CheckOBAComponents(opt TestOptions) error {
 	client := getKubeClient(opt, false)
 	deployments := client.AppsV1().Deployments(MCO_ADDON_NAMESPACE)
@@ -354,9 +373,32 @@ func CheckStatefulSetPodReady(opt TestOptions, stsName string, number int32) err
 	if statefulset.Status.ReadyReplicas != number ||
 		statefulset.Status.UpdatedReplicas != number ||
 		statefulset.Status.UpdateRevision != statefulset.Status.CurrentRevision {
-		err = fmt.Errorf("Statefulset %s should have 3 but got %d ready replicas",
-			stsName,
+		err = fmt.Errorf("Statefulset %s should have %d but got %d ready replicas",
+			stsName, number,
 			statefulset.Status.ReadyReplicas)
+		return err
+	}
+	return nil
+}
+
+func CheckDeploymentPodReady(opt TestOptions, deployName string, number int32) error {
+	client := NewKubeClient(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+	deploys := client.AppsV1().Deployments(MCO_NAMESPACE)
+	deploy, err := deploys.Get(deployName, metav1.GetOptions{})
+	if err != nil {
+		klog.V(1).Infof("Error while retrieving statefulset %s: %s", deployName, err.Error())
+		return err
+	}
+
+	if deploy.Status.ReadyReplicas != number ||
+		deploy.Status.UpdatedReplicas != number ||
+		deploy.Status.AvailableReplicas != number {
+		err = fmt.Errorf("Statefulset %s should have %d but got %d ready replicas",
+			deployName, number,
+			deploy.Status.ReadyReplicas)
 		return err
 	}
 	return nil
@@ -454,6 +496,8 @@ func ModifyMCOCR(opt TestOptions) error {
 	spec := mco.Object["spec"].(map[string]interface{})
 	retentionConfig := spec["retentionConfig"].(map[string]interface{})
 	retentionConfig["retentionResolutionRaw"] = "3d"
+	storageConfig := spec["storageConfig"].(map[string]interface{})
+	storageConfig["alertmanagerStorageSize"] = "2Gi"
 
 	_, updateErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Update(mco, metav1.UpdateOptions{})
 	if updateErr != nil {
