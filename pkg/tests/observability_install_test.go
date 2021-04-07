@@ -98,14 +98,12 @@ func installMCO() {
 	By("Waiting for MCO ready status")
 	allPodsIsReady = false
 	Eventually(func() error {
-		instance, err := dynClient.Resource(utils.NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
-		if err == nil {
-			allPodsIsReady = utils.StatusContainsTypeEqualTo(instance, "Ready")
-			if allPodsIsReady {
-				return nil
-			}
+		err = utils.CheckMCOComponentsInHighMode(testOptions)
+		if err != nil {
+			return err
 		}
-		return fmt.Errorf("MCO componnets cannot be running in 20 minutes. check the MCO CR status for the details: %v", instance.Object["status"])
+		allPodsIsReady = true
+		return nil
 	}, EventuallyTimeoutMinute*20, EventuallyIntervalSecond*5).Should(Succeed())
 
 	if !allPodsIsReady {
