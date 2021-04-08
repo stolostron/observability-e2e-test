@@ -4,6 +4,8 @@
 package tests
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,6 +53,9 @@ var _ = Describe("Observability:", func() {
 				}
 				return false
 			}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*1).Should(BeTrue())
+
+			// wait for pod restarting
+			time.Sleep(10 * time.Second)
 
 			By("Wait for thanos compact pods are ready")
 			// ensure the thanos rule pods are restarted successfully before processing
