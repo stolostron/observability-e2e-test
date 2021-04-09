@@ -330,7 +330,7 @@ delete_mco_operator() {
     # don't delete the ${OCM_DEFAULT_NS} namespace at this step, since ACM is there
     ${SED_COMMAND} '0,/^---$/d' config/manager/manager.yaml
     kustomize build config/default | kubectl delete --ignore-not-found -f -
-    kubectl delete ns ${OBSERVABILITY_NS}
+    kubectl delete ns ${OBSERVABILITY_NS} --ignore-not-found
 }
 
 # deploy the new grafana to check the dashboards from browsers
