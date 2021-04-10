@@ -27,7 +27,7 @@ var _ = Describe("Observability:", func() {
 	})
 
 	Context("[P1][Sev1][Observability] Should revert any manual changes on observatorium cr (observatorium_preserve/g0) -", func() {
-		It("Updating observatorium cr (spec.thanos.compact.retentionResolution1h) should be automatically reverted", func() {
+		It("[Stable] Updating observatorium cr (spec.thanos.compact.retentionResolution1h) should be automatically reverted", func() {
 			oldResourceVersion := ""
 			updateRetention := "10d"
 			Eventually(func() error {

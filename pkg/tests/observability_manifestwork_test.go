@@ -26,7 +26,7 @@ var _ = Describe("Observability:", func() {
 			testOptions.HubCluster.KubeContext)
 	})
 
-	Context("[P2][Sev2][Observability] Should be automatically created within 1 minute when delete manifestwork (manifestwork/g0) -", func() {
+	Context("[P2][Sev2][Observability][Stable] Should be automatically created within 1 minute when delete manifestwork (manifestwork/g0) -", func() {
 		manifestWorkName := "endpoint-observability-work"
 		clientDynamic := utils.GetKubeClientDynamic(testOptions, true)
 		clusterName := utils.GetManagedClusterName(testOptions)
@@ -64,7 +64,7 @@ var _ = Describe("Observability:", func() {
 				}
 			}, EventuallyTimeoutMinute*2, EventuallyIntervalSecond*5).Should(Succeed())
 
-			It("Waiting for metrics collector to be created automatically", func() {
+			It("[Stable] Waiting for metrics collector to be created automatically", func() {
 				Eventually(func() error {
 					_, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
 					if podList != nil && len(podList.Items) > 0 {
@@ -76,7 +76,7 @@ var _ = Describe("Observability:", func() {
 				}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 			})
 
-			It("Checking OBA components are ready", func() {
+			It("[Stable] Checking OBA components are ready", func() {
 				Eventually(func() error {
 					err = utils.CheckOBAComponents(testOptions)
 					if err != nil {
@@ -86,7 +86,7 @@ var _ = Describe("Observability:", func() {
 				}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
 			})
 
-			It("Checking metric to ensure that no data is lost in 1 minute", func() {
+			It("[Stable] Checking metric to ensure that no data is lost in 1 minute", func() {
 				Eventually(func() error {
 					err, _ = utils.ContainManagedClusterMetric(testOptions, `timestamp(node_memory_MemAvailable_bytes{cluster="`+clusterName+`}) - timestamp(node_memory_MemAvailable_bytes{cluster=`+clusterName+`"} offset 1m) > 59`, []string{`"__name__":"node_memory_MemAvailable_bytes"`})
 					return err

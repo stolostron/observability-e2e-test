@@ -34,7 +34,7 @@ var _ = Describe("Observability:", func() {
 
 	Context("[P2][Sev2][Observability] Modifying MCO cr to disable observabilityaddon (addon/g0) -", func() {
 		clusterName := utils.GetManagedClusterName(testOptions)
-		It("Should have endpoint-operator and metrics-collector being deployed", func() {
+		It("[Stable] Should have endpoint-operator and metrics-collector being deployed", func() {
 			By("Check enableMetrics is true")
 			enable, err := utils.GetMCOAddonSpecMetrics(testOptions)
 			Expect(err).ToNot(HaveOccurred())
@@ -65,7 +65,7 @@ var _ = Describe("Observability:", func() {
 			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 		})
 
-		It("Should not have the expected MCO addon pods when disable observabilityaddon", func() {
+		It("[Stable] Should not have the expected MCO addon pods when disable observabilityaddon", func() {
 			Eventually(func() error {
 				return utils.ModifyMCOAddonSpecMetrics(testOptions, false)
 			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
@@ -108,7 +108,7 @@ var _ = Describe("Observability:", func() {
 		// it takes Prometheus 5m to notice a metric is not available - https://github.com/prometheus/prometheus/issues/1810
 		// the corret way is use timestamp, for example:
 		// timestamp(node_memory_MemAvailable_bytes{cluster="local-cluster"}) - timestamp(node_memory_MemAvailable_bytes{cluster="local-cluster"} offset 1m) > 59
-		It("Waiting for check no metric data in grafana console", func() {
+		It("[Stable] Waiting for check no metric data in grafana console", func() {
 			Eventually(func() error {
 				err, hasMetric := utils.ContainManagedClusterMetric(testOptions, `timestamp(node_memory_MemAvailable_bytes{cluster="`+clusterName+`}) - timestamp(node_memory_MemAvailable_bytes{cluster=`+clusterName+`"} offset 1m) > 59`, []string{`"__name__":"node_memory_MemAvailable_bytes"`})
 				if err != nil && !hasMetric && strings.Contains(err.Error(), "Failed to find metric name from response") {
@@ -118,7 +118,7 @@ var _ = Describe("Observability:", func() {
 			}, EventuallyTimeoutMinute*2, EventuallyIntervalSecond*5).Should(Succeed())
 		})
 
-		It("Modifying MCO cr to enable observabilityaddon", func() {
+		It("[Stable] Modifying MCO cr to enable observabilityaddon", func() {
 			Eventually(func() error {
 				return utils.ModifyMCOAddonSpecMetrics(testOptions, true)
 			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
@@ -149,7 +149,7 @@ var _ = Describe("Observability:", func() {
 		})
 	})
 
-	It("[P3][Sev3][Observability] Should not set interval to values beyond scope (addon/g0)", func() {
+	It("[P3][Sev3][Observability][Stable] Should not set interval to values beyond scope (addon/g0)", func() {
 		By("Set interval to 14")
 		Eventually(func() bool {
 			err := utils.ModifyMCOAddonSpecInterval(testOptions, int64(14))
@@ -174,8 +174,7 @@ var _ = Describe("Observability:", func() {
 	})
 
 	Context("[P2][Sev2][Observability] Should not have the expected MCO addon pods when disable observability from managedcluster (addon/g0) -", func() {
-		It("Modifying managedcluster cr to disable observability", func() {
-			Skip("Modifying managedcluster cr to disable observability")
+		It("[Integration] Modifying managedcluster cr to disable observability", func() {
 			Eventually(func() error {
 				return utils.UpdateObservabilityFromManagedCluster(testOptions, false)
 			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
@@ -190,8 +189,7 @@ var _ = Describe("Observability:", func() {
 			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 		})
 
-		It("Modifying managedcluster cr to enable observability", func() {
-			Skip("Modifying managedcluster cr to disable observability")
+		It("[Integration] Modifying managedcluster cr to enable observability", func() {
 			Eventually(func() error {
 				return utils.UpdateObservabilityFromManagedCluster(testOptions, true)
 			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())

@@ -40,7 +40,8 @@ ENV GINKGO_DEFAULT_FLAGS "-slowSpecThreshold=120 -timeout 7200s"
 ENV GINKGO_NODES "1"
 ENV GINKGO_FLAGS=""
 ENV GINKGO_FOCUS=""
-ENV GINKGO_SKIP=""
+ENV GINKGO_SKIP="Integration"
+ENV SKIP_INTEGRATION_CASES="true"
 
 # install ginkgo into built image
 COPY --from=build /go/bin/ /usr/local/bin

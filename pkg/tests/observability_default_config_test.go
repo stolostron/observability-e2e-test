@@ -27,7 +27,7 @@ var _ = Describe("Observability:", func() {
 			testOptions.HubCluster.KubeContext)
 	})
 
-	It("[P1][Sev1][Observability] Checking metrics default values on managed cluster (config/g0)", func() {
+	It("[P1][Sev1][Observability][Stable] Checking metrics default values on managed cluster (config/g0)", func() {
 		mcoRes, err := dynClient.Resource(utils.NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
 		if err != nil {
 			panic(err.Error())
@@ -37,7 +37,7 @@ var _ = Describe("Observability:", func() {
 		Expect(observabilityAddonSpec["interval"]).To(Equal(int64(30)))
 	})
 
-	It("[P1][Sev1][Observability] Checking default value of PVC and StorageClass (config/g0)", func() {
+	It("[P1][Sev1][Observability][Stable] Checking default value of PVC and StorageClass (config/g0)", func() {
 		mcoSC, err := dynClient.Resource(utils.NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
