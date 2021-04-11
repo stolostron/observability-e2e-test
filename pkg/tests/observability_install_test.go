@@ -56,38 +56,40 @@ func installMCO() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
 
-	By("Creating MCO instance of v1beta1")
-	v1beta1KustomizationPath := "../../observability-gitops/mco/e2e/v1beta1"
-	yamlB, err = kustomize.Render(kustomize.Options{KustomizationPath: v1beta1KustomizationPath})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
+	if os.Getenv("SKIP_INTEGRATION_CASES") == "true" {
+		By("Creating MCO instance of v1beta1")
+		v1beta1KustomizationPath := "../../observability-gitops/mco/e2e/v1beta1"
+		yamlB, err = kustomize.Render(kustomize.Options{KustomizationPath: v1beta1KustomizationPath})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
 
-	By("Waiting for MCO ready status")
-	allPodsIsReady := false
-	Eventually(func() error {
-		instance, err := dynClient.Resource(utils.NewMCOGVRV1BETA1()).Get(MCO_CR_NAME, metav1.GetOptions{})
-		if err == nil {
-			allPodsIsReady = utils.StatusContainsTypeEqualTo(instance, "Ready")
-			if allPodsIsReady {
-				return nil
+		By("Waiting for MCO ready status")
+		allPodsIsReady := false
+		Eventually(func() error {
+			instance, err := dynClient.Resource(utils.NewMCOGVRV1BETA1()).Get(MCO_CR_NAME, metav1.GetOptions{})
+			if err == nil {
+				allPodsIsReady = utils.StatusContainsTypeEqualTo(instance, "Ready")
+				if allPodsIsReady {
+					return nil
+				}
 			}
-		}
-		return fmt.Errorf("MCO componnets cannot be running in 20 minutes. check the MCO CR status for the details: %v", instance.Object["status"])
-	}, EventuallyTimeoutMinute*20, EventuallyIntervalSecond*5).Should(Succeed())
+			return fmt.Errorf("MCO componnets cannot be running in 20 minutes. check the MCO CR status for the details: %v", instance.Object["status"])
+		}, EventuallyTimeoutMinute*20, EventuallyIntervalSecond*5).Should(Succeed())
 
-	By("Check clustermanagementaddon CR is created")
-	Eventually(func() error {
-		_, err := dynClient.Resource(utils.NewMCOClusterManagementAddonsGVR()).Get("observability-controller", metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-		return nil
-	}).Should(Succeed())
+		By("Check clustermanagementaddon CR is created")
+		Eventually(func() error {
+			_, err := dynClient.Resource(utils.NewMCOClusterManagementAddonsGVR()).Get("observability-controller", metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			return nil
+		}).Should(Succeed())
 
-	By("Check the api conversion is working as expected")
-	v1beta1Tov1beta2GoldenPath := "../../observability-gitops/mco/e2e/v1beta1/observability-v1beta1-to-v1beta2-golden.yaml"
-	err = utils.CheckMCOConversion(testOptions, v1beta1Tov1beta2GoldenPath)
-	Expect(err).NotTo(HaveOccurred())
+		By("Check the api conversion is working as expected")
+		v1beta1Tov1beta2GoldenPath := "../../observability-gitops/mco/e2e/v1beta1/observability-v1beta1-to-v1beta2-golden.yaml"
+		err = utils.CheckMCOConversion(testOptions, v1beta1Tov1beta2GoldenPath)
+		Expect(err).NotTo(HaveOccurred())
+	}
 
 	By("Apply MCO instance of v1beta2")
 	v1beta2KustomizationPath := "../../observability-gitops/mco/e2e/v1beta2"
@@ -96,7 +98,7 @@ func installMCO() {
 	Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
 
 	By("Waiting for MCO ready status")
-	allPodsIsReady = false
+	allPodsIsReady := false
 	Eventually(func() error {
 		err = utils.CheckMCOComponentsInHighMode(testOptions)
 		if err != nil {

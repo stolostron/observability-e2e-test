@@ -48,7 +48,7 @@ var _ = Describe("Observability:", func() {
 			testOptions.HubCluster.KubeContext)
 	})
 
-	It("[P2][Sev2][Observability] Modifying MCO CR for reconciling (reconcile/g0)", func() {
+	It("[P2][Sev2][Observability][Stable] Modifying MCO CR for reconciling (reconcile/g0)", func() {
 		By("Modifying MCO CR for reconciling")
 		err := utils.ModifyMCOCR(testOptions)
 		Expect(err).ToNot(HaveOccurred())
@@ -90,7 +90,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P2][Sev2][Observability] Checking node selector for all pods (reconcile/g0)", func() {
+	It("[P2][Sev2][Observability][Stable] Checking node selector for all pods (reconcile/g0)", func() {
 		By("Checking node selector for all pods")
 		Eventually(func() error {
 			err = utils.CheckAllPodNodeSelector(testOptions)
@@ -101,7 +101,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P2][Sev2][Observability] Checking podAntiAffinity for all pods (reconcile/g0)", func() {
+	It("[P2][Sev2][Observability][Stable] Checking podAntiAffinity for all pods (reconcile/g0)", func() {
 		By("Checking podAntiAffinity for all pods")
 		Eventually(func() error {
 			err := utils.CheckAllPodsAffinity(testOptions)
@@ -112,7 +112,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P2][Sev2][Observability] Checking alertmanager storage resize (reconcile/g0)", func() {
+	It("[P2][Sev2][Observability][Stable] Checking alertmanager storage resize (reconcile/g0)", func() {
 		By("Resizing alertmanager storage")
 		Eventually(func() error {
 			err := utils.CheckStorageResize(testOptions)
@@ -123,7 +123,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P2][Sev2][Observability] Customize the replicas for thanos query (reconcile/g0)", func() {
+	It("[P2][Sev2][Observability][Stable] Customize the replicas for thanos query (reconcile/g0)", func() {
 		Eventually(func() error {
 			err := utils.UpdateDeploymentReplicas(testOptions, MCO_CR_NAME+"-thanos-query", "query", 3, 3)
 			if err != nil {
@@ -159,7 +159,7 @@ var _ = Describe("Observability:", func() {
 
 	})
 
-	It("[P2][Sev2][Observability] Revert MCO CR changes (reconcile/g0)", func() {
+	It("[P2][Sev2][Observability][Stable] Revert MCO CR changes (reconcile/g0)", func() {
 
 		By("Revert MCO CR changes")
 		err := utils.RevertMCOCRModification(testOptions)
