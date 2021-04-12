@@ -56,7 +56,7 @@ func installMCO() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
 
-	if os.Getenv("SKIP_INTEGRATION_CASES") == "true" {
+	if os.Getenv("SKIP_INTEGRATION_CASES") != "true" {
 		By("Creating MCO instance of v1beta1")
 		v1beta1KustomizationPath := "../../observability-gitops/mco/e2e/v1beta1"
 		yamlB, err = kustomize.Render(kustomize.Options{KustomizationPath: v1beta1KustomizationPath})
