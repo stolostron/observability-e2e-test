@@ -115,7 +115,7 @@ var _ = Describe("Observability:", func() {
 	It("[P2][Sev2][Observability][Stable] Checking alertmanager storage resize (reconcile/g0)", func() {
 		By("Resizing alertmanager storage")
 		Eventually(func() error {
-			err := utils.CheckStorageResize(testOptions)
+			err := utils.CheckStorageResize(testOptions, MCO_CR_NAME+"-alertmanager", "2Gi")
 			if err != nil {
 				return err
 			}

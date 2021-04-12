@@ -111,6 +111,60 @@ func NewKubeClientAPIExtension(url, kubeconfig, context string) apiextensionscli
 // 	return clientset
 // }
 
+func CreateMCOTestingRBAC(opt TestOptions) error {
+	// create new service account and new clusterrolebinding and bind the serviceaccount to cluster-admin clusterrole
+	// then the bearer token can be retrieved from the secret of created serviceaccount
+	mcoTestingCRBName := "mco-e2e-testing-crb"
+	mcoTestingSAName := "mco-e2e-testing-sa"
+	mcoTestingCRB := &rbacv1.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: mcoTestingCRBName,
+			Labels: map[string]string{
+				"app": "mco-e2e-testing",
+			},
+		},
+		RoleRef: rbacv1.RoleRef{
+			Kind:     "ClusterRole",
+			Name:     "cluster-admin",
+			APIGroup: "rbac.authorization.k8s.io",
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      mcoTestingSAName,
+				Namespace: MCO_NAMESPACE,
+			},
+		},
+	}
+	if err := CreateCRB(opt, true, mcoTestingCRB); err != nil {
+		return fmt.Errorf("failed to create clusterrolebing for %s: %v", mcoTestingCRB.GetName(), err)
+	}
+
+	mcoTestingSA := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mcoTestingSAName,
+			Namespace: MCO_NAMESPACE,
+		},
+	}
+	if err := CreateSA(opt, true, MCO_NAMESPACE, mcoTestingSA); err != nil {
+		return fmt.Errorf("failed to create serviceaccount for %s: %v", mcoTestingSA.GetName(), err)
+	}
+	return nil
+}
+
+func DeleteMCOTestingRBAC(opt TestOptions) error {
+	// delete the created service account and clusterrolebinding
+	mcoTestingCRBName := "mco-e2e-testing-crb"
+	mcoTestingSAName := "mco-e2e-testing-sa"
+	if err := DeleteCRB(opt, true, mcoTestingCRBName); err != nil {
+		return err
+	}
+	if err := DeleteSA(opt, true, MCO_NAMESPACE, mcoTestingSAName); err != nil {
+		return err
+	}
+	return nil
+}
+
 func FetchBearerToken(opt TestOptions) (string, error) {
 	config, err := LoadConfig(
 		opt.HubCluster.MasterURL,
@@ -119,7 +173,30 @@ func FetchBearerToken(opt TestOptions) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return config.BearerToken, err
+
+	if config.BearerToken != "" {
+		return config.BearerToken, nil
+	}
+
+	clientKube := NewKubeClient(opt.HubCluster.MasterURL, opt.KubeConfig, opt.HubCluster.KubeContext)
+	secretList, err := clientKube.CoreV1().Secrets(MCO_NAMESPACE).List(metav1.ListOptions{FieldSelector: "type=kubernetes.io/service-account-token"})
+	if err != nil {
+		return "", err
+	}
+	for _, secret := range secretList.Items {
+		if secret.GetObjectMeta() != nil && len(secret.GetObjectMeta().GetAnnotations()) > 0 {
+			annos := secret.GetObjectMeta().GetAnnotations()
+			sa, saExists := annos["kubernetes.io/service-account.name"]
+			_, createByExists := annos["kubernetes.io/created-by"]
+			if saExists && !createByExists && sa == "mco-e2e-testing-sa" {
+				data := secret.Data
+				if token, ok := data["token"]; ok {
+					return string(token), nil
+				}
+			}
+		}
+	}
+	return "", fmt.Errorf("failed to get bearer token")
 }
 
 func LoadConfig(url, kubeconfig, context string) (*rest.Config, error) {

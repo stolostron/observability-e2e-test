@@ -14,21 +14,30 @@ base_domain="${app_domain#apps.}"
 kubeconfig_hub_path="${HOME}/.kube/kubeconfig-hub"
 oc config view --raw --minify > ${kubeconfig_hub_path}
 
+masterUrl=$(oc config view -o jsonpath="{.clusters[0].cluster.server}")
+context=$(oc config view -o jsonpath="{.current-context"})
 git clone --depth 1 https://github.com/open-cluster-management/observability-gitops.git
 
 # remove the options file if it exists
 rm -f resources/options.yaml
 
 printf "options:" >> resources/options.yaml
+printf "\n  kubeconfig: ${kubeconfig_hub_path}" >> resources/options.yaml
 printf "\n  hub:" >> resources/options.yaml
+printf "\n    masterURL: ${masterUrl}" >> resources/options.yaml
+printf "\n    kubeconfig: ${kubeconfig_hub_path}" >> resources/options.yaml
+printf "\n    kubecontext: ${context}" >> resources/options.yaml
 printf "\n    baseDomain: ${base_domain}" >> resources/options.yaml
-printf "\n    grafanaURL: http://grafana-test.${app_domain}" >> resources/options.yaml
+printf "\n    grafanaURL: http://grafana.${app_domain}" >> resources/options.yaml
 printf "\n  clusters:" >> resources/options.yaml
 printf "\n    - name: cluster1" >> resources/options.yaml
 printf "\n      baseDomain: ${base_domain}" >> resources/options.yaml
-printf "\n      kubecontext: ${kubeconfig_hub_path}" >> resources/options.yaml
+printf "\n      kubeconfig: ${kubeconfig_hub_path}" >> resources/options.yaml
+printf "\n      kubecontext: ${context}" >> resources/options.yaml
 
-export SKIP_INSTALL_STEP=true
+# TODO(morvencao): remove the environment variable after accessing metrics from grafana url with bearer token is supported
+export THANOS_QUERY_FRONTEND_URL="http://observability-thanos-query-frontend.${app_domain}"
+# export SKIP_INSTALL_STEP=true
 
 go get -u github.com/onsi/ginkgo/ginkgo
 ginkgo -debug -trace -v ${ROOTDIR}/pkg/tests -- -options=${ROOTDIR}/resources/options.yaml -v=3

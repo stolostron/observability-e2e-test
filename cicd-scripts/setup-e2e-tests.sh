@@ -252,7 +252,8 @@ deploy_mco_operator() {
             cd config/manager && kustomize edit set image quay.io/open-cluster-management/multicluster-observability-operator=${COMPONENT_REPO}/multicluster-observability-operator:${LATEST_SNAPSHOT} && cd ../..
             # test the concrete component
             component_anno_name=$(echo ${component_name} | sed 's/-/_/g')
-            sed -i "/annotations.*/a \ \ \ \ mco-${component_anno_name}-image: ${1}" ${ROOTDIR}//observability-gitops/mco/func/observability.yaml
+            sed -i "/annotations.*/a \ \ \ \ mco-${component_anno_name}-image: ${1}" ${ROOTDIR}/observability-gitops/mco/e2e/v1beta1/observability.yaml
+            sed -i "/annotations.*/a \ \ \ \ mco-${component_anno_name}-image: ${1}" ${ROOTDIR}/observability-gitops/mco/e2e/v1beta2/observability.yaml
         fi
     else
         if [ -d "multicluster-observability-operator" ]; then
@@ -263,7 +264,11 @@ deploy_mco_operator() {
         cd config/manager && kustomize edit set image quay.io/open-cluster-management/multicluster-observability-operator=${COMPONENT_REPO}/multicluster-observability-operator:${LATEST_SNAPSHOT} && cd ../..
     fi
     # Add mco-imageTagSuffix annotation
-    ${SED_COMMAND} "s~mco-imageTagSuffix:.*~mco-imageTagSuffix: ${LATEST_SNAPSHOT}~g" ${ROOTDIR}/observability-gitops/mco/func/observability.yaml
+    sed -i "/annotations.*/a \ \ \ \ mco-imageTagSuffix: ${LATEST_SNAPSHOT}" ${ROOTDIR}/observability-gitops/mco/e2e/v1beta1/observability.yaml
+    sed -i "/annotations.*/a \ \ \ \ mco-imageTagSuffix: ${LATEST_SNAPSHOT}" ${ROOTDIR}/observability-gitops/mco/e2e/v1beta2/observability.yaml
+    # Add mco-thanos-without-resources-requests annotation
+    sed -i "/annotations.*/a \ \ \ \ mco-thanos-without-resources-requests: \"true\"" ${ROOTDIR}/observability-gitops/mco/e2e/v1beta1/observability.yaml
+    sed -i "/annotations.*/a \ \ \ \ mco-thanos-without-resources-requests: \"true\"" ${ROOTDIR}/observability-gitops/mco/e2e/v1beta2/observability.yaml
 
     # create the two CRDs: clustermanagementaddons and managedclusteraddons
     if [ -d "ocm-api" ]; then
@@ -297,10 +302,47 @@ deploy_mco_operator() {
     # wait until minio is ready
     wait_for_deployment_ready 10 60s ${OBSERVABILITY_NS} minio
 
+    # TODO(morvencao): remove the following two extra routes after after accessing metrics from grafana url with bearer token is supported
+    temp_route=$(mktemp -d /tmp/grafana.XXXXXXXXXX)
+    # install grafana route
+    cat << EOF > ${temp_route}/grafana-route.yaml
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: grafana
+spec:
+  host: grafana
+  wildcardPolicy: None
+  to:
+    kind: Service
+    name: grafana
+EOF
+
+    # install observability-thanos-query-frontend route
+    cat << EOF > ${temp_route}/observability-thanos-query-frontend-route.yaml
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: observability-thanos-query-frontend
+spec:
+  host: observability-thanos-query-frontend
+  port:
+    targetPort: http
+  to:
+    kind: Service
+    name: observability-thanos-query-frontend
+  wildcardPolicy: None
+EOF
+    app_domain=$(kubectl -n openshift-ingress-operator get ingresscontrollers default -o jsonpath='{.status.domain}')
+    ${SED_COMMAND} "s~host: grafana$~host: grafana.$app_domain~g" ${temp_route}/grafana-route.yaml
+    kubectl -n ${OBSERVABILITY_NS} apply -f ${temp_route}/grafana-route.yaml
+    ${SED_COMMAND} "s~host: observability-thanos-query-frontend$~host: observability-thanos-query-frontend.$app_domain~g" ${temp_route}/observability-thanos-query-frontend-route.yaml
+    kubectl -n ${OBSERVABILITY_NS} apply -f ${temp_route}/observability-thanos-query-frontend-route.yaml
+
     # create the mco CR
-    kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/observability-gitops/mco/func/observability.yaml
-    wait_for_observability_ready
-    echo "mco CR is created successfully."
+    # kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/observability-gitops/mco/func/observability.yaml
+    # wait_for_observability_ready
+    # echo "mco CR is created successfully."
 }
 
 delete_mco_operator() {
@@ -309,7 +351,7 @@ delete_mco_operator() {
     else
         cd ${ROOTDIR}/multicluster-observability-operator
     fi
-    kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/observability-gitops/mco/func/observability.yaml --ignore-not-found
+    # kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/observability-gitops/mco/func/observability.yaml --ignore-not-found
     kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/minio --ignore-not-found
 
     # wait until all resources are deleted before delete the mco
@@ -509,17 +551,17 @@ execute() {
         deploy_hub_spoke_core
         approve_csr_joinrequest
         deploy_mco_operator "${IMAGE}"
-        deploy_grafana_test "${IMAGE}"
-        patch_placement_rule
-        wait_for_observabilityaddons_ready
-        echo "OCM and Observability are installed successfuly..."
+        #deploy_grafana_test "${IMAGE}"
+        #patch_placement_rule
+        #wait_for_observabilityaddons_ready
+        echo "OCM and MCO are installed successfuly..."
     elif [[ "${ACTION}" == "uninstall" ]]; then
-        delete_grafana_test "${IMAGE}"
+        # delete_grafana_test "${IMAGE}"
         delete_mco_operator "${IMAGE}"
         delete_hub_spoke_core
         delete_csr
         delete_cert_manager
-        echo "OCM and Observability are uninstalled successfuly..."
+        echo "OCM and MCO are uninstalled successfuly..."
     else
         echo "This ACTION ${ACTION} isn't recognized/supported" && exit 1
     fi

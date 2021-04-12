@@ -5,6 +5,7 @@ package utils
 
 import (
 	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
@@ -35,4 +36,20 @@ func UpdateCRB(opt TestOptions, isHub bool, name string,
 		klog.Errorf("Failed to update cluster rolebinding %s due to %v", name, err)
 	}
 	return err, updateCRB
+}
+
+func CreateCRB(opt TestOptions, isHub bool,
+	crb *rbacv1.ClusterRoleBinding) error {
+	clientKube := getKubeClient(opt, isHub)
+	_, err := clientKube.RbacV1().ClusterRoleBindings().Create(crb)
+	if err != nil {
+		if errors.IsAlreadyExists(err) {
+			klog.V(1).Infof("clusterrolebinding %s already exists, updating...", crb.GetName())
+			err, _ := UpdateCRB(opt, isHub, crb.GetName(), crb)
+			return err
+		}
+		klog.Errorf("Failed to create cluster rolebinding %s due to %v", crb.GetName(), err)
+		return err
+	}
+	return nil
 }

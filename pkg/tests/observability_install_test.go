@@ -49,12 +49,19 @@ func installMCO() {
 	}).Should(Succeed())
 
 	Expect(utils.CreateMCONamespace(testOptions)).NotTo(HaveOccurred())
-	Expect(utils.CreatePullSecret(testOptions)).NotTo(HaveOccurred())
-	Expect(utils.CreateObjSecret(testOptions)).NotTo(HaveOccurred())
+	if os.Getenv("IS_CANARY_ENV") == "true" {
+		Expect(utils.CreatePullSecret(testOptions)).NotTo(HaveOccurred())
+		Expect(utils.CreateObjSecret(testOptions)).NotTo(HaveOccurred())
+	}
 	//set resource quota and limit range for canary environment to avoid destruct the node
 	yamlB, err := kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/policy"})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
+
+	if os.Getenv("IS_CANARY_ENV") != "true" {
+		By("Creating the MCO testing RBAC resources")
+		Expect(utils.CreateMCOTestingRBAC(testOptions)).NotTo(HaveOccurred())
+	}
 
 	if os.Getenv("SKIP_INTEGRATION_CASES") != "true" {
 		By("Creating MCO instance of v1beta1")
@@ -97,6 +104,16 @@ func installMCO() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
 
+	By("Checking the thanos-receive storage capacity is updated")
+	Eventually(func() error {
+		err := utils.CheckStorageResize(testOptions, MCO_CR_NAME+"-thanos-receive-default", "4Gi")
+		if err != nil {
+			return err
+		}
+		return nil
+		// the terminationGracePeriodSeconds for thanos-receive pod is 900s, so we need to wait for than 15 minutes before timeout
+	}, EventuallyTimeoutMinute*25, EventuallyIntervalSecond*5).Should(Succeed())
+
 	By("Waiting for MCO ready status")
 	allPodsIsReady := false
 	Eventually(func() error {
@@ -106,10 +123,42 @@ func installMCO() {
 		}
 		allPodsIsReady = true
 		return nil
-	}, EventuallyTimeoutMinute*20, EventuallyIntervalSecond*5).Should(Succeed())
+	}, EventuallyTimeoutMinute*25, EventuallyIntervalSecond*5).Should(Succeed())
 
 	if !allPodsIsReady {
 		utils.PrintAllMCOPodsStatus(testOptions)
+	}
+
+	By("Checking placementrule CR is created")
+	Eventually(func() error {
+		_, err := dynClient.Resource(utils.NewOCMPlacementRuleGVR()).Namespace(utils.MCO_NAMESPACE).Get("observability", metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		return nil
+	}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
+
+	if os.Getenv("IS_CANARY_ENV") != "true" {
+		// TODO(morvencao): remove the patch from placement is implemented by server foundation.
+		By("Patching the placementrule CR's status")
+		token, err := utils.FetchBearerToken(testOptions)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(func() error {
+			err = utils.PatchPlacementRule(testOptions, token)
+			if err != nil {
+				return err
+			}
+			return nil
+		}).Should(Succeed())
+
+		By("Waiting for MCO addon components ready")
+		Eventually(func() bool {
+			err, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
+			if len(podList.Items) == 1 && err == nil {
+				return true
+			}
+			return false
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 	}
 
 	By("Check clustermanagementaddon CR is created")

@@ -42,6 +42,7 @@ ENV GINKGO_FLAGS=""
 ENV GINKGO_FOCUS=""
 ENV GINKGO_SKIP="Integration"
 ENV SKIP_INTEGRATION_CASES="true"
+ENV IS_CANARY_ENV="true"
 
 # install ginkgo into built image
 COPY --from=build /go/bin/ /usr/local/bin
