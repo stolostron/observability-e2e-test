@@ -54,9 +54,10 @@ RUN oc version
 RUN mkdir -p /opt/tests
 COPY --from=build /go/src/github.com/open-cluster-management/observability-e2e-test/pkg/tests/tests.test /opt/tests/observability-e2e-test.test
 COPY --from=build /go/src/github.com/open-cluster-management/observability-e2e-test/observability-gitops /observability-gitops
+COPY --from=build /go/src/github.com/open-cluster-management/observability-e2e-test/format-results.sh /opt/tests/
 
 VOLUME /results
 WORKDIR "/opt/tests/"
 
 # execute compiled ginkgo tests
-CMD ["/bin/bash", "-c", "ginkgo --v --focus=${GINKGO_FOCUS} --skip=${GINKGO_SKIP} -nodes=${GINKGO_NODES} --reportFile=${REPORT_FILE} -x -debug -trace observability-e2e-test.test -- -v=3"]
+CMD ["/bin/bash", "-c", "ginkgo --v --focus=${GINKGO_FOCUS} --skip=${GINKGO_SKIP} -nodes=${GINKGO_NODES} --reportFile=${REPORT_FILE} -x -debug -trace observability-e2e-test.test -- -v=3 && ./format-results.sh ${REPORT_FILE}"]
