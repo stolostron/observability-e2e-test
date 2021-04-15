@@ -4,9 +4,12 @@
 package utils
 
 import (
+	"bytes"
+	"crypto/tls"
 	b64 "encoding/base64"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"reflect"
 	"strings"
@@ -89,6 +92,13 @@ func NewMCOMObservatoriumGVR() schema.GroupVersionResource {
 		Group:    "core.observatorium.io",
 		Version:  "v1alpha1",
 		Resource: "observatoria"}
+}
+
+func NewOCMPlacementRuleGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    "apps.open-cluster-management.io",
+		Version:  "v1",
+		Resource: "placementrules"}
 }
 
 func ModifyMCOAvailabilityConfig(opt TestOptions, availabilityConfig string) error {
@@ -255,18 +265,18 @@ func CheckAllPodsAffinity(opt TestOptions) error {
 	return nil
 }
 
-func CheckStorageResize(opt TestOptions) error {
+func CheckStorageResize(opt TestOptions, stsName string, expectedCapacity string) error {
 	client := getKubeClient(opt, true)
 	statefulsets := client.AppsV1().StatefulSets(MCO_NAMESPACE)
-	statefulset, err := statefulsets.Get(MCO_CR_NAME+"-alertmanager", metav1.GetOptions{})
+	statefulset, err := statefulsets.Get(stsName, metav1.GetOptions{})
 	if err != nil {
-		klog.V(1).Infof("Error while retrieving statefulset %s: %s", MCO_CR_NAME+"-alertmanager", err.Error())
+		klog.V(1).Infof("Error while retrieving statefulset %s: %s", stsName, err.Error())
 		return err
 	}
 	vct := statefulset.Spec.VolumeClaimTemplates[0]
-	if !vct.Spec.Resources.Requests["storage"].Equal(resource.MustParse("2Gi")) {
+	if !vct.Spec.Resources.Requests["storage"].Equal(resource.MustParse(expectedCapacity)) {
 		err = fmt.Errorf("the storage size of statefulset %s should have %s but got %v",
-			MCO_CR_NAME+"-alertmanager", "2Gi",
+			stsName, expectedCapacity,
 			vct.Spec.Resources.Requests["storage"])
 		return err
 	}
@@ -480,6 +490,61 @@ func CheckMCOComponentsInHighMode(opt TestOptions) error {
 		}
 	}
 
+	return nil
+}
+
+// PatchPlacementRule patch the status of the placementrule created by MCO
+// TODO(morvencao): remove this function after placement is implemented by server foundation
+func PatchPlacementRule(opt TestOptions, token string) error {
+	if token == "" {
+		klog.Errorf("empty bearer token")
+		return fmt.Errorf("empty bearer token")
+	}
+	if opt.HubCluster.MasterURL == "" {
+		klog.Errorf("empty master URL")
+		return fmt.Errorf("empty master URL")
+	}
+
+	patchURL := opt.HubCluster.MasterURL + "/apis/apps.open-cluster-management.io/v1/namespaces/" + MCO_NAMESPACE + "/placementrules/observability/status"
+	patchJSON := []byte(`
+{
+  "status": {
+    "decisions": [
+      {
+        "clusterName": "cluster1",
+        "clusterNamespace": "cluster1"
+      }
+    ]
+  }
+}`)
+	req, err := http.NewRequest("PATCH", patchURL, bytes.NewBuffer(patchJSON))
+	if err != nil {
+		klog.Errorf("error to create http request : %v", err)
+		return err
+	}
+	// add bearer token to request header
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/merge-patch+json")
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	// req.Host =
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		klog.Errorf("resp.StatusCode: %v\n", resp.StatusCode)
+		return fmt.Errorf("Failed to patch placementrule")
+	}
+
+	result, err := ioutil.ReadAll(resp.Body)
+	klog.V(1).Infof("patch result: %s\n", result)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
 	"k8s.io/klog"
@@ -31,12 +32,16 @@ func ContainDashboard(opt TestOptions, title string) (error, bool) {
 	}
 
 	client := &http.Client{Transport: tr}
-	token, err := FetchBearerToken(opt)
-	if err != nil {
-		return err, false
-	}
-	if token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
+	if os.Getenv("IS_CANARY_ENV") == "true" {
+		token, err := FetchBearerToken(opt)
+		if err != nil {
+			return err, false
+		}
+		if token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+	} else {
+		req.Header.Set("X-Forwarded-User", "WHAT_YOU_ARE_DOING_IS_VOIDING_SUPPORT_0000000000000000000000000000000000000000000000000000000000000000")
 	}
 	req.Host = opt.HubCluster.GrafanaHost
 
