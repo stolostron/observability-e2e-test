@@ -73,7 +73,6 @@ then, depending on how your E2E environment is set up, you can choose the follow
 $ cp resources/options.yaml.template resources/options.yaml
 $ cat resources/options.yaml
 options:
-  identityProvider: kube:admin
   hub:
     name: HUB_CLUSTER_NAME
     baseDomain: BASE_DOMAIN
@@ -84,7 +83,6 @@ options:
 ```
 $ cat resources/options.yaml
 options:
-  identityProvider: kube:admin
   hub:
     name: HUB_CLUSTER_NAME
     baseDomain: BASE_DOMAIN
@@ -125,7 +123,6 @@ $ git clone git@github.com:open-cluster-management/observability-e2e-test.git
 $ cp resources/options.yaml.template resources/options.yaml
 $ cat resources/options.yaml
 options:
-  identityProvider: kube:admin
   hub:
     name: HUB_CLUSTER_NAME
     baseDomain: BASE_DOMAIN
@@ -134,7 +131,6 @@ options:
 ```
 $ cat resources/options.yaml
 options:
-  identityProvider: kube:admin
   hub:
     name: HUB_CLUSTER_NAME
     baseDomain: BASE_DOMAIN

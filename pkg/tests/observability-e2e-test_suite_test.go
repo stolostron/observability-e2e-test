@@ -40,7 +40,6 @@ var installConfig utils.InstallConfig
 var testOptionsContainer utils.TestOptionsContainer
 var testUITimeout time.Duration
 var testHeadless bool
-var testIdentityProvider int
 
 var ownerPrefix string
 
