@@ -70,7 +70,6 @@ ROOTDIR="$(cd "$(dirname "$0")/.." ; pwd -P)"
 mkdir -p ${ROOTDIR}/bin
 export PATH=${PATH}:${ROOTDIR}/bin
 
-CERT_MANAGER_NS="cert-manager"
 OBSERVABILITY_NS="open-cluster-management-observability"
 OBSERVABILITYG_ADDON_NS="open-cluster-management-addon-observability"
 OCM_DEFAULT_NS="open-cluster-management"
@@ -130,18 +129,6 @@ setup_jq() {
         fi
         chmod +x ./jq && mv ./jq ${ROOTDIR}/bin/jq
     fi
-}
-
-deploy_cert_manager() {
-    kubectl apply -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/cert-manager/cert-manager-openshift.yaml
-    echo "cert-manager is successfully deployed."
-
-    # wait until cert-manager is ready
-    wait_for_deployment_ready 10 60s ${CERT_MANAGER_NS} cert-manager-cainjector cert-manager cert-manager-webhook
-}
-
-delete_cert_manager() {
-    kubectl delete -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/cert-manager/cert-manager-openshift.yaml --ignore-not-found
 }
 
 deploy_hub_spoke_core() {
@@ -547,7 +534,6 @@ execute() {
     setup_kustomize
     setup_jq
     if [[ "${ACTION}" == "install" ]]; then
-        deploy_cert_manager
         deploy_hub_spoke_core
         approve_csr_joinrequest
         deploy_mco_operator "${IMAGE}"
@@ -560,7 +546,6 @@ execute() {
         delete_mco_operator "${IMAGE}"
         delete_hub_spoke_core
         delete_csr
-        delete_cert_manager
         echo "OCM and MCO are uninstalled successfuly..."
     else
         echo "This ACTION ${ACTION} isn't recognized/supported" && exit 1
