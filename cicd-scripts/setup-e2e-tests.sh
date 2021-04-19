@@ -71,7 +71,6 @@ mkdir -p ${ROOTDIR}/bin
 export PATH=${PATH}:${ROOTDIR}/bin
 
 OBSERVABILITY_NS="open-cluster-management-observability"
-OBSERVABILITYG_ADDON_NS="open-cluster-management-addon-observability"
 OCM_DEFAULT_NS="open-cluster-management"
 AGENT_NS="open-cluster-management-agent"
 HUB_NS="open-cluster-management-hub"
@@ -362,103 +361,6 @@ delete_mco_operator() {
     kubectl delete ns ${OBSERVABILITY_NS}
 }
 
-# deploy the new grafana to check the dashboards from browsers
-deploy_grafana_test() {
-    if [[ "${1}" == *"multicluster-observability-operator"* ]]; then
-        cd ${ROOTDIR}/../../multicluster-observability-operator
-    else
-        cd ${ROOTDIR}/multicluster-observability-operator
-    fi
-    ${SED_COMMAND} "s~name: grafana$~name: grafana-test~g; s~app: multicluster-observability-grafana$~app: multicluster-observability-grafana-test~g; s~secretName: grafana-config$~secretName: grafana-config-test~g; s~secretName: grafana-datasources$~secretName: grafana-datasources-test~g; /MULTICLUSTEROBSERVABILITY_CR_NAME/d" manifests/base/grafana/deployment.yaml
-    # replace with latest grafana-dashboard-loader image
-    if [[ ! -z "${1}" ]]; then
-        if [[ "${1}" == *"grafana-dashboard-loader"* ]]; then
-            ${SED_COMMAND} "s~image: quay.io/open-cluster-management/grafana-dashboard-loader.*$~image: ${1}~g" manifests/base/grafana/deployment.yaml
-        else
-            ${SED_COMMAND} "s~image: quay.io/open-cluster-management/grafana-dashboard-loader.*$~image: ${COMPONENT_REPO}/grafana-dashboard-loader:${LATEST_SNAPSHOT}~g" manifests/base/grafana/deployment.yaml
-        fi
-    else
-        ${SED_COMMAND} "s~image: quay.io/open-cluster-management/grafana-dashboard-loader.*$~image: ${COMPONENT_REPO}/grafana-dashboard-loader:${LATEST_SNAPSHOT}~g" manifests/base/grafana/deployment.yaml
-    fi
-    ${SED_COMMAND} "s~name: grafana$~name: grafana-test~g; s~app: multicluster-observability-grafana$~app: multicluster-observability-grafana-test~g" manifests/base/grafana/service.yaml
-    ${SED_COMMAND} "s~namespace: open-cluster-management$~namespace: open-cluster-management-observability~g" manifests/base/grafana/deployment.yaml manifests/base/grafana/service.yaml
-
-    kubectl -n ${OBSERVABILITY_NS} apply -f manifests/base/grafana/deployment.yaml
-    kubectl -n ${OBSERVABILITY_NS} apply -f manifests/base/grafana/service.yaml
-
-    # set up dedicated host for grafana-test
-    app_domain=$(kubectl -n openshift-ingress-operator get ingresscontrollers default -o jsonpath='{.status.domain}')
-    ${SED_COMMAND} "s~host: grafana-test$~host: grafana-test.$app_domain~g" ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/grafana/grafana-route-test.yaml
-    kubectl -n ${OBSERVABILITY_NS} apply -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/grafana
-
-    # wait until minio is ready
-    wait_for_deployment_ready 10 60s ${OBSERVABILITY_NS} grafana-test
-}
-
-# delete the grafana test
-delete_grafana_test() {
-    if [[ "${1}" == *"multicluster-observability-operator"* ]]; then
-        cd ${ROOTDIR}/../../multicluster-observability-operator
-    else
-        cd ${ROOTDIR}/multicluster-observability-operator
-    fi
-    kubectl delete -n ${OBSERVABILITY_NS} -f manifests/base/grafana/service.yaml --ignore-not-found
-    kubectl delete -n ${OBSERVABILITY_NS} -f manifests/base/grafana/deployment.yaml --ignore-not-found
-    kubectl delete -n ${OBSERVABILITY_NS} -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/grafana --ignore-not-found
-}
-
-patch_placement_rule() {
-    # Workaround for placementrules operator
-    echo "Patch observability placementrule"
-    for i in {1..100}; do
-        if kubectl -n ${OBSERVABILITY_NS} get placementrule observability &> /dev/null; then
-            break
-        fi
-
-        if [[ ${i} -eq 100 ]]; then
-            print_mco_operator_log
-            exit 1
-        fi
-        echo "retrying in 10s..."
-        sleep 10
-    done
-
-    # dump kubeconfig to local disk
-    temp_out=$(mktemp -d /tmp/output.XXXXXXXXXX) 
-    kubectl config view --raw --minify > ${temp_out}/kubeconfig-hub
-    cat ${temp_out}/kubeconfig-hub | grep certificate-authority-data | awk '{split($0, a, ": "); print a[2]}' | base64 -d  >> ${temp_out}/ca
-    cat ${temp_out}/kubeconfig-hub | grep client-certificate-data | awk '{split($0, a, ": "); print a[2]}' | base64 -d >> ${temp_out}/crt
-    cat ${temp_out}/kubeconfig-hub | grep client-key-data | awk '{split($0, a, ": "); print a[2]}' | base64 -d >> ${temp_out}/key
-    hub_apiserver=$(cat ${temp_out}/kubeconfig-hub | grep server | awk '{split($0, a, ": "); print a[2]}')
-
-    # create the patch
-    cat << EOF > ${temp_out}/status.json
-{
-  "status": {
-    "decisions": [
-      {
-        "clusterName": "cluster1",
-        "clusterNamespace": "cluster1"
-      }
-    ]
-  }
-}
-EOF
-
-    curl --cert ${temp_out}/crt --key ${temp_out}/key --cacert ${temp_out}/ca -X PATCH -H "Content-Type:application/merge-patch+json" \
-        ${hub_apiserver}/apis/apps.open-cluster-management.io/v1/namespaces/${OBSERVABILITY_NS}/placementrules/observability/status \
-        -d @${temp_out}/status.json
-    # print new line to make sure the output is not messed up
-    echo
-}
-
-wait_for_observabilityaddons_ready() {
-    if ! wait_for_deployment_ready 10 60s ${OBSERVABILITYG_ADDON_NS} endpoint-observability-operator metrics-collector-deployment ; then
-        echo "error waiting for observabilityaddons are ready."
-        print_mco_operator_log
-    fi
-}
-
 wait_for_observability_ready() {
     echo "wait for mco is ready and running..."
     retry_number=10
@@ -537,12 +439,8 @@ execute() {
         deploy_hub_spoke_core
         approve_csr_joinrequest
         deploy_mco_operator "${IMAGE}"
-        #deploy_grafana_test "${IMAGE}"
-        #patch_placement_rule
-        #wait_for_observabilityaddons_ready
         echo "OCM and MCO are installed successfuly..."
     elif [[ "${ACTION}" == "uninstall" ]]; then
-        # delete_grafana_test "${IMAGE}"
         delete_mco_operator "${IMAGE}"
         delete_hub_spoke_core
         delete_csr
