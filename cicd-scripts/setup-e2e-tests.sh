@@ -436,8 +436,8 @@ execute() {
     setup_kustomize
     setup_jq
     if [[ "${ACTION}" == "install" ]]; then
-        deploy_hub_spoke_core
-        approve_csr_joinrequest
+        #deploy_hub_spoke_core
+        #approve_csr_joinrequest
         deploy_mco_operator "${IMAGE}"
         echo "OCM and MCO are installed successfuly..."
     elif [[ "${ACTION}" == "uninstall" ]]; then

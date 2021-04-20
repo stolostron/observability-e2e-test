@@ -23,9 +23,10 @@ test-e2e: test-e2e-setup
 
 test-e2e-setup:
 	@echo "Seting up E2E Tests environment..."
+	@export KUBECONFIG="$(SHARED_DIR)/hub-1.kc"
 ifdef COMPONENT_IMAGE_NAME
 	# override the image for the e2e test
-	@./cicd-scripts/setup-e2e-tests.sh -a install -i $(COMPONENT_IMAGE_NAME)
+	@KUBECONFIG="$(SHARED_DIR)/hub-1.kc" ./cicd-scripts/setup-e2e-tests.sh -a install -i $(COMPONENT_IMAGE_NAME)
 else
 	# fall back to the latest snapshot image from quay.io for the e2e test
 	@./cicd-scripts/setup-e2e-tests.sh -a install
