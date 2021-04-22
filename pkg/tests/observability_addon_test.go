@@ -33,18 +33,9 @@ var _ = Describe("Observability:", func() {
 		clusterName := utils.GetManagedClusterName(testOptions)
 		It("Should have endpoint-operator and metrics-collector being deployed", func() {
 			By("Check enableMetrics is true")
-			Eventually(func() error {
-				enable, err := utils.GetMCOAddonSpecMetrics(testOptions)
-				if err != nil {
-					return fmt.Errorf("Failed to get MCO addon spec: %v", err)
-				}
-
-				if enable == false {
-					return fmt.Errorf("Failed to check MCO addon spec: enableMetrics should be true")
-				}
-
-				return nil
-			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+			enable, err := utils.GetMCOAddonSpecMetrics(testOptions)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(enable).To(Equal(true))
 
 			By("Check ObservabilityAddon is created if there's managed OCP clusters on the hub")
 			if clusterName != "" {
