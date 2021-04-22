@@ -38,7 +38,6 @@ var _ = Describe("Observability:", func() {
 			Expect(enable).To(Equal(true))
 
 			By("Check ObservabilityAddon is created if there's managed OCP clusters on the hub")
-
 			if clusterName != "" {
 				Eventually(func() string {
 					mco, err := dynClient.Resource(utils.NewMCOAddonGVR()).Namespace(string(clusterName)).Get("observability-addon", metav1.GetOptions{})
@@ -47,6 +46,7 @@ var _ = Describe("Observability:", func() {
 					}
 					return fmt.Sprintf("%T", mco.Object["status"])
 				}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).ShouldNot(Equal("nil"))
+
 				Eventually(func() string {
 					mco, err := dynClient.Resource(utils.NewMCOAddonGVR()).Namespace(string(clusterName)).Get("observability-addon", metav1.GetOptions{})
 					if err != nil {
@@ -54,11 +54,12 @@ var _ = Describe("Observability:", func() {
 					}
 					return mco.Object["status"].(map[string]interface{})["conditions"].([]interface{})[0].(map[string]interface{})["message"].(string)
 				}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Equal("Metrics collector deployed and functional"))
-			}
 
-			By("Check endpoint-operator and metrics-collector pods are created")
-			err = utils.CheckMCOAddon(testOptions)
-			Expect(err).ToNot(HaveOccurred())
+				By("Check endpoint-operator and metrics-collector pods are created")
+				Eventually(func() error {
+					return utils.CheckMCOAddon(testOptions)
+				}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+			}
 		})
 
 		It("Should not have the expected MCO addon pods when disable observabilityaddon", func() {
