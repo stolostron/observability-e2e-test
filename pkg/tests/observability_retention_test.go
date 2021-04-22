@@ -41,7 +41,7 @@ var _ = Describe("Observability:", func() {
 					return nil
 				}
 			}
-			return fmt.Errorf("Failed to check compact args: --delete-delay=50h")
+			return fmt.Errorf("Failed to check compact args: --delete-delay=50h. args is %v", argList)
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 
 		By("check store args: --ignore-deletion-marks-delay=25h")
@@ -57,7 +57,7 @@ var _ = Describe("Observability:", func() {
 					return nil
 				}
 			}
-			return fmt.Errorf("Failed to check store args: --ignore-deletion-marks-delay=25h")
+			return fmt.Errorf("Failed to check store args: --ignore-deletion-marks-delay=25h. args is %v", argList)
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 
 		By("check receive args: --tsdb.retention=5d")
@@ -73,7 +73,7 @@ var _ = Describe("Observability:", func() {
 					return nil
 				}
 			}
-			return fmt.Errorf("Failed to check receive args: --tsdb.retention=5d")
+			return fmt.Errorf("Failed to check receive args: --tsdb.retention=5d. args is %v", argList)
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 
 		By("check rule args: --tsdb.retention=5d")
@@ -89,7 +89,7 @@ var _ = Describe("Observability:", func() {
 					return nil
 				}
 			}
-			return fmt.Errorf("Failed to check rule args: --tsdb.retention=5d")
+			return fmt.Errorf("Failed to check rule args: --tsdb.retention=5d. args is %v", argList)
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 
 		By("check rule args: --tsdb.block-duration=3h")
@@ -105,7 +105,7 @@ var _ = Describe("Observability:", func() {
 					return nil
 				}
 			}
-			return fmt.Errorf("Failed to check rule args: --tsdb.block-duration=3h")
+			return fmt.Errorf("Failed to check rule args: --tsdb.block-duration=3h. args is %v", argList)
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
