@@ -54,7 +54,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(BeTrue())
 	})
 
-	It("[P2][Sev2][Observability][Stable] Should have no custom dashboard in grafana after related configmap removed (dashboard/g0)", func() {
+	It("[P2][Sev2][Observability][Integration] Should have no custom dashboard in grafana after related configmap removed (dashboard/g0)", func() {
 		By("Deleting custom dashboard configmap")
 		err = utils.DeleteConfigMap(testOptions, true, dashboardName, MCO_NAMESPACE)
 		Expect(err).ToNot(HaveOccurred())
@@ -65,6 +65,7 @@ var _ = Describe("Observability:", func() {
 	})
 
 	AfterEach(func() {
+		testFailed = testFailed || CurrentGinkgoTestDescription().Failed
 		if testFailed {
 			utils.PrintMCOObject(testOptions)
 			utils.PrintAllMCOPodsStatus(testOptions)
@@ -72,6 +73,5 @@ var _ = Describe("Observability:", func() {
 		} else {
 			Expect(utils.IntegrityChecking(testOptions)).NotTo(HaveOccurred())
 		}
-		testFailed = testFailed || CurrentGinkgoTestDescription().Failed
 	})
 })
