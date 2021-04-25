@@ -27,8 +27,7 @@ var _ = Describe("Observability:", func() {
 			testOptions.HubCluster.KubeContext)
 	})
 
-	It("[P2][Sev2][Observability][Integration] Checking retention config in components args (retention/g0)", func() {
-		By("check compact args: --delete-delay=50h")
+	It("[P2][Sev2][Observability][Integration] Check compact args: --delete-delay=50h (retention/g0)", func() {
 		Eventually(func() error {
 			name := MCO_CR_NAME + "-thanos-compact"
 			compact, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
@@ -43,8 +42,9 @@ var _ = Describe("Observability:", func() {
 			}
 			return fmt.Errorf("Failed to check compact args: --delete-delay=50h. args is %v", argList)
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+	})
 
-		By("check store args: --ignore-deletion-marks-delay=25h")
+	It("[P2][Sev2][Observability][Integration] Check store args: --ignore-deletion-marks-delay=25h (retention/g0)", func() {
 		Eventually(func() error {
 			name := MCO_CR_NAME + "-thanos-store-shard-0"
 			store, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
@@ -59,8 +59,9 @@ var _ = Describe("Observability:", func() {
 			}
 			return fmt.Errorf("Failed to check store args: --ignore-deletion-marks-delay=25h. args is %v", argList)
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+	})
 
-		By("check receive args: --tsdb.retention=5d")
+	It("[P2][Sev2][Observability][Integration] Check receive args: --tsdb.retention=5d (retention/g0)", func() {
 		Eventually(func() error {
 			name := MCO_CR_NAME + "thanos-receive-default"
 			receive, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
@@ -75,8 +76,9 @@ var _ = Describe("Observability:", func() {
 			}
 			return fmt.Errorf("Failed to check receive args: --tsdb.retention=5d. args is %v", argList)
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+	})
 
-		By("check rule args: --tsdb.retention=5d")
+	It("[P2][Sev2][Observability][Integration] Check rule args: --tsdb.retention=5d (retention/g0)", func() {
 		Eventually(func() error {
 			name := MCO_CR_NAME + "-thanos-rule"
 			rule, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
@@ -91,8 +93,9 @@ var _ = Describe("Observability:", func() {
 			}
 			return fmt.Errorf("Failed to check rule args: --tsdb.retention=5d. args is %v", argList)
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+	})
 
-		By("check rule args: --tsdb.block-duration=3h")
+	It("[P2][Sev2][Observability][Integration] Check rule args: --tsdb.block-duration=3h (retention/g0)", func() {
 		Eventually(func() error {
 			name := MCO_CR_NAME + "-thanos-rule"
 			rule, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
