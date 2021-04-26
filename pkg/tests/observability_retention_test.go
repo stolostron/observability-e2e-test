@@ -63,7 +63,7 @@ var _ = Describe("Observability:", func() {
 
 	It("[P2][Sev2][Observability][Integration] Check receive args: --tsdb.retention=5d (retention/g0)", func() {
 		Eventually(func() error {
-			name := MCO_CR_NAME + "thanos-receive-default"
+			name := MCO_CR_NAME + "-thanos-receive-default"
 			receive, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
 			if err != nil {
 				return err
