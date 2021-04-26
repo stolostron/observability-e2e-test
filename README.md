@@ -1,5 +1,7 @@
 # observability-e2e-test
 
+[![Build](https://img.shields.io/badge/build-Prow-informational)](https://prow.ci.openshift.org/?repo=open-cluster-management%2F${observability-e2e-test})
+
 This is modeled after: https://github.com/open-cluster-management/open-cluster-management-e2e
 
 This is a container which will be called from:
