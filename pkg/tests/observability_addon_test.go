@@ -130,7 +130,7 @@ var _ = Describe("Observability:", func() {
 					return true
 				}
 				return false
-			}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(BeTrue())
+			}, EventuallyTimeoutMinute*6, EventuallyIntervalSecond*5).Should(BeTrue())
 
 			By("Checking the status in managedclusteraddon reflects the endpoint operator status correctly")
 			if clusterName != "" {
