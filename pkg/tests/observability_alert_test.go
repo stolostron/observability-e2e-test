@@ -87,6 +87,22 @@ var _ = Describe("Observability:", func() {
 		klog.V(3).Infof("Successfully got secret: %s", secret.GetName())
 	})
 
+	It("[P1][Sev1][Observability][Integration] Should have the alertmanager url configured in rule (alert/g0)", func() {
+		By("Checking if --alertmanagers.url is configured in rule")
+		name := MCO_CR_NAME + "-thanos-rule"
+		rule, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		argList := rule.Spec.Template.Spec.Containers[0].Args
+		exists := false
+		for _, arg := range argList {
+			if arg == "--alertmanagers.url=http://alertmanager:9093" {
+				exists = true
+			}
+		}
+		Expect(exists).To(Equal(true))
+		klog.V(3).Info("Have the alertmanager url configured in rule")
+	})
+
 	It("[P2][Sev2][Observability][Stable] Should have custom alert generated (alert/g0)", func() {
 		By("Creating custom alert rules")
 		_, oldSts := utils.GetStatefulSet(testOptions, true, ThanosRuleName, MCO_NAMESPACE)
