@@ -27,7 +27,7 @@ var _ = Describe("Observability:", func() {
 		Eventually(func() error {
 			err, _ = utils.ContainManagedClusterMetric(testOptions, "node_memory_MemAvailable_bytes", []string{`"__name__":"node_memory_MemAvailable_bytes"`})
 			return err
-		}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Succeed())
+		}, EventuallyTimeoutMinute*6, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
 	AfterEach(func() {
