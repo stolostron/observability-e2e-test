@@ -41,7 +41,6 @@ var _ = Describe("Observability:", func() {
 			Expect(enable).To(Equal(true))
 
 			By("Check ObservabilityAddon is created if there's managed OCP clusters on the hub")
-
 			if clusterName != "" {
 				Eventually(func() string {
 					mco, err := dynClient.Resource(utils.NewMCOAddonGVR()).Namespace(string(clusterName)).Get("observability-addon", metav1.GetOptions{})
@@ -62,6 +61,25 @@ var _ = Describe("Observability:", func() {
 			By("Check endpoint-operator and metrics-collector pods are created")
 			Eventually(func() error {
 				return utils.CheckMCOAddon(testOptions)
+			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
+		})
+
+		It("[Integration] Should have resource requirement defined in CR", func() {
+			By("Check addon resource requirement")
+			res, err := utils.GetMCOAddonSpecResources(testOptions)
+			limits := res["limits"].(map[string]interface{})
+			requests := res["requests"].(map[string]interface{})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(limits["cpu"]).To(Equal("200m"))
+			Expect(limits["memory"]).To(Equal("700Mi"))
+			Expect(requests["cpu"]).To(Equal("200m"))
+			Expect(requests["memory"]).To(Equal("200Mi"))
+		})
+
+		It("[Integration] Should have resource requirement in metrics-collector", func() {
+			By("Check metrics-collector resource requirement")
+			Eventually(func() error {
+				return utils.CheckMCOAddonResources(testOptions)
 			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 		})
 

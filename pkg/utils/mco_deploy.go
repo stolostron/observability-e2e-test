@@ -629,6 +629,48 @@ func CheckMCOAddon(opt TestOptions) error {
 	return nil
 }
 
+func CheckMCOAddonResources(opt TestOptions) error {
+	client := NewKubeClient(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+	if len(opt.ManagedClusters) > 0 {
+		client = NewKubeClient(
+			opt.ManagedClusters[0].MasterURL,
+			opt.ManagedClusters[0].KubeConfig,
+			"")
+	}
+
+	deployList, err := client.AppsV1().Deployments(MCO_ADDON_NAMESPACE).List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	resMap := make(map[string]corev1.ResourceRequirements)
+	for _, deploy := range deployList.Items {
+		resMap[deploy.Name] = deploy.Spec.Template.Spec.Containers[0].Resources
+	}
+
+	metricsCollectorRes := corev1.ResourceRequirements{
+		Limits: corev1.ResourceList{
+			"cpu":    resource.MustParse("200m"),
+			"memory": resource.MustParse("700Mi"),
+		},
+		Requests: corev1.ResourceList{
+			"cpu":    resource.MustParse("200m"),
+			"memory": resource.MustParse("200Mi"),
+		},
+	}
+
+	if !reflect.DeepEqual(resMap["metrics-collector-deployment"], metricsCollectorRes) {
+		return fmt.Errorf("metrics-collector-deployment resource <%v> is not equal <%v>",
+			resMap["metrics-collector-deployment"],
+			metricsCollectorRes)
+	}
+
+	return nil
+}
+
 func ModifyMCORetentionResolutionRaw(opt TestOptions) error {
 	clientDynamic := NewKubeClientDynamic(
 		opt.HubCluster.MasterURL,
@@ -699,6 +741,21 @@ func ModifyMCOAddonSpecInterval(opt TestOptions, interval int64) error {
 	}
 	return nil
 }
+
+func GetMCOAddonSpecResources(opt TestOptions) (map[string]interface{}, error) {
+	clientDynamic := NewKubeClientDynamic(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+	mco, getErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	if getErr != nil {
+		return nil, getErr
+	}
+
+	res := mco.Object["spec"].(map[string]interface{})["observabilityAddonSpec"].(map[string]interface{})["resources"].(map[string]interface{})
+	return res, nil
+}
+
 func DeleteMCOInstance(opt TestOptions) error {
 	clientDynamic := NewKubeClientDynamic(
 		opt.HubCluster.MasterURL,
