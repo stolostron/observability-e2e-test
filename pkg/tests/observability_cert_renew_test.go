@@ -28,7 +28,7 @@ var _ = Describe("Observability:", func() {
 	})
 
 	It("[P1][Sev1][Observability][Integration] Should have metrics collector pod restart if cert secret re-generated (certrenew/g0)", func() {
-		By("Waiting for pods ready: observability-observatorium-api, metrics-collector-deployment")
+		By("Waiting for pods ready: observability-observatorium-api, observability-rbac-query-proxy, metrics-collector-deployment")
 		// sleep 30s to wait for installation is ready
 		time.Sleep(30 * time.Second)
 		collectorPodName := ""
@@ -83,10 +83,18 @@ var _ = Describe("Observability:", func() {
 							klog.V(1).Infof("<%s> not removed yet", oldPodName)
 							return false
 						}
+						if pod.Status.Phase != "Running" {
+							klog.V(1).Infof("<%s> not in Running status yet", pod.Name)
+							return false
+						}
 					}
 					for _, pod := range rbacPodList.Items {
 						if oldPodName == pod.Name {
 							klog.V(1).Infof("<%s> not removed yet", oldPodName)
+							return false
+						}
+						if pod.Status.Phase != "Running" {
+							klog.V(1).Infof("<%s> not in Running status yet", pod.Name)
 							return false
 						}
 					}
