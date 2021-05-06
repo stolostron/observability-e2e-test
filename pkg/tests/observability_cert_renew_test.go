@@ -5,6 +5,7 @@ package tests
 
 import (
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -27,10 +28,11 @@ var _ = Describe("Observability:", func() {
 	})
 
 	It("[P1][Sev1][Observability][Integration] Should have metrics collector pod restart if cert secret re-generated (certrenew/g0)", func() {
-		Skip("[P1][Sev1][Observability] Should have metrics collector pod restart if cert secret re-generated (certrenew/g0)")
-		By("Waiting for pods ready: observability-observatorium-api, metrics-collector-deployment")
+		By("Waiting for pods ready: observability-observatorium-api, observability-rbac-query-proxy, metrics-collector-deployment")
+		// sleep 30s to wait for installation is ready
+		time.Sleep(30 * time.Second)
 		collectorPodName := ""
-		apiPodsName := map[string]bool{}
+		hubPodsName := []string{}
 		Eventually(func() bool {
 			if collectorPodName == "" {
 				_, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
@@ -38,18 +40,27 @@ var _ = Describe("Observability:", func() {
 					collectorPodName = podList.Items[0].Name
 				}
 			}
-			if len(apiPodsName) == 0 {
-				_, podList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, "app.kubernetes.io/name=observatorium-api")
-				if podList != nil {
-					for _, pod := range podList.Items {
-						apiPodsName[pod.Name] = false
-					}
-				}
-
-			}
-			if collectorPodName == "" && len(apiPodsName) == 0 {
+			if collectorPodName == "" {
 				return false
 			}
+			hubPodsName = []string{}
+			_, apiPodList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, "app.kubernetes.io/name=observatorium-api")
+			if apiPodList != nil && len(apiPodList.Items) != 0 {
+				for _, pod := range apiPodList.Items {
+					hubPodsName = append(hubPodsName, pod.Name)
+				}
+			} else {
+				return false
+			}
+			_, rbacPodList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, "app=rbac-query-proxy")
+			if rbacPodList != nil && len(rbacPodList.Items) != 0 {
+				for _, pod := range rbacPodList.Items {
+					hubPodsName = append(hubPodsName, pod.Name)
+				}
+			} else {
+				return false
+			}
+
 			return true
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 
@@ -57,37 +68,48 @@ var _ = Describe("Observability:", func() {
 		err := utils.DeleteCertSecret(testOptions)
 		Expect(err).ToNot(HaveOccurred())
 
-		By(fmt.Sprintf("Waiting for old pods removed: %v and new pods created", apiPodsName))
+		By(fmt.Sprintf("Waiting for old pods removed: %v and new pods created", hubPodsName))
 		Eventually(func() bool {
-			err, podList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, "app.kubernetes.io/name=observatorium-api")
-			if err == nil {
-				if len(podList.Items) != 0 {
-					for oldPodName := range apiPodsName {
-						apiPodsName[oldPodName] = true
-						for _, pod := range podList.Items {
-							if oldPodName == pod.Name {
-								apiPodsName[oldPodName] = false
-							}
+			err1, appPodList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, "app.kubernetes.io/name=observatorium-api")
+			err2, rbacPodList := utils.GetPodList(testOptions, true, MCO_NAMESPACE, "app=rbac-query-proxy")
+			if err1 == nil && err2 == nil {
+				if len(hubPodsName) != len(appPodList.Items)+len(rbacPodList.Items) {
+					klog.V(1).Infof("Wrong number of pods: <%d> observatorium-api pods and <%d> rbac-query-proxy pods", len(appPodList.Items), len(rbacPodList.Items))
+					return false
+				}
+				for _, oldPodName := range hubPodsName {
+					for _, pod := range appPodList.Items {
+						if oldPodName == pod.Name {
+							klog.V(1).Infof("<%s> not removed yet", oldPodName)
+							return false
+						}
+						if pod.Status.Phase != "Running" {
+							klog.V(1).Infof("<%s> not in Running status yet", pod.Name)
+							return false
+						}
+					}
+					for _, pod := range rbacPodList.Items {
+						if oldPodName == pod.Name {
+							klog.V(1).Infof("<%s> not removed yet", oldPodName)
+							return false
+						}
+						if pod.Status.Phase != "Running" {
+							klog.V(1).Infof("<%s> not in Running status yet", pod.Name)
+							return false
 						}
 					}
 				}
-				allRecreated := true
-				for _, value := range apiPodsName {
-					if !value {
-						allRecreated = false
-					}
-				}
-				if allRecreated {
-					return true
-				}
-			} else {
-				return false
+				return true
 			}
 
-			// debug code to check label "certmanager.k8s.io/time-restarted"
+			// debug code to check label "cert/time-restarted"
 			err, deployment := utils.GetDeployment(testOptions, true, MCO_CR_NAME+"-observatorium-api", MCO_NAMESPACE)
 			if err == nil {
-				klog.V(1).Infof("labels: <%v>", deployment.ObjectMeta.Labels)
+				klog.V(1).Infof("labels: <%v>", deployment.Spec.Template.ObjectMeta.Labels)
+			}
+			err, deployment = utils.GetDeployment(testOptions, true, MCO_CR_NAME+"-rbac-query-proxy", MCO_NAMESPACE)
+			if err == nil {
+				klog.V(1).Infof("labels: <%v>", deployment.Spec.Template.ObjectMeta.Labels)
 			}
 
 			return false

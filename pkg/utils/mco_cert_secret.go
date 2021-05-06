@@ -9,8 +9,10 @@ import (
 )
 
 const (
-	secretName   = "observability-server-certs"
-	caSecretName = "observability-server-ca-certs"
+	ServerCACerts = "observability-server-ca-certs"
+	ClientCACerts = "observability-client-ca-certs"
+	ServerCerts   = "observability-server-certs"
+	GrafanaCerts  = "observability-grafana-certs"
 )
 
 func DeleteCertSecret(opt TestOptions) error {
@@ -20,14 +22,24 @@ func DeleteCertSecret(opt TestOptions) error {
 		opt.HubCluster.KubeContext)
 
 	klog.V(1).Infof("Delete certificate secret")
-	err := clientKube.CoreV1().Secrets(MCO_NAMESPACE).Delete(caSecretName, &metav1.DeleteOptions{})
+	err := clientKube.CoreV1().Secrets(MCO_NAMESPACE).Delete(ServerCACerts, &metav1.DeleteOptions{})
 	if err != nil {
-		klog.Errorf("Failed to delete certificate secret %s due to %v", caSecretName, err)
+		klog.Errorf("Failed to delete certificate secret %s due to %v", ServerCACerts, err)
 		return err
 	}
-	err = clientKube.CoreV1().Secrets(MCO_NAMESPACE).Delete(secretName, &metav1.DeleteOptions{})
+	err = clientKube.CoreV1().Secrets(MCO_NAMESPACE).Delete(ClientCACerts, &metav1.DeleteOptions{})
 	if err != nil {
-		klog.Errorf("Failed to delete certificate secret %s due to %v", secretName, err)
+		klog.Errorf("Failed to delete certificate secret %s due to %v", ClientCACerts, err)
+		return err
+	}
+	err = clientKube.CoreV1().Secrets(MCO_NAMESPACE).Delete(ServerCerts, &metav1.DeleteOptions{})
+	if err != nil {
+		klog.Errorf("Failed to delete certificate secret %s due to %v", ServerCerts, err)
+		return err
+	}
+	err = clientKube.CoreV1().Secrets(MCO_NAMESPACE).Delete(GrafanaCerts, &metav1.DeleteOptions{})
+	if err != nil {
+		klog.Errorf("Failed to delete certificate secret %s due to %v", GrafanaCerts, err)
 		return err
 	}
 	return err
