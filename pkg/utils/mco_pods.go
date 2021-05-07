@@ -4,6 +4,9 @@
 package utils
 
 import (
+	"bytes"
+	"io"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
@@ -34,4 +37,27 @@ func DeletePod(opt TestOptions, isHub bool, namespace, name string) error {
 		return err
 	}
 	return nil
+}
+
+func GetPodLogs(opt TestOptions, isHub bool, namespace, podName, containerName string, previous bool, tailLines int64) (string, error) {
+	clientKube := getKubeClient(opt, isHub)
+	podLogOpts := v1.PodLogOptions{
+		Container: containerName,
+		Previous:  previous,
+		TailLines: &tailLines,
+	}
+	req := clientKube.CoreV1().Pods(namespace).GetLogs(podName, &podLogOpts)
+	podLogs, err := req.Stream()
+	if err != nil {
+		klog.Errorf("Failed to get logs for %s/%s in namespace %s due to %v", podName, containerName, namespace, err)
+		return "", err
+	}
+	defer podLogs.Close()
+	buf := new(bytes.Buffer)
+	_, err = io.Copy(buf, podLogs)
+	if err != nil {
+		klog.Errorf("Failed to copy pod logs to buffer due to %v", err)
+		return "", err
+	}
+	return buf.String(), nil
 }
