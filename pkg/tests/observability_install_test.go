@@ -80,7 +80,11 @@ func installMCO() {
 					return nil
 				}
 			}
-			return fmt.Errorf("MCO componnets cannot be running in 20 minutes. check the MCO CR status for the details: %v", instance.Object["status"])
+			if instance != nil && instance.Object != nil {
+				return fmt.Errorf("MCO componnets cannot be running in 20 minutes. check the MCO CR status for the details: %v", instance.Object["status"])
+			} else {
+				return fmt.Errorf("Wait for reconciling.")
+			}
 		}, EventuallyTimeoutMinute*20, EventuallyIntervalSecond*5).Should(Succeed())
 
 		By("Check clustermanagementaddon CR is created")
