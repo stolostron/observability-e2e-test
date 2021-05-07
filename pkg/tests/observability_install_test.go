@@ -41,6 +41,12 @@ func installMCO() {
 		Expect(string(pod.Status.Phase)).To(Equal("Running"))
 	}
 
+	defer func(testOptions utils.TestOptions, isHub bool, namespace, podName, containerName string, previous bool, tailLines int64) {
+		mcoLogs, err := utils.GetPodLogs(testOptions, isHub, namespace, podName, containerName, previous, tailLines)
+		Expect(err).NotTo(HaveOccurred())
+		fmt.Fprintf(GinkgoWriter, "[DEBUG] MCO operator logs: %s\n", mcoLogs)
+	}(testOptions, false, MCO_OPERATOR_NAMESPACE, mcoPod, "multicluster-observability-operator", false, 1000)
+
 	By("Checking Required CRDs is existed")
 	Eventually(func() error {
 		return utils.HaveCRDs(testOptions.HubCluster, testOptions.KubeConfig,
@@ -97,9 +103,6 @@ func installMCO() {
 		Eventually(func() error {
 			_, err := dynClient.Resource(utils.NewMCOClusterManagementAddonsGVR()).Get("observability-controller", metav1.GetOptions{})
 			if err != nil {
-				mcoLogs, err := utils.GetPodLogs(testOptions, false, MCO_OPERATOR_NAMESPACE, mcoPod, "multicluster-observability-operator", false, 1000)
-				Expect(err).NotTo(HaveOccurred())
-				fmt.Fprintf(GinkgoWriter, "[DEBUG] MCO operator logs: %s\n", mcoLogs)
 				return err
 			}
 			return nil
@@ -121,9 +124,6 @@ func installMCO() {
 	Eventually(func() error {
 		err := utils.CheckStorageResize(testOptions, MCO_CR_NAME+"-thanos-receive-default", "4Gi")
 		if err != nil {
-			mcoLogs, err := utils.GetPodLogs(testOptions, false, MCO_OPERATOR_NAMESPACE, mcoPod, "multicluster-observability-operator", false, 1000)
-			Expect(err).NotTo(HaveOccurred())
-			fmt.Fprintf(GinkgoWriter, "[DEBUG] MCO operator logs: %s\n", mcoLogs)
 			return err
 		}
 		return nil
@@ -135,9 +135,6 @@ func installMCO() {
 	Eventually(func() error {
 		err = utils.CheckMCOComponentsInHighMode(testOptions)
 		if err != nil {
-			mcoLogs, err := utils.GetPodLogs(testOptions, false, MCO_OPERATOR_NAMESPACE, mcoPod, "multicluster-observability-operator", false, 1000)
-			Expect(err).NotTo(HaveOccurred())
-			fmt.Fprintf(GinkgoWriter, "[DEBUG] MCO operator logs: %s\n", mcoLogs)
 			return err
 		}
 		allPodsIsReady = true
@@ -152,9 +149,6 @@ func installMCO() {
 	Eventually(func() error {
 		_, err := dynClient.Resource(utils.NewOCMPlacementRuleGVR()).Namespace(utils.MCO_NAMESPACE).Get("observability", metav1.GetOptions{})
 		if err != nil {
-			mcoLogs, err := utils.GetPodLogs(testOptions, false, MCO_OPERATOR_NAMESPACE, mcoPod, "multicluster-observability-operator", false, 1000)
-			Expect(err).NotTo(HaveOccurred())
-			fmt.Fprintf(GinkgoWriter, "[DEBUG] MCO operator logs: %s\n", mcoLogs)
 			return err
 		}
 		return nil
@@ -187,9 +181,6 @@ func installMCO() {
 	Eventually(func() error {
 		_, err := dynClient.Resource(utils.NewMCOClusterManagementAddonsGVR()).Get("observability-controller", metav1.GetOptions{})
 		if err != nil {
-			mcoLogs, err := utils.GetPodLogs(testOptions, false, MCO_OPERATOR_NAMESPACE, mcoPod, "multicluster-observability-operator", false, 1000)
-			Expect(err).NotTo(HaveOccurred())
-			fmt.Fprintf(GinkgoWriter, "[DEBUG] MCO operator logs: %s\n", mcoLogs)
 			return err
 		}
 		return nil
