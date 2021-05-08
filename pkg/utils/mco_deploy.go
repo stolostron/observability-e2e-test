@@ -234,7 +234,7 @@ func CheckAllPodNodeSelector(opt TestOptions) error {
 
 		selecterValue, ok := pod.Spec.NodeSelector["kubernetes.io/os"]
 		if !ok || selecterValue != "linux" {
-			return fmt.Errorf("Failed to check node selector for pod: %v", pod.GetName())
+			return fmt.Errorf("failed to check node selector for pod: %v", pod.GetName())
 		}
 	}
 	return nil
@@ -249,7 +249,7 @@ func CheckAllPodsAffinity(opt TestOptions) error {
 	for _, pod := range podList {
 
 		if pod.Spec.Affinity == nil {
-			return fmt.Errorf("Failed to ckeck affinity for pod: %v" + pod.GetName())
+			return fmt.Errorf("Failed to check affinity for pod: %v" + pod.GetName())
 		}
 
 		weightedPodAffinityTerms := pod.Spec.Affinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution
@@ -258,7 +258,7 @@ func CheckAllPodsAffinity(opt TestOptions) error {
 			if (topologyKey == "kubernetes.io/hostname" && weightedPodAffinityTerm.Weight == 30) ||
 				(topologyKey == "topology.kubernetes.io/zone" && weightedPodAffinityTerm.Weight == 70) {
 			} else {
-				return fmt.Errorf("Failed to ckeck affinity for pod: %v" + pod.GetName())
+				return fmt.Errorf("failed to check affinity for pod: %v" + pod.GetName())
 			}
 		}
 	}
@@ -298,9 +298,10 @@ func CheckOBAComponents(opt TestOptions) error {
 			return err
 		}
 
-		if deployment.Status.ReadyReplicas != 1 {
-			err = fmt.Errorf("Deployment %s should have 1 but got %d ready replicas",
+		if deployment.Status.ReadyReplicas != deployment.Status.AvailableReplicas {
+			err = fmt.Errorf("deployment %s should have %d but got %d ready replicas",
 				deploymentName,
+				deployment.Status.AvailableReplicas,
 				deployment.Status.ReadyReplicas)
 			return err
 		}
@@ -332,9 +333,10 @@ func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 			return err
 		}
 
-		if deployment.Status.ReadyReplicas != 1 {
-			err = fmt.Errorf("Deployment %s should have 1 but got %d ready replicas",
+		if deployment.Status.ReadyReplicas != deployment.Status.AvailableReplicas {
+			err = fmt.Errorf("deployment %s should have %d but got %d ready replicas",
 				deploymentName,
+				deployment.Status.AvailableReplicas,
 				deployment.Status.ReadyReplicas)
 			return err
 		}
@@ -357,9 +359,10 @@ func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 			return err
 		}
 
-		if statefulset.Status.ReadyReplicas != 1 {
-			err = fmt.Errorf("Statefulset %s should have 1 but got %d ready replicas",
+		if statefulset.Status.ReadyReplicas != statefulset.Status.CurrentReplicas {
+			err = fmt.Errorf("statefulset %s should have %d but got %d ready replicas",
 				statefulsetName,
+				statefulset.Status.CurrentReplicas,
 				statefulset.Status.ReadyReplicas)
 			return err
 		}
@@ -383,7 +386,7 @@ func CheckStatefulSetPodReady(opt TestOptions, stsName string, number int32) err
 	if statefulset.Status.ReadyReplicas != number ||
 		statefulset.Status.UpdatedReplicas != number ||
 		statefulset.Status.UpdateRevision != statefulset.Status.CurrentRevision {
-		err = fmt.Errorf("Statefulset %s should have %d but got %d ready replicas",
+		err = fmt.Errorf("statefulset %s should have %d but got %d ready replicas",
 			stsName, number,
 			statefulset.Status.ReadyReplicas)
 		return err
@@ -399,14 +402,14 @@ func CheckDeploymentPodReady(opt TestOptions, deployName string, number int32) e
 	deploys := client.AppsV1().Deployments(MCO_NAMESPACE)
 	deploy, err := deploys.Get(deployName, metav1.GetOptions{})
 	if err != nil {
-		klog.V(1).Infof("Error while retrieving statefulset %s: %s", deployName, err.Error())
+		klog.V(1).Infof("Error while retrieving deployment %s: %s", deployName, err.Error())
 		return err
 	}
 
 	if deploy.Status.ReadyReplicas != number ||
 		deploy.Status.UpdatedReplicas != number ||
 		deploy.Status.AvailableReplicas != number {
-		err = fmt.Errorf("Statefulset %s should have %d but got %d ready replicas",
+		err = fmt.Errorf("deployment %s should have %d but got %d ready replicas",
 			deployName, number,
 			deploy.Status.ReadyReplicas)
 		return err
@@ -435,9 +438,10 @@ func CheckMCOComponentsInHighMode(opt TestOptions) error {
 			return err
 		}
 
-		if deployment.Status.ReadyReplicas != 2 {
-			err = fmt.Errorf("Deployment %s should have 2 but got %d ready replicas",
+		if deployment.Status.ReadyReplicas != deployment.Status.AvailableReplicas {
+			err = fmt.Errorf("deployment %s should have %d but got %d ready replicas",
 				deploymentName,
+				deployment.Status.AvailableReplicas,
 				deployment.Status.ReadyReplicas)
 			return err
 		}
@@ -460,9 +464,10 @@ func CheckMCOComponentsInHighMode(opt TestOptions) error {
 			return err
 		}
 
-		if statefulset.Status.ReadyReplicas != 3 {
-			err = fmt.Errorf("Statefulset %s should have 3 but got %d ready replicas",
+		if statefulset.Status.ReadyReplicas != statefulset.Status.CurrentReplicas {
+			err = fmt.Errorf("statefulset %s should have %d but got %d ready replicas",
 				statefulsetName,
+				statefulset.Status.CurrentReplicas,
 				statefulset.Status.ReadyReplicas)
 			return err
 		}
@@ -482,9 +487,10 @@ func CheckMCOComponentsInHighMode(opt TestOptions) error {
 			return err
 		}
 
-		if statefulset.Status.ReadyReplicas != 1 {
-			err = fmt.Errorf("Statefulset %s should have 1 but got %d ready replicas",
+		if statefulset.Status.ReadyReplicas != statefulset.Status.CurrentReplicas {
+			err = fmt.Errorf("statefulset %s should have %d but got %d ready replicas",
 				statefulsetName,
+				statefulset.Status.CurrentReplicas,
 				statefulset.Status.ReadyReplicas)
 			return err
 		}
@@ -537,7 +543,7 @@ func PatchPlacementRule(opt TestOptions, token string) error {
 
 	if resp.StatusCode != http.StatusOK {
 		klog.Errorf("resp.StatusCode: %v\n", resp.StatusCode)
-		return fmt.Errorf("Failed to patch placementrule")
+		return fmt.Errorf("failed to patch placementrule")
 	}
 
 	result, err := ioutil.ReadAll(resp.Body)
@@ -795,7 +801,7 @@ func CheckMCOConversion(opt TestOptions, v1beta1tov1beta2GoldenPath string) erro
 			return fmt.Errorf("%s not found in ", k)
 		}
 		if !reflect.DeepEqual(val, v) {
-			return fmt.Errorf("%+v and %+v are not equal!", val, v)
+			return fmt.Errorf("%+v and %+v are not equal", val, v)
 		}
 	}
 	return nil
