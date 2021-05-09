@@ -217,7 +217,7 @@ func PrintAllOBAPodsStatus(opt TestOptions) {
 	}
 }
 
-func CheckAllPodNodeSelector(opt TestOptions) error {
+func CheckAllPodNodeSelector(opt TestOptions, nodeSelector map[string]interface{}) error {
 	podList, err := GetAllMCOPods(opt)
 	if err != nil {
 		return err
@@ -227,16 +227,19 @@ func CheckAllPodNodeSelector(opt TestOptions) error {
 	//https://github.com/open-cluster-management/backlog/issues/6532
 	ignorePods := MCO_CR_NAME + "-thanos-store-shard-1-0," + MCO_CR_NAME + "-thanos-store-shard-2-0"
 
-	for _, pod := range podList {
-		if strings.Contains(ignorePods, pod.GetName()) {
-			continue
-		}
+	for k, v := range nodeSelector {
+		for _, pod := range podList {
+			if strings.Contains(ignorePods, pod.GetName()) {
+				continue
+			}
 
-		selecterValue, ok := pod.Spec.NodeSelector["kubernetes.io/os"]
-		if !ok || selecterValue != "linux" {
-			return fmt.Errorf("failed to check node selector for pod: %v", pod.GetName())
+			selecterValue, ok := pod.Spec.NodeSelector[k]
+			if !ok || selecterValue != v {
+				return fmt.Errorf("failed to check node selector with %s=%s for pod: %v", k, v, pod.GetName())
+			}
 		}
 	}
+
 	return nil
 }
 

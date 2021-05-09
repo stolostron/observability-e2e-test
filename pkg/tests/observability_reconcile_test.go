@@ -91,9 +91,18 @@ var _ = Describe("Observability:", func() {
 	})
 
 	It("[P2][Sev2][Observability][Stable] Checking node selector for all pods (reconcile/g0)", func() {
+		By("Checking node selector spec in MCO CR")
+		mcoSC, err := dynClient.Resource(utils.NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		spec := mcoSC.Object["spec"].(map[string]interface{})
+		if _, ok := spec["nodeSelector"]; !ok {
+			Skip("Skip the case since the MCO CR did not set the nodeSelector")
+		}
+
 		By("Checking node selector for all pods")
 		Eventually(func() error {
-			err = utils.CheckAllPodNodeSelector(testOptions)
+			err = utils.CheckAllPodNodeSelector(testOptions, spec["nodeSelector"].(map[string]interface{}))
 			if err != nil {
 				return err
 			}
