@@ -126,18 +126,6 @@ func installMCO() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
 
-	By("Checking the thanos-receive storage capacity is updated")
-	Eventually(func() error {
-		err := utils.CheckStorageResize(testOptions, MCO_CR_NAME+"-thanos-receive-default", "4Gi")
-		if err != nil {
-			testFailed = true
-			return err
-		}
-		testFailed = false
-		return nil
-		// the terminationGracePeriodSeconds for thanos-receive pod is 900s, so we need to wait for than 15 minutes before timeout
-	}, EventuallyTimeoutMinute*25, EventuallyIntervalSecond*5).Should(Succeed())
-
 	By("Waiting for MCO ready status")
 	allPodsIsReady := false
 	Eventually(func() error {
