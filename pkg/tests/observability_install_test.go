@@ -46,9 +46,9 @@ func installMCO() {
 		if testFailed {
 			mcoLogs, err := utils.GetPodLogs(testOptions, isHub, namespace, podName, containerName, previous, tailLines)
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Fprintf(GinkgoWriter, "[DEBUG] MCO is installed failed, checking MCO operator logs: %s\n", mcoLogs)
+			fmt.Fprintf(GinkgoWriter, "[DEBUG] MCO is installed failed, checking MCO operator logs:\n%s\n", mcoLogs)
 		} else {
-			fmt.Fprintf(GinkgoWriter, "[DEBUG] MCO is installed successfully!")
+			fmt.Fprintf(GinkgoWriter, "[DEBUG] MCO is installed successfully!\n")
 		}
 	}(testOptions, false, MCO_OPERATOR_NAMESPACE, mcoPod, "multicluster-observability-operator", false, 1000)
 
