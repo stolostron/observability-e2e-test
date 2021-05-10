@@ -598,33 +598,6 @@ func HaveDeploymentsInNamespace(c Cluster, kubeconfig string, namespace string, 
 	return nil
 }
 
-func HaveStatefulSetsInNamespace(c Cluster, kubeconfig string, namespace string, expectedStatefulSetNames []string) error {
-	client := NewKubeClient(c.MasterURL, kubeconfig, c.KubeContext)
-	versionInfo, err := client.Discovery().ServerVersion()
-	if err != nil {
-		return err
-	}
-	klog.V(1).Infof("Server version info: %v", versionInfo)
-
-	statefulsets := client.AppsV1().StatefulSets(namespace)
-
-	for _, statefulsetName := range expectedStatefulSetNames {
-		klog.V(1).Infof("Check if statefulset %s exists", statefulsetName)
-		statefulset, err := statefulsets.Get(statefulsetName, metav1.GetOptions{})
-		if err != nil {
-			klog.V(1).Infof("Error while retrieving statefulset %s: %s", statefulsetName, err.Error())
-			return err
-		}
-		if statefulset.Status.Replicas != statefulset.Status.ReadyReplicas {
-			err = fmt.Errorf("Expect %d but got %d Ready replicas", statefulset.Status.Replicas, statefulset.Status.ReadyReplicas)
-			klog.Errorln(err)
-			return err
-		}
-	}
-
-	return nil
-}
-
 func GetKubeVersion(client *rest.RESTClient) version.Info {
 	kubeVersion := version.Info{}
 

@@ -301,10 +301,10 @@ func CheckOBAComponents(opt TestOptions) error {
 			return err
 		}
 
-		if deployment.Status.ReadyReplicas != deployment.Status.AvailableReplicas {
+		if deployment.Status.ReadyReplicas != *deployment.Spec.Replicas {
 			err = fmt.Errorf("deployment %s should have %d but got %d ready replicas",
 				deploymentName,
-				deployment.Status.AvailableReplicas,
+				*deployment.Spec.Replicas,
 				deployment.Status.ReadyReplicas)
 			return err
 		}
@@ -336,10 +336,10 @@ func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 			return err
 		}
 
-		if deployment.Status.ReadyReplicas != deployment.Status.AvailableReplicas {
+		if deployment.Status.ReadyReplicas != *deployment.Spec.Replicas {
 			err = fmt.Errorf("deployment %s should have %d but got %d ready replicas",
 				deploymentName,
-				deployment.Status.AvailableReplicas,
+				*deployment.Spec.Replicas,
 				deployment.Status.ReadyReplicas)
 			return err
 		}
@@ -362,10 +362,10 @@ func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 			return err
 		}
 
-		if statefulset.Status.ReadyReplicas != statefulset.Status.CurrentReplicas {
+		if statefulset.Status.ReadyReplicas != *statefulset.Spec.Replicas {
 			err = fmt.Errorf("statefulset %s should have %d but got %d ready replicas",
 				statefulsetName,
-				statefulset.Status.CurrentReplicas,
+				*statefulset.Spec.Replicas,
 				statefulset.Status.ReadyReplicas)
 			return err
 		}
@@ -441,10 +441,10 @@ func CheckMCOComponentsInHighMode(opt TestOptions) error {
 			return err
 		}
 
-		if deployment.Status.ReadyReplicas != deployment.Status.AvailableReplicas {
+		if deployment.Status.ReadyReplicas != *deployment.Spec.Replicas {
 			err = fmt.Errorf("deployment %s should have %d but got %d ready replicas",
 				deploymentName,
-				deployment.Status.AvailableReplicas,
+				*deployment.Spec.Replicas,
 				deployment.Status.ReadyReplicas)
 			return err
 		}
@@ -458,25 +458,6 @@ func CheckMCOComponentsInHighMode(opt TestOptions) error {
 		MCO_CR_NAME + "-thanos-store-memcached",
 		// TODO: https://github.com/open-cluster-management/backlog/issues/6532
 		// "observability-observatorium-thanos-store-shard-0",
-	}
-
-	for _, statefulsetName := range expectedStatefulSetNames {
-		statefulset, err := statefulsets.Get(statefulsetName, metav1.GetOptions{})
-		if err != nil {
-			klog.V(1).Infof("Error while retrieving statefulset %s: %s", statefulsetName, err.Error())
-			return err
-		}
-
-		if statefulset.Status.ReadyReplicas != statefulset.Status.CurrentReplicas {
-			err = fmt.Errorf("statefulset %s should have %d but got %d ready replicas",
-				statefulsetName,
-				statefulset.Status.CurrentReplicas,
-				statefulset.Status.ReadyReplicas)
-			return err
-		}
-	}
-
-	expectedStatefulSetNames = []string{
 		MCO_CR_NAME + "-thanos-compact",
 		MCO_CR_NAME + "-thanos-store-shard-0",
 		MCO_CR_NAME + "-thanos-store-shard-1",
@@ -490,10 +471,10 @@ func CheckMCOComponentsInHighMode(opt TestOptions) error {
 			return err
 		}
 
-		if statefulset.Status.ReadyReplicas != statefulset.Status.CurrentReplicas {
+		if statefulset.Status.ReadyReplicas != *statefulset.Spec.Replicas {
 			err = fmt.Errorf("statefulset %s should have %d but got %d ready replicas",
 				statefulsetName,
-				statefulset.Status.CurrentReplicas,
+				*statefulset.Spec.Replicas,
 				statefulset.Status.ReadyReplicas)
 			return err
 		}
