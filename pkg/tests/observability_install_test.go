@@ -34,9 +34,23 @@ func installMCO() {
 	podList, err := hubClient.CoreV1().Pods(MCO_OPERATOR_NAMESPACE).List(metav1.ListOptions{LabelSelector: MCO_LABEL})
 	Expect(len(podList.Items)).To(Equal(1))
 	Expect(err).NotTo(HaveOccurred())
+	mcoPod := ""
 	for _, pod := range podList.Items {
+		mcoPod = pod.GetName()
+		Expect(string(mcoPod)).NotTo(Equal(""))
 		Expect(string(pod.Status.Phase)).To(Equal("Running"))
 	}
+
+	// print mco logs if MCO installation failed
+	defer func(testOptions utils.TestOptions, isHub bool, namespace, podName, containerName string, previous bool, tailLines int64) {
+		if testFailed {
+			mcoLogs, err := utils.GetPodLogs(testOptions, isHub, namespace, podName, containerName, previous, tailLines)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Fprintf(GinkgoWriter, "[DEBUG] MCO is installed failed, checking MCO operator logs: %s\n", mcoLogs)
+		} else {
+			fmt.Fprintf(GinkgoWriter, "[DEBUG] MCO is installed successfully!")
+		}
+	}(testOptions, false, MCO_OPERATOR_NAMESPACE, mcoPod, "multicluster-observability-operator", false, 1000)
 
 	By("Checking Required CRDs is existed")
 	Eventually(func() error {
@@ -77,9 +91,11 @@ func installMCO() {
 			if err == nil {
 				allPodsIsReady = utils.StatusContainsTypeEqualTo(instance, "Ready")
 				if allPodsIsReady {
+					testFailed = false
 					return nil
 				}
 			}
+			testFailed = true
 			if instance != nil && instance.Object != nil {
 				return fmt.Errorf("MCO componnets cannot be running in 20 minutes. check the MCO CR status for the details: %v", instance.Object["status"])
 			} else {
@@ -91,8 +107,10 @@ func installMCO() {
 		Eventually(func() error {
 			_, err := dynClient.Resource(utils.NewMCOClusterManagementAddonsGVR()).Get("observability-controller", metav1.GetOptions{})
 			if err != nil {
+				testFailed = true
 				return err
 			}
+			testFailed = false
 			return nil
 		}).Should(Succeed())
 
@@ -112,8 +130,10 @@ func installMCO() {
 	Eventually(func() error {
 		err := utils.CheckStorageResize(testOptions, MCO_CR_NAME+"-thanos-receive-default", "4Gi")
 		if err != nil {
+			testFailed = true
 			return err
 		}
+		testFailed = false
 		return nil
 		// the terminationGracePeriodSeconds for thanos-receive pod is 900s, so we need to wait for than 15 minutes before timeout
 	}, EventuallyTimeoutMinute*25, EventuallyIntervalSecond*5).Should(Succeed())
@@ -123,9 +143,11 @@ func installMCO() {
 	Eventually(func() error {
 		err = utils.CheckMCOComponentsInHighMode(testOptions)
 		if err != nil {
+			testFailed = true
 			return err
 		}
 		allPodsIsReady = true
+		testFailed = false
 		return nil
 	}, EventuallyTimeoutMinute*25, EventuallyIntervalSecond*5).Should(Succeed())
 
@@ -137,8 +159,10 @@ func installMCO() {
 	Eventually(func() error {
 		_, err := dynClient.Resource(utils.NewOCMPlacementRuleGVR()).Namespace(utils.MCO_NAMESPACE).Get("observability", metav1.GetOptions{})
 		if err != nil {
+			testFailed = true
 			return err
 		}
+		testFailed = false
 		return nil
 	}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 
@@ -150,8 +174,10 @@ func installMCO() {
 		Eventually(func() error {
 			err = utils.PatchPlacementRule(testOptions, token)
 			if err != nil {
+				testFailed = true
 				return err
 			}
+			testFailed = false
 			return nil
 		}).Should(Succeed())
 
@@ -159,8 +185,10 @@ func installMCO() {
 		Eventually(func() bool {
 			err, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
 			if len(podList.Items) == 1 && err == nil {
+				testFailed = false
 				return true
 			}
+			testFailed = true
 			return false
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 	}
@@ -169,8 +197,10 @@ func installMCO() {
 	Eventually(func() error {
 		_, err := dynClient.Resource(utils.NewMCOClusterManagementAddonsGVR()).Get("observability-controller", metav1.GetOptions{})
 		if err != nil {
+			testFailed = true
 			return err
 		}
+		testFailed = false
 		return nil
 	}).Should(Succeed())
 }
