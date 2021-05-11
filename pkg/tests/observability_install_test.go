@@ -6,6 +6,7 @@ package tests
 import (
 	"fmt"
 	"os"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -125,6 +126,9 @@ func installMCO() {
 	yamlB, err = kustomize.Render(kustomize.Options{KustomizationPath: v1beta2KustomizationPath})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
+
+	// wait for pod restarting
+	time.Sleep(60 * time.Second)
 
 	By("Waiting for MCO ready status")
 	allPodsIsReady := false
