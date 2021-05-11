@@ -6,6 +6,7 @@ package tests
 import (
 	"fmt"
 	"os"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -46,9 +47,9 @@ func installMCO() {
 		if testFailed {
 			mcoLogs, err := utils.GetPodLogs(testOptions, isHub, namespace, podName, containerName, previous, tailLines)
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Fprintf(GinkgoWriter, "[DEBUG] MCO is installed failed, checking MCO operator logs: %s\n", mcoLogs)
+			fmt.Fprintf(GinkgoWriter, "[DEBUG] MCO is installed failed, checking MCO operator logs:\n%s\n", mcoLogs)
 		} else {
-			fmt.Fprintf(GinkgoWriter, "[DEBUG] MCO is installed successfully!")
+			fmt.Fprintf(GinkgoWriter, "[DEBUG] MCO is installed successfully!\n")
 		}
 	}(testOptions, false, MCO_OPERATOR_NAMESPACE, mcoPod, "multicluster-observability-operator", false, 1000)
 
@@ -125,6 +126,9 @@ func installMCO() {
 	yamlB, err = kustomize.Render(kustomize.Options{KustomizationPath: v1beta2KustomizationPath})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
+
+	// wait for pod restarting
+	time.Sleep(60 * time.Second)
 
 	By("Waiting for MCO ready status")
 	allPodsIsReady := false
