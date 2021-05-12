@@ -5,6 +5,7 @@ package tests
 
 import (
 	"fmt"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -87,8 +88,8 @@ var _ = Describe("Observability:", func() {
 		klog.V(3).Infof("Successfully got secret: %s", secret.GetName())
 	})
 
-	It("[P1][Sev1][Observability][Integration] Should have the alertmanager url configured in rule (alert/g0)", func() {
-		By("Checking if --alertmanagers.url is configured in rule")
+	It("[P1][Sev1][Observability][Integration] Should have the alertmanager configured in rule (alert/g0)", func() {
+		By("Checking if --alertmanagers.url or --alertmanager.config or --alertmanagers.config-file is configured in rule")
 		name := MCO_CR_NAME + "-thanos-rule"
 		rule, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -97,6 +98,15 @@ var _ = Describe("Observability:", func() {
 		for _, arg := range argList {
 			if arg == "--alertmanagers.url=http://alertmanager:9093" {
 				exists = true
+				break
+			}
+			if strings.HasPrefix(arg, "--alertmanagers.config=") {
+				exists = true
+				break
+			}
+			if strings.HasPrefix(arg, "--alertmanagers.config-file=") {
+				exists = true
+				break
 			}
 		}
 		Expect(exists).To(Equal(true))
