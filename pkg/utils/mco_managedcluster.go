@@ -46,5 +46,4 @@ func PrintManagedCluster(opt TestOptions) {
 		}
 		klog.V(1).Infof("managedcluster <%v>: %+v\n", clusterName, cluster)
 	}
-	klog.Errorf("Failed to found managedcluster")
 }
