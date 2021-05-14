@@ -639,3 +639,10 @@ func IsOpenshift(client *rest.RESTClient) bool {
 func IntegrityChecking(opt TestOptions) error {
 	return CheckMCOComponentsInHighMode(opt)
 }
+
+func PrintMCORelatedInfoForDebug(opt TestOptions) {
+	PrintMCOObject(opt)
+	PrintAllMCOPodsStatus(opt)
+	PrintAllOBAPodsStatus(opt)
+	PrintManagedCluster(opt)
+}

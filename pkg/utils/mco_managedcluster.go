@@ -3,7 +3,10 @@
 
 package utils
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
+)
 
 func UpdateObservabilityFromManagedCluster(opt TestOptions, enableObservability bool) error {
 	clusterName := GetManagedClusterName(opt)
@@ -30,4 +33,18 @@ func UpdateObservabilityFromManagedCluster(opt TestOptions, enableObservability 
 		}
 	}
 	return nil
+}
+
+func PrintManagedCluster(opt TestOptions) {
+	clusterName := GetManagedClusterName(opt)
+	if clusterName != "" {
+		clientDynamic := GetKubeClientDynamic(opt, true)
+		cluster, err := clientDynamic.Resource(NewOCMManagedClustersGVR()).Get(clusterName, metav1.GetOptions{})
+		if err != nil {
+			klog.Errorf("Failed to get managedcluster %+v: %v", clusterName, err)
+			return
+		}
+		klog.V(1).Infof("managedcluster <%v>: %+v\n", clusterName, cluster)
+	}
+	klog.Errorf("Failed to found managedcluster")
 }

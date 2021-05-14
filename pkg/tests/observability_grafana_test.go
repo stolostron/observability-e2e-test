@@ -33,9 +33,7 @@ var _ = Describe("Observability:", func() {
 	AfterEach(func() {
 		testFailed = testFailed || CurrentGinkgoTestDescription().Failed
 		if testFailed {
-			utils.PrintMCOObject(testOptions)
-			utils.PrintAllMCOPodsStatus(testOptions)
-			utils.PrintAllOBAPodsStatus(testOptions)
+			utils.PrintMCORelatedInfoForDebug(testOptions)
 		} else {
 			Expect(utils.IntegrityChecking(testOptions)).NotTo(HaveOccurred())
 		}
