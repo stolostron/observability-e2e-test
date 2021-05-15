@@ -24,7 +24,6 @@ import (
 )
 
 const (
-	MCO_OPERATOR_NAMESPACE        = "open-cluster-management"
 	MCO_CR_NAME                   = "observability"
 	MCO_COMPONENT_LABEL           = "observability.open-cluster-management.io/name=" + MCO_CR_NAME
 	OBSERVATORIUM_COMPONENT_LABEL = "app.kubernetes.io/part-of=observatorium"
@@ -791,14 +790,14 @@ func CheckMCOConversion(opt TestOptions, v1beta1tov1beta2GoldenPath string) erro
 	return nil
 }
 
-func CreatePullSecret(opt TestOptions) error {
+func CreatePullSecret(opt TestOptions, mcoNs string) error {
 	clientKube := NewKubeClient(
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
-	namespace := MCO_OPERATOR_NAMESPACE
+
 	name := "multiclusterhub-operator-pull-secret"
-	pullSecret, errGet := clientKube.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+	pullSecret, errGet := clientKube.CoreV1().Secrets(mcoNs).Get(name, metav1.GetOptions{})
 	if errGet != nil {
 		return errGet
 	}
@@ -818,7 +817,7 @@ kind: Namespace
 metadata:
   name: %s`,
 		MCO_NAMESPACE)
-	klog.V(1).Infof("Create MCO namespaces")
+	klog.V(1).Infof("Create %s namespaces", MCO_NAMESPACE)
 	return Apply(
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
