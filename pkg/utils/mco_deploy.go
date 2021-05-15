@@ -100,6 +100,13 @@ func NewOCMPlacementRuleGVR() schema.GroupVersionResource {
 		Resource: "placementrules"}
 }
 
+func NewOCMMultiClusterHubGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    "operator.open-cluster-management.io",
+		Version:  "v1",
+		Resource: "multiclusterhubs"}
+}
+
 func ModifyMCOAvailabilityConfig(opt TestOptions, availabilityConfig string) error {
 	clientDynamic := NewKubeClientDynamic(
 		opt.HubCluster.MasterURL,
@@ -790,24 +797,58 @@ func CheckMCOConversion(opt TestOptions, v1beta1tov1beta2GoldenPath string) erro
 	return nil
 }
 
+func GetPullSecret(opt TestOptions, mcoNS string) (string, error) {
+	clientDynamic := NewKubeClientDynamic(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+
+	mchList, err := clientDynamic.Resource(NewOCMMultiClusterHubGVR()).List(metav1.ListOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	if len(mchList.Items) == 0 {
+		return "", fmt.Errorf("can not find the MCH operator CR in the cluster")
+	}
+	mchName := mchList.Items[0].GetName()
+
+	getMCH, err := clientDynamic.Resource(NewOCMMultiClusterHubGVR()).Namespace(mcoNS).Get(mchName, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	spec := getMCH.Object["spec"].(map[string]interface{})
+	if _, ok := spec["imagePullSecret"]; !ok {
+		return "", fmt.Errorf("can not find imagePullSecret in MCH CR")
+	}
+
+	ips := spec["imagePullSecret"].(string)
+	return ips, nil
+}
+
 func CreatePullSecret(opt TestOptions, mcoNs string) error {
 	clientKube := NewKubeClient(
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
 
-	name := "multiclusterhub-operator-pull-secret"
+	name, err := GetPullSecret(opt, mcoNs)
+	if err != nil {
+		return err
+	}
+
 	pullSecret, errGet := clientKube.CoreV1().Secrets(mcoNs).Get(name, metav1.GetOptions{})
 	if errGet != nil {
 		return errGet
 	}
 
 	pullSecret.ObjectMeta = metav1.ObjectMeta{
-		Name:      name,
+		Name:      MCO_PULL_SECRET_NAME,
 		Namespace: MCO_NAMESPACE,
 	}
 	klog.V(1).Infof("Create MCO pull secret")
-	_, err := clientKube.CoreV1().Secrets(pullSecret.Namespace).Create(pullSecret)
+	_, err = clientKube.CoreV1().Secrets(pullSecret.Namespace).Create(pullSecret)
 	return err
 }
 
@@ -883,11 +924,16 @@ func UninstallMCO(opt TestOptions) error {
 		return deleteMCOErr
 	}
 
-	klog.V(1).Infof("Delete MCO pull secret")
 	clientKube := NewKubeClient(
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
+
+	klog.V(1).Infof("Delete MCO pull secret")
+	deletePullSecretErr := clientKube.CoreV1().Secrets(MCO_NAMESPACE).Delete(MCO_PULL_SECRET_NAME, &metav1.DeleteOptions{})
+	if deletePullSecretErr != nil {
+		return deletePullSecretErr
+	}
 
 	klog.V(1).Infof("Delete MCO object storage secret")
 	deleteObjSecretErr := clientKube.CoreV1().Secrets(MCO_NAMESPACE).Delete(OBJ_SECRET_NAME, &metav1.DeleteOptions{})
