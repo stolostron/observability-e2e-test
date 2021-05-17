@@ -58,7 +58,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
 	})
 
-	It("[P2][Sev2][Observability][Stable] Should have no metrics after custom metrics allowlist deleted (metricslist/g0)", func() {
+	It("[P2][Sev2][Observability][Integration] Should have no metrics after custom metrics allowlist deleted (metricslist/g0)", func() {
 		By("Deleting custom metrics allowlist configmap")
 		Eventually(func() error {
 			err := hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Delete(allowlistCMname, &metav1.DeleteOptions{})
