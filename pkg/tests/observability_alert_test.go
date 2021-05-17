@@ -28,12 +28,12 @@ var _ = Describe("Observability:", func() {
 			testOptions.KubeConfig,
 			testOptions.HubCluster.KubeContext)
 	})
-	statefulset := [...]string{"alertmanager", "observability-observatorium-thanos-rule"}
+	statefulset := [...]string{"alertmanager", "observability-thanos-rule"}
 	configmap := [...]string{"thanos-ruler-default-rules", "thanos-ruler-custom-rules"}
 	secret := "alertmanager-config"
 
 	It("[P1][Sev1][Observability] Should have the expected statefulsets (alert/g0)", func() {
-		By("Checking if STS: Alertmanager and observability-observatorium-thanos-rule exist")
+		By("Checking if STS: Alertmanager and observability-thanos-rule exist")
 		for _, name := range statefulset {
 			sts, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
@@ -44,7 +44,7 @@ var _ = Describe("Observability:", func() {
 				Expect(sts.Spec.Template.Spec.Volumes[0].Secret.SecretName).To(Equal("alertmanager-config"))
 			}
 
-			if sts.GetName() == "observability-observatorium-thanos-rule" {
+			if sts.GetName() == "observability-thanos-rule" {
 				By("The statefulset: " + sts.GetName() + " should have the appropriate configmap mounted")
 				Expect(sts.Spec.Template.Spec.Volumes[0].ConfigMap.Name).To(Equal("thanos-ruler-default-rules"))
 			}
