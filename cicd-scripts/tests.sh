@@ -6,7 +6,7 @@ export KUBECONFIG=$HOME/.kube/kind-config-hub
 export IMPORT_KUBECONFIG=$HOME/.kube/kind-config-spoke
 export SKIP_INSTALL_STEP=true
 
-git clone https://github.com/open-cluster-management/observability-gitops.git
+git clone --depth 1 -b release-2.2 https://github.com/open-cluster-management/observability-gitops.git
 
 printf "options:" >> resources/options.yaml
 printf "\n  hub:" >> resources/options.yaml
