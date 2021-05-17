@@ -231,7 +231,6 @@ func LoadConfig(url, kubeconfig, context string) (*rest.Config, error) {
 	}
 
 	return nil, fmt.Errorf("could not create a valid kubeconfig")
-
 }
 
 //Apply a multi resources file to the cluster described by the url, kubeconfig and context.
@@ -396,7 +395,6 @@ func Apply(url string, kubeconfig string, context string, yamlB []byte) error {
 				klog.Warningf("%s %s/%s already exists, updating!", obj.Kind, obj.Namespace, obj.Name)
 				_, err = clientKube.CoreV1().PersistentVolumeClaims(obj.Namespace).Update(obj)
 			}
-
 		case "Deployment":
 			klog.V(5).Infof("Install %s: %s\n", kind, f)
 			obj := &appsv1.Deployment{}
@@ -412,7 +410,6 @@ func Apply(url string, kubeconfig string, context string, yamlB []byte) error {
 				klog.Warningf("%s %s/%s already exists, updating!", obj.Kind, obj.Namespace, obj.Name)
 				_, err = clientKube.AppsV1().Deployments(obj.Namespace).Update(obj)
 			}
-
 		case "LimitRange":
 			klog.V(5).Infof("Install %s: %s\n", kind, f)
 			obj := &corev1.LimitRange{}
@@ -428,7 +425,6 @@ func Apply(url string, kubeconfig string, context string, yamlB []byte) error {
 				klog.Warningf("%s %s/%s already exists, updating!", obj.Kind, obj.Namespace, obj.Name)
 				_, err = clientKube.CoreV1().LimitRanges(obj.Namespace).Update(obj)
 			}
-
 		case "ResourceQuota":
 			klog.V(5).Infof("Install %s: %s\n", kind, f)
 			obj := &corev1.ResourceQuota{}
@@ -444,13 +440,12 @@ func Apply(url string, kubeconfig string, context string, yamlB []byte) error {
 				klog.Warningf("%s %s/%s already exists, updating!", obj.Kind, obj.Namespace, obj.Name)
 				_, err = clientKube.CoreV1().ResourceQuotas(obj.Namespace).Update(obj)
 			}
-
 		default:
 			switch kind {
 			case "MultiClusterObservability":
 				klog.V(5).Infof("Install MultiClusterObservability: %s\n", f)
 			default:
-				return fmt.Errorf("Resource %s not supported", kind)
+				return fmt.Errorf("resource %s not supported", kind)
 			}
 
 			gvr := NewMCOGVRV1BETA2()
@@ -458,10 +453,21 @@ func Apply(url string, kubeconfig string, context string, yamlB []byte) error {
 				gvr = NewMCOGVRV1BETA1()
 			}
 
+			// url string, kubeconfig string, context string
+			opt := TestOptions{
+				HubCluster: Cluster{
+					MasterURL:   url,
+					KubeContext: context,
+				},
+				KubeConfig: kubeconfig,
+			}
 			clientDynamic := NewKubeClientDynamic(url, kubeconfig, context)
 			if ns := obj.GetNamespace(); ns != "" {
 				existingObject, errGet := clientDynamic.Resource(gvr).Namespace(ns).Get(obj.GetName(), metav1.GetOptions{})
 				if errGet != nil {
+					if ips, err := GetPullSecret(opt); err == nil {
+						obj.Object["spec"].(map[string]interface{})["imagePullSecret"] = ips
+					}
 					_, err = clientDynamic.Resource(gvr).Namespace(ns).Create(obj, metav1.CreateOptions{})
 				} else {
 					obj.Object["metadata"] = existingObject.Object["metadata"]
@@ -471,6 +477,9 @@ func Apply(url string, kubeconfig string, context string, yamlB []byte) error {
 			} else {
 				existingObject, errGet := clientDynamic.Resource(gvr).Get(obj.GetName(), metav1.GetOptions{})
 				if errGet != nil {
+					if ips, err := GetPullSecret(opt); err == nil {
+						obj.Object["spec"].(map[string]interface{})["imagePullSecret"] = ips
+					}
 					_, err = clientDynamic.Resource(gvr).Create(obj, metav1.CreateOptions{})
 				} else {
 					obj.Object["metadata"] = existingObject.Object["metadata"]
@@ -638,4 +647,37 @@ func IsOpenshift(client *rest.RESTClient) bool {
 // IntegrityChecking checks to ensure all required conditions are met when completing the specs
 func IntegrityChecking(opt TestOptions) error {
 	return CheckMCOComponentsInHighMode(opt)
+}
+
+// GetPullSecret checks the secret from MCH CR and return the secret name
+func GetPullSecret(opt TestOptions) (string, error) {
+	clientDynamic := NewKubeClientDynamic(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+
+	mchList, err := clientDynamic.Resource(NewOCMMultiClusterHubGVR()).List(metav1.ListOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	if len(mchList.Items) == 0 {
+		return "", fmt.Errorf("can not find the MCH operator CR in the cluster")
+	}
+
+	mchName := mchList.Items[0].GetName()
+	mchNs := mchList.Items[0].GetNamespace()
+
+	getMCH, err := clientDynamic.Resource(NewOCMMultiClusterHubGVR()).Namespace(mchNs).Get(mchName, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	spec := getMCH.Object["spec"].(map[string]interface{})
+	if _, ok := spec["imagePullSecret"]; !ok {
+		return "", fmt.Errorf("can not find imagePullSecret in MCH CR")
+	}
+
+	ips := spec["imagePullSecret"].(string)
+	return ips, nil
 }

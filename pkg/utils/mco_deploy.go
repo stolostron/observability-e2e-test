@@ -797,43 +797,13 @@ func CheckMCOConversion(opt TestOptions, v1beta1tov1beta2GoldenPath string) erro
 	return nil
 }
 
-func GetPullSecret(opt TestOptions, mcoNS string) (string, error) {
-	clientDynamic := NewKubeClientDynamic(
-		opt.HubCluster.MasterURL,
-		opt.KubeConfig,
-		opt.HubCluster.KubeContext)
-
-	mchList, err := clientDynamic.Resource(NewOCMMultiClusterHubGVR()).List(metav1.ListOptions{})
-	if err != nil {
-		return "", err
-	}
-
-	if len(mchList.Items) == 0 {
-		return "", fmt.Errorf("can not find the MCH operator CR in the cluster")
-	}
-	mchName := mchList.Items[0].GetName()
-
-	getMCH, err := clientDynamic.Resource(NewOCMMultiClusterHubGVR()).Namespace(mcoNS).Get(mchName, metav1.GetOptions{})
-	if err != nil {
-		return "", err
-	}
-
-	spec := getMCH.Object["spec"].(map[string]interface{})
-	if _, ok := spec["imagePullSecret"]; !ok {
-		return "", fmt.Errorf("can not find imagePullSecret in MCH CR")
-	}
-
-	ips := spec["imagePullSecret"].(string)
-	return ips, nil
-}
-
 func CreatePullSecret(opt TestOptions, mcoNs string) error {
 	clientKube := NewKubeClient(
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
 
-	name, err := GetPullSecret(opt, mcoNs)
+	name, err := GetPullSecret(opt)
 	if err != nil {
 		return err
 	}
@@ -844,7 +814,7 @@ func CreatePullSecret(opt TestOptions, mcoNs string) error {
 	}
 
 	pullSecret.ObjectMeta = metav1.ObjectMeta{
-		Name:      MCO_PULL_SECRET_NAME,
+		Name:      name,
 		Namespace: MCO_NAMESPACE,
 	}
 	klog.V(1).Infof("Create MCO pull secret")
@@ -928,12 +898,6 @@ func UninstallMCO(opt TestOptions) error {
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
-
-	klog.V(1).Infof("Delete MCO pull secret")
-	deletePullSecretErr := clientKube.CoreV1().Secrets(MCO_NAMESPACE).Delete(MCO_PULL_SECRET_NAME, &metav1.DeleteOptions{})
-	if deletePullSecretErr != nil {
-		return deletePullSecretErr
-	}
 
 	klog.V(1).Infof("Delete MCO object storage secret")
 	deleteObjSecretErr := clientKube.CoreV1().Secrets(MCO_NAMESPACE).Delete(OBJ_SECRET_NAME, &metav1.DeleteOptions{})
