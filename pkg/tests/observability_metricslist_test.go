@@ -42,10 +42,18 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P2][Sev2][Observability][Integration] Should have not metrics which have been marked for deletion (metricslist/g0)", func() {
+	It("[P2][Sev2][Observability][Integration] Should have not metrics which have been marked for deletion in names section (metricslist/g0)", func() {
 		By("Waiting for deleted metrics disappear on grafana console")
 		Eventually(func() error {
 			err, _ := utils.ContainManagedClusterMetric(testOptions, "rest_client_requests_total offset 1m", []string{`"__name__":"rest_client_requests_total"`})
+			return err
+		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
+	})
+
+	It("[P2][Sev2][Observability][Integration] Should have not metrics which have been marked for deletion in matches section (metricslist/g0)", func() {
+		By("Waiting for deleted metrics disappear on grafana console")
+		Eventually(func() error {
+			err, _ := utils.ContainManagedClusterMetric(testOptions, "go_goroutines offset 1m", []string{`"__name__":"go_goroutines"`})
 			return err
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
 	})
