@@ -42,15 +42,23 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P2][Sev2][Observability][Integration] Should have not metrics which have been marked for deletion (metricslist/g0)", func() {
+	It("[P2][Sev2][Observability][Integration] Should have not metrics which have been marked for deletion in names section (metricslist/g0)", func() {
 		By("Waiting for deleted metrics disappear on grafana console")
 		Eventually(func() error {
-			err, _ := utils.ContainManagedClusterMetric(testOptions, "rest_client_requests_total offset 1m", []string{`"__name__":"rest_client_requests_total"`})
+			err, _ := utils.ContainManagedClusterMetric(testOptions, "cluster_version_payload offset 1m", []string{`"__name__":"cluster_version_payload"`})
 			return err
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
 	})
 
-	It("[P2][Sev2][Observability][Stable] Should have no metrics after custom metrics allowlist deleted (metricslist/g0)", func() {
+	It("[P2][Sev2][Observability][Integration] Should have not metrics which have been marked for deletion in matches section (metricslist/g0)", func() {
+		By("Waiting for deleted metrics disappear on grafana console")
+		Eventually(func() error {
+			err, _ := utils.ContainManagedClusterMetric(testOptions, "go_goroutines offset 1m", []string{`"__name__":"go_goroutines"`})
+			return err
+		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
+	})
+
+	It("[P2][Sev2][Observability][Integration] Should have no metrics after custom metrics allowlist deleted (metricslist/g0)", func() {
 		By("Deleting custom metrics allowlist configmap")
 		Eventually(func() error {
 			err := hubClient.CoreV1().ConfigMaps(MCO_NAMESPACE).Delete(allowlistCMname, &metav1.DeleteOptions{})
