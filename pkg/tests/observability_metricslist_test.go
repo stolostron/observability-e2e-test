@@ -45,7 +45,7 @@ var _ = Describe("Observability:", func() {
 	It("[P2][Sev2][Observability][Integration] Should have not metrics which have been marked for deletion in names section (metricslist/g0)", func() {
 		By("Waiting for deleted metrics disappear on grafana console")
 		Eventually(func() error {
-			err, _ := utils.ContainManagedClusterMetric(testOptions, "rest_client_requests_total offset 1m", []string{`"__name__":"rest_client_requests_total"`})
+			err, _ := utils.ContainManagedClusterMetric(testOptions, "cluster_version_payload offset 1m", []string{`"__name__":"cluster_version_payload"`})
 			return err
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
 	})
