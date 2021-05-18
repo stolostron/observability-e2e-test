@@ -100,6 +100,13 @@ func NewOCMPlacementRuleGVR() schema.GroupVersionResource {
 		Resource: "placementrules"}
 }
 
+func NewOCMMultiClusterHubGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    "operator.open-cluster-management.io",
+		Version:  "v1",
+		Resource: "multiclusterhubs"}
+}
+
 func ModifyMCOAvailabilityConfig(opt TestOptions, availabilityConfig string) error {
 	clientDynamic := NewKubeClientDynamic(
 		opt.HubCluster.MasterURL,
@@ -796,7 +803,11 @@ func CreatePullSecret(opt TestOptions, mcoNs string) error {
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
 
-	name := "multiclusterhub-operator-pull-secret"
+	name, err := GetPullSecret(opt)
+	if err != nil {
+		return err
+	}
+
 	pullSecret, errGet := clientKube.CoreV1().Secrets(mcoNs).Get(name, metav1.GetOptions{})
 	if errGet != nil {
 		return errGet
@@ -807,7 +818,7 @@ func CreatePullSecret(opt TestOptions, mcoNs string) error {
 		Namespace: MCO_NAMESPACE,
 	}
 	klog.V(1).Infof("Create MCO pull secret")
-	_, err := clientKube.CoreV1().Secrets(pullSecret.Namespace).Create(pullSecret)
+	_, err = clientKube.CoreV1().Secrets(pullSecret.Namespace).Create(pullSecret)
 	return err
 }
 
@@ -883,7 +894,6 @@ func UninstallMCO(opt TestOptions) error {
 		return deleteMCOErr
 	}
 
-	klog.V(1).Infof("Delete MCO pull secret")
 	clientKube := NewKubeClient(
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
