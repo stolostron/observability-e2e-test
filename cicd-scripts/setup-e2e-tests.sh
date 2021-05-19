@@ -132,58 +132,15 @@ setup_jq() {
 }
 
 deploy_hub_spoke_core() {
-    # create the open-cluster-management namespace if it doesn't exist
-    kubectl create ns ${OCM_DEFAULT_NS} --dry-run=client -o yaml | kubectl apply -f -
-    kubectl create ns ${HUB_NS} --dry-run=client -o yaml | kubectl apply -f -
-    kubectl create ns ${AGENT_NS} --dry-run=client -o yaml | kubectl apply -f -
+    cd ${ROOTDIR}
+    if [ -d "registration-operator" ]; then
+        rm -rf registration-operator
+    fi
+    latest_release_branch=$(git ls-remote --heads https://github.com/open-cluster-management/registration-operator.git release\* | tail -1 | cut -f 2 | cut -d '/' -f 3)
+    git clone --depth 1 -b ${latest_release_branch} https://github.com/open-cluster-management/registration-operator.git && cd registration-operator
 
-    cat << EOF | kubectl -n ${OCM_DEFAULT_NS} apply -f -
-apiVersion: operators.coreos.com/v1
-kind: OperatorGroup
-metadata:
-  name: ocm-og
-spec:
-  targetNamespaces:
-  - ${OCM_DEFAULT_NS}
-EOF
-
-    cat << EOF | kubectl -n ${OCM_DEFAULT_NS} apply -f -
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: cluster-manager
-spec:
-  channel: stable
-  name: cluster-manager
-  source: community-operators
-  sourceNamespace: openshift-marketplace
-EOF
-
-    # create the hub cr
-    kubectl apply -n ${OCM_DEFAULT_NS} -f https://raw.githubusercontent.com/open-cluster-management/registration-operator/release-2.2/deploy/cluster-manager/config/samples/operator_open-cluster-management_clustermanagers.cr.yaml
-
-    cat << EOF | kubectl -n ${OCM_DEFAULT_NS} apply -f -
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: klusterlet
-spec:
-  channel: stable
-  name: klusterlet
-  source: community-operators
-  sourceNamespace: openshift-marketplace
-EOF
-
-    clusterip=$(kubectl get svc kubernetes -n default -o jsonpath="{.spec.clusterIP}")
-    curentctx=$(kubectl config current-context)
-	cp ${KUBECONFIG} dev-kubeconfig
-    kubectl config use-context ${curentctx}
-    kubectl config set clusters.kind-${MANAGED_CLUSTER}.server https://${CLUSTER_IP} --kubeconfig dev-kubeconfig
-    kubectl delete secret bootstrap-hub-kubeconfig -n ${AGENT_NS} --ignore-not-found
-    kubectl create secret generic bootstrap-hub-kubeconfig --from-file=kubeconfig=dev-kubeconfig -n ${AGENT_NS}
-
-    # create the spoke cr
-    kubectl apply -n ${OCM_DEFAULT_NS} -f https://raw.githubusercontent.com/open-cluster-management/registration-operator/release-2.2/deploy/klusterlet/config/samples/operator_open-cluster-management_klusterlets.cr.yaml
+    # deploy hub and spoke via OLM
+    make deploy
 
     # wait until hub and spoke are ready
     wait_for_deployment_ready 10 60s ${HUB_NS} cluster-manager-registration-controller cluster-manager-registration-webhook cluster-manager-work-webhook
@@ -191,15 +148,11 @@ EOF
 }
 
 delete_hub_spoke_core() {
-    kubectl delete -n ${OCM_DEFAULT_NS} --ignore-not-found -f https://raw.githubusercontent.com/open-cluster-management/registration-operator/release-2.2/deploy/klusterlet/config/samples/operator_open-cluster-management_klusterlets.cr.yaml
-    kubectl delete -n ${OCM_DEFAULT_NS} --ignore-not-found -f https://raw.githubusercontent.com/open-cluster-management/registration-operator/release-2.2/deploy/cluster-manager/config/samples/operator_open-cluster-management_clustermanagers.cr.yaml
-
-    # delete the subscriptions and clusterserviceversions for hub and spoke
-    kubectl -n ${OCM_DEFAULT_NS} delete subscriptions.operators.coreos.com klusterlet cluster-manager --ignore-not-found
-    kubectl -n ${OCM_DEFAULT_NS} delete clusterserviceversions.operators.coreos.com --all
-
-    # delete relevant namespaces
-    kubectl delete ns ${HUB_NS} ${AGENT_NS} ${OCM_DEFAULT_NS} --ignore-not-found
+    cd ${ROOTDIR}/registration-operator
+    # uninstall hub and spoke via OLM
+    make clean-deploy
+    rm -rf ${ROOTDIR}/registration-operator
+    oc delete ns ${OCM_DEFAULT_NS} --ignore-not-found
 }
 
 approve_csr_joinrequest() {
