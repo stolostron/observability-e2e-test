@@ -80,7 +80,6 @@ jobs:
         # - make sonar/go   # TODO: Need to onboard to SonarCloud
     - stage: test-e2e
       name: "Deploy the image to a cluster and run e2e tests"
-      if: type = pull_request
       script:
         - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; fi;
         - make

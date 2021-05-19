@@ -285,10 +285,10 @@ func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 	deployments := client.AppsV1().Deployments(MCO_NAMESPACE)
 	expectedDeploymentNames := []string{
 		"grafana",
-		"observability-observatorium-observatorium-api",
-		"observability-observatorium-thanos-query",
-		"observability-observatorium-thanos-query-frontend",
-		"observability-observatorium-thanos-receive-controller",
+		"observability-observatorium-api",
+		"observability-thanos-query",
+		"observability-thanos-query-frontend",
+		"observability-thanos-receive-controller",
 		"observatorium-operator",
 		"rbac-query-proxy",
 	}
@@ -309,11 +309,11 @@ func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 	statefulsets := client.AppsV1().StatefulSets(MCO_NAMESPACE)
 	expectedStatefulSetNames := []string{
 		"alertmanager",
-		"observability-observatorium-thanos-compact",
-		"observability-observatorium-thanos-receive-default",
-		"observability-observatorium-thanos-rule",
-		"observability-observatorium-thanos-store-memcached",
-		"observability-observatorium-thanos-store-shard-0",
+		"observability-thanos-compact",
+		"observability-thanos-receive-default",
+		"observability-thanos-rule",
+		"observability-thanos-store-memcached",
+		"observability-thanos-store-shard-0",
 	}
 
 	for _, statefulsetName := range expectedStatefulSetNames {
@@ -340,9 +340,9 @@ func CheckMCOComponentsInHighMode(opt TestOptions) error {
 	deployments := client.AppsV1().Deployments(MCO_NAMESPACE)
 	expectedDeploymentNames := []string{
 		"grafana",
-		"observability-observatorium-observatorium-api",
-		"observability-observatorium-thanos-query",
-		"observability-observatorium-thanos-query-frontend",
+		"observability-observatorium-api",
+		"observability-thanos-query",
+		"observability-thanos-query-frontend",
 		"rbac-query-proxy",
 	}
 
@@ -362,11 +362,11 @@ func CheckMCOComponentsInHighMode(opt TestOptions) error {
 	statefulsets := client.AppsV1().StatefulSets(MCO_NAMESPACE)
 	expectedStatefulSetNames := []string{
 		"alertmanager",
-		"observability-observatorium-thanos-receive-default",
-		"observability-observatorium-thanos-rule",
-		"observability-observatorium-thanos-store-memcached",
+		"observability-thanos-receive-default",
+		"observability-thanos-rule",
+		"observability-thanos-store-memcached",
 		// TODO: https://github.com/open-cluster-management/backlog/issues/6532
-		// "observability-observatorium-thanos-store-shard-0",
+		// "observability-thanos-store-shard-0",
 	}
 
 	for _, statefulsetName := range expectedStatefulSetNames {
@@ -383,10 +383,10 @@ func CheckMCOComponentsInHighMode(opt TestOptions) error {
 	}
 
 	expectedStatefulSetNames = []string{
-		"observability-observatorium-thanos-compact",
-		"observability-observatorium-thanos-store-shard-0",
-		"observability-observatorium-thanos-store-shard-1",
-		"observability-observatorium-thanos-store-shard-2",
+		"observability-thanos-compact",
+		"observability-thanos-store-shard-0",
+		"observability-thanos-store-shard-1",
+		"observability-thanos-store-shard-2",
 	}
 
 	for _, statefulsetName := range expectedStatefulSetNames {

@@ -25,7 +25,7 @@ var _ = Describe("Observability:", func() {
 
 	It("[P1][Sev1][Observability] Should have metrics collector pod restart if cert secret re-generated (certrenew/g0)", func() {
 		Skip("[P1][Sev1][Observability] Should have metrics collector pod restart if cert secret re-generated (certrenew/g0)")
-		By("Waiting for pods ready: observability-observatorium-observatorium-api, metrics-collector-deployment")
+		By("Waiting for pods ready: observability-observatorium-api, metrics-collector-deployment")
 		collectorPodName := ""
 		apiPodsName := map[string]bool{}
 		Eventually(func() bool {
