@@ -153,7 +153,7 @@ AWS_ACCESS_KEY_ID=YOUR_S3_AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY=YOUR_S3_AWS_SECRET_ACCESS_KEY
 ```
 
-4. oc login to your cluster in which observability is installed - and make sure that remains the current-context in kubeconfig:
+4. login to your cluster in which observability is installed - and make sure that remains the current-context in kubeconfig:
 
 ```
 $ kubectl config current-context
