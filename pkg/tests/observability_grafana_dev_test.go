@@ -16,7 +16,7 @@ import (
 
 var _ = Describe("Observability:", func() {
 
-	It("[P1][Sev1][Observability][Integration] Should run grafana-dev test successfully (grafana-dev/g0)", func() {
+	It("[P1][Sev1][Observability][Stable] Should run grafana-dev test successfully (grafana-dev/g0)", func() {
 		Eventually(func() error {
 			cmd := exec.Command("../../cicd-scripts/grafana-dev-test.sh")
 			var out bytes.Buffer

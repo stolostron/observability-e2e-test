@@ -29,7 +29,7 @@ var _ = Describe("Observability:", func() {
 			testOptions.HubCluster.KubeContext)
 	})
 
-	It("[P2][Sev2][Observability][Stable] Should have metrics which defined in custom metrics allowlist (metricslist/g0)", func() {
+	It("[P2][Sev2][Observability][Integration] Should have metrics which defined in custom metrics allowlist (metricslist/g0)", func() {
 		By("Adding custom metrics allowlist configmap")
 		yamlB, err := kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/metrics/allowlist"})
 		Expect(err).ToNot(HaveOccurred())

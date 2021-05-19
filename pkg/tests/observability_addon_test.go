@@ -64,7 +64,7 @@ var _ = Describe("Observability:", func() {
 			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 		})
 
-		It("[Integration] Should have resource requirement defined in CR", func() {
+		It("[Stable] Should have resource requirement defined in CR", func() {
 			By("Check addon resource requirement")
 			res, err := utils.GetMCOAddonSpecResources(testOptions)
 			limits := res["limits"].(map[string]interface{})
@@ -76,7 +76,7 @@ var _ = Describe("Observability:", func() {
 			Expect(requests["memory"]).To(Equal("200Mi"))
 		})
 
-		It("[Integration] Should have resource requirement in metrics-collector", func() {
+		It("[Stable] Should have resource requirement in metrics-collector", func() {
 			By("Check metrics-collector resource requirement")
 			Eventually(func() error {
 				return utils.CheckMCOAddonResources(testOptions)
@@ -192,7 +192,7 @@ var _ = Describe("Observability:", func() {
 	})
 
 	Context("[P2][Sev2][Observability] Should not have the expected MCO addon pods when disable observability from managedcluster (addon/g0) -", func() {
-		It("[Integration] Modifying managedcluster cr to disable observability", func() {
+		It("[Stable] Modifying managedcluster cr to disable observability", func() {
 			Skip("Modifying managedcluster cr to disable observability")
 			Eventually(func() error {
 				return utils.UpdateObservabilityFromManagedCluster(testOptions, false)
@@ -208,7 +208,7 @@ var _ = Describe("Observability:", func() {
 			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 		})
 
-		It("[Integration] Modifying managedcluster cr to enable observability", func() {
+		It("[Stable] Modifying managedcluster cr to enable observability", func() {
 			Skip("Modifying managedcluster cr to enable observability")
 			Eventually(func() error {
 				return utils.UpdateObservabilityFromManagedCluster(testOptions, true)
