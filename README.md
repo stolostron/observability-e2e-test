@@ -62,7 +62,7 @@ The supported component images include the following **keywords**:
 go get -u github.com/onsi/ginkgo/ginkgo
 ```
 
-2. then, depending on how your E2E environment is set up, **choose the following exclusive methods to run the e2e testing**:
+2. Then, depending on how your E2E environment is set up, **choose the following exclusive methods to run the e2e testing**:
 
 **option 1:** If your E2E environment is set up with steps by running `make test-e2e-setup`, then simply run the e2e testing with the following command:
 

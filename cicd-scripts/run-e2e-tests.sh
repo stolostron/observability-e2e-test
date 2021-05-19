@@ -18,7 +18,10 @@ kubectl config view --raw --minify > ${kubeconfig_hub_path}
 
 kubeMasterURL=$(kubectl config view -o jsonpath="{.clusters[0].cluster.server}")
 kubecontext=$(kubectl config current-context)
-git clone --depth 1 https://github.com/open-cluster-management/observability-gitops.git
+
+if [ ! -d "observability-gitops" ]; then
+  git clone --depth 1 https://github.com/open-cluster-management/observability-gitops.git
+fi
 
 # remove the options file if it exists
 rm -f resources/options.yaml
