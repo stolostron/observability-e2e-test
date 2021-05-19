@@ -151,6 +151,7 @@ delete_hub_spoke_core() {
     cd ${ROOTDIR}/registration-operator
     # uninstall hub and spoke via OLM
     make clean-deploy
+
     rm -rf ${ROOTDIR}/registration-operator
     oc delete ns ${OCM_DEFAULT_NS} --ignore-not-found
 }
