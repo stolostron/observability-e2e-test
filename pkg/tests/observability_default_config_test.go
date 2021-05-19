@@ -34,7 +34,7 @@ var _ = Describe("Observability:", func() {
 		}
 		observabilityAddonSpec := mcoRes.Object["spec"].(map[string]interface{})["observabilityAddonSpec"].(map[string]interface{})
 		Expect(observabilityAddonSpec["enableMetrics"]).To(Equal(true))
-		Expect(observabilityAddonSpec["interval"]).To(Equal(int64(30)))
+		Expect(observabilityAddonSpec["interval"]).To(Equal(int64(60)))
 	})
 
 	It("[P1][Sev1][Observability][Stable] Checking default value of PVC and StorageClass (config/g0)", func() {
