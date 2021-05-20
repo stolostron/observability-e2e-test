@@ -20,6 +20,8 @@ COPY . /go/src/github.com/open-cluster-management/observability-e2e-test/
 
 WORKDIR "/go/src/github.com/open-cluster-management/observability-e2e-test/"
 
+RUN git clone --depth 1 -b release-2.2 https://github.com/open-cluster-management/observability-gitops.git
+
 # compile go tests in build image
 RUN go get github.com/onsi/ginkgo/ginkgo@v1.14.2 && ginkgo build ./pkg/tests/
 
@@ -50,7 +52,7 @@ RUN oc version
 # copy compiled tests into built image
 RUN mkdir -p /opt/tests
 COPY --from=build /go/src/github.com/open-cluster-management/observability-e2e-test/pkg/tests/tests.test /opt/tests/observability-e2e-test.test
-COPY ./observability-gitops /observability-gitops
+COPY --from=build /go/src/github.com/open-cluster-management/observability-e2e-test/observability-gitops /observability-gitops
 
 VOLUME /results
 WORKDIR "/opt/tests/"
