@@ -15,11 +15,10 @@ import (
 )
 
 const (
-	MCO_OPERATOR_NAMESPACE = "open-cluster-management"
-	MCO_CR_NAME            = "observability"
-	MCO_NAMESPACE          = "open-cluster-management-observability"
-	MCO_ADDON_NAMESPACE    = "open-cluster-management-addon-observability"
-	MCO_LABEL              = "name=multicluster-observability-operator"
+	MCO_CR_NAME         = "observability"
+	MCO_NAMESPACE       = "open-cluster-management-observability"
+	MCO_ADDON_NAMESPACE = "open-cluster-management-addon-observability"
+	MCO_LABEL           = "name=multicluster-observability-operator"
 )
 
 var (
@@ -42,12 +41,13 @@ var _ = Describe("Observability:", func() {
 			testOptions.KubeConfig,
 			testOptions.HubCluster.KubeContext)
 	})
-
+	mcoNs := ""
 	It("Case 01 - MCO Operator is created", func() {
-		var podList, _ = hubClient.CoreV1().Pods(MCO_OPERATOR_NAMESPACE).List(metav1.ListOptions{LabelSelector: MCO_LABEL})
+		podList, _ := hubClient.CoreV1().Pods("").List(metav1.ListOptions{LabelSelector: MCO_LABEL})
 		Expect(len(podList.Items)).To(Equal(1))
 		for _, pod := range podList.Items {
 			Expect(string(pod.Status.Phase)).To(Equal("Running"))
+			mcoNs = pod.GetNamespace()
 		}
 	})
 
@@ -64,7 +64,7 @@ var _ = Describe("Observability:", func() {
 
 	It("Case 03 - All required components are deployed and running", func() {
 		Expect(utils.CreateMCONamespace(testOptions)).NotTo(HaveOccurred())
-		Expect(utils.CreatePullSecret(testOptions)).NotTo(HaveOccurred())
+		Expect(utils.CreatePullSecret(testOptions, mcoNs)).NotTo(HaveOccurred())
 		Expect(utils.CreateObjSecret(testOptions)).NotTo(HaveOccurred())
 
 		By("Creating MCO instance")
