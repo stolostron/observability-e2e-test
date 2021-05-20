@@ -14,12 +14,11 @@ import (
 )
 
 const (
-	MCO_OPERATOR_NAMESPACE = "open-cluster-management"
-	MCO_CR_NAME            = "observability"
-	MCO_NAMESPACE          = "open-cluster-management-observability"
-	MCO_ADDON_NAMESPACE    = "open-cluster-management-addon-observability"
-	MCO_LABEL              = "name=multicluster-observability-operator"
-	MCO_LABEL_OWNER        = "owner=multicluster-observability-operator"
+	MCO_CR_NAME         = "observability"
+	MCO_NAMESPACE       = "open-cluster-management-observability"
+	MCO_ADDON_NAMESPACE = "open-cluster-management-addon-observability"
+	MCO_LABEL           = "name=multicluster-observability-operator"
+	MCO_LABEL_OWNER     = "owner=multicluster-observability-operator"
 )
 
 var (
