@@ -135,21 +135,16 @@ func installMCO() {
 	time.Sleep(60 * time.Second)
 
 	By("Waiting for MCO ready status")
-	allPodsIsReady := false
 	Eventually(func() error {
 		err = utils.CheckMCOComponentsInHighMode(testOptions)
 		if err != nil {
 			testFailed = true
+			utils.PrintAllMCOPodsStatus(testOptions)
 			return err
 		}
-		allPodsIsReady = true
 		testFailed = false
 		return nil
-	}, EventuallyTimeoutMinute*25, EventuallyIntervalSecond*5).Should(Succeed())
-
-	if !allPodsIsReady {
-		utils.PrintAllMCOPodsStatus(testOptions)
-	}
+	}, EventuallyTimeoutMinute*25, EventuallyIntervalSecond*10).Should(Succeed())
 
 	By("Checking placementrule CR is created")
 	Eventually(func() error {
