@@ -132,6 +132,7 @@ var _ = Describe("Observability:", func() {
 	})
 
 	It("[P2][Sev2][Observability][Stable] Customize the replicas for thanos query (reconcile/g0)", func() {
+		Skip("Customize the replicas. Will update it soon...")
 		Eventually(func() error {
 			err := utils.UpdateDeploymentReplicas(testOptions, MCO_CR_NAME+"-thanos-query", "query", 3, 3)
 			if err != nil {
