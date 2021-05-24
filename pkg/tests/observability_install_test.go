@@ -129,7 +129,11 @@ func installMCO() {
 	v1beta2KustomizationPath := "../../observability-gitops/mco/e2e/v1beta2"
 	yamlB, err = kustomize.Render(kustomize.Options{KustomizationPath: v1beta2KustomizationPath})
 	Expect(err).NotTo(HaveOccurred())
-	Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
+
+	// add retry for update mco object failure
+	Eventually(func() error {
+		return utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)
+	}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 
 	// wait for pod restarting
 	time.Sleep(60 * time.Second)
