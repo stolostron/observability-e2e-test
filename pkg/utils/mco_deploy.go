@@ -555,7 +555,8 @@ func ModifyMCOCR(opt TestOptions) error {
 		return getErr
 	}
 	spec := mco.Object["spec"].(map[string]interface{})
-	retentionConfig := spec["retentionConfig"].(map[string]interface{})
+	advanced := spec["advanced"].(map[string]interface{})
+	retentionConfig := advanced["retentionConfig"].(map[string]interface{})
 	retentionConfig["retentionResolutionRaw"] = "3d"
 	storageConfig := spec["storageConfig"].(map[string]interface{})
 	storageConfig["alertmanagerStorageSize"] = "2Gi"
