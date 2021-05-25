@@ -579,7 +579,8 @@ func RevertMCOCRModification(opt TestOptions) error {
 		return getErr
 	}
 	spec := mco.Object["spec"].(map[string]interface{})
-	retentionConfig := spec["retentionConfig"].(map[string]interface{})
+	advanced := spec["advanced"].(map[string]interface{})
+	retentionConfig := advanced["retentionConfig"].(map[string]interface{})
 	retentionConfig["retentionResolutionRaw"] = "5d"
 
 	_, updateErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Update(mco, metav1.UpdateOptions{})
