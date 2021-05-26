@@ -138,6 +138,7 @@ deploy_hub_spoke_core() {
     latest_release_branch=$(git ls-remote --heads https://github.com/open-cluster-management/registration-operator.git release\* | tail -1 | cut -f 2 | cut -d '/' -f 3)
     git clone --depth 1 -b ${latest_release_branch} https://github.com/open-cluster-management/registration-operator.git && cd registration-operator
 
+    export KLUSTERLET_KUBECONFIG_CONTEXT=$(kubectl config current-context)
     # deploy hub and spoke via OLM
     set +e
     make deploy
@@ -185,6 +186,8 @@ approve_csr_joinrequest() {
             for clustername in ${clusternames}; do
                 echo "approve joinrequest for ${clustername}"
                 kubectl patch managedcluster ${clustername} --patch '{"spec":{"hubAcceptsClient":true}}' --type=merge
+                echo "label vendor=OpenShift"
+                kubectl label managedcluster ${clustername} vendor=OpenShift --overwrite
             done
             break
         fi
@@ -331,6 +334,7 @@ delete_mco_operator() {
     fi
     # kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/observability-gitops/mco/func/observability.yaml --ignore-not-found
     kubectl -n ${OBSERVABILITY_NS} delete -f ${ROOTDIR}/cicd-scripts/e2e-setup-manifests/minio --ignore-not-found
+    kubectl -n ${OBSERVABILITY_NS} delete route --all --ignore-not-found
 
     # wait until all resources are deleted before delete the mco
     for i in {1..20}; do
@@ -350,7 +354,7 @@ delete_mco_operator() {
     # don't delete the ${OCM_DEFAULT_NS} namespace at this step, since ACM is there
     ${SED_COMMAND} '0,/^---$/d' config/manager/manager.yaml
     kustomize build config/default | kubectl delete --ignore-not-found -f -
-    kubectl delete ns ${OBSERVABILITY_NS}
+    kubectl delete ns ${OBSERVABILITY_NS} --ignore-not-found
 }
 
 wait_for_observability_ready() {
