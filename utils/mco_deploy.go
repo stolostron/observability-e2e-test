@@ -11,13 +11,12 @@ import (
 )
 
 const (
-	MCO_OPERATOR_NAMESPACE = "open-cluster-management"
-	MCO_NAMESPACE          = "open-cluster-management-observability"
-	MCO_CR_NAME            = "observability"
-	MCO_LABEL              = "name=multicluster-observability-operator"
-	MCO_PULL_SECRET_NAME   = "multiclusterhub-operator-pull-secret"
-	OBJ_SECRET_NAME        = "thanos-object-storage"
-	MCO_GROUP              = "observability.open-cluster-management.io"
+	MCO_NAMESPACE        = "open-cluster-management-observability"
+	MCO_CR_NAME          = "observability"
+	MCO_LABEL            = "name=multicluster-observability-operator"
+	MCO_PULL_SECRET_NAME = "multiclusterhub-operator-pull-secret"
+	OBJ_SECRET_NAME      = "thanos-object-storage"
+	MCO_GROUP            = "observability.open-cluster-management.io"
 )
 
 func NewMCOInstanceYaml(name string) []byte {
@@ -242,14 +241,13 @@ func DeleteMCOInstance(opt TestOptions) error {
 	return clientDynamic.Resource(NewMCOGVR()).Delete(MCO_CR_NAME, &metav1.DeleteOptions{})
 }
 
-func CreatePullSecret(opt TestOptions) error {
+func CreatePullSecret(opt TestOptions, mcoNs string) error {
 	clientKube := NewKubeClient(
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
-	namespace := MCO_OPERATOR_NAMESPACE
 	name := "multiclusterhub-operator-pull-secret"
-	pullSecret, errGet := clientKube.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+	pullSecret, errGet := clientKube.CoreV1().Secrets(mcoNs).Get(name, metav1.GetOptions{})
 	if errGet != nil {
 		return errGet
 	}
