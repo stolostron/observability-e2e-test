@@ -74,6 +74,7 @@ OBSERVABILITY_NS="open-cluster-management-observability"
 OCM_DEFAULT_NS="open-cluster-management"
 AGENT_NS="open-cluster-management-agent"
 HUB_NS="open-cluster-management-hub"
+MANAGED_CLUSTER="cluster1"
 
 COMPONENTS="multicluster-observability-operator rbac-query-proxy metrics-collector endpoint-monitoring-operator grafana-dashboard-loader"
 COMPONENT_REPO="quay.io/open-cluster-management"
@@ -139,9 +140,7 @@ deploy_hub_spoke_core() {
     git clone --depth 1 -b ${latest_release_branch} https://github.com/open-cluster-management/registration-operator.git && cd registration-operator
 
     # deploy hub and spoke via OLM
-    set +e
     make deploy
-    set -e
 
     # wait until hub and spoke are ready
     wait_for_deployment_ready 10 60s ${HUB_NS} cluster-manager-registration-controller cluster-manager-registration-webhook cluster-manager-work-webhook
@@ -151,9 +150,8 @@ deploy_hub_spoke_core() {
 delete_hub_spoke_core() {
     cd ${ROOTDIR}/registration-operator
     # uninstall hub and spoke via OLM
-    set +e
     make clean-deploy
-    set -e
+
     rm -rf ${ROOTDIR}/registration-operator
     oc delete ns ${OCM_DEFAULT_NS} --ignore-not-found
 }
@@ -161,9 +159,9 @@ delete_hub_spoke_core() {
 approve_csr_joinrequest() {
     for i in {1..60}; do
         # TODO(morvencao): remove the hard-coded cluster label
-        csrs=$(kubectl get csr -lopen-cluster-management.io/cluster-name=cluster1)
+        csrs=$(kubectl get csr -lopen-cluster-management.io/cluster-name=${MANAGED_CLUSTER})
         if [[ ! -z ${csrs} ]]; then
-            csrnames=$(kubectl get csr -lopen-cluster-management.io/cluster-name=cluster1 -o jsonpath={.items..metadata.name})
+            csrnames=$(kubectl get csr -lopen-cluster-management.io/cluster-name=${MANAGED_CLUSTER} -o jsonpath={.items..metadata.name})
             for csrname in ${csrnames}; do
                 echo "approve CSR: $csrname"
                 kubectl certificate approve $csrname
@@ -198,17 +196,7 @@ approve_csr_joinrequest() {
 }
 
 delete_csr() {
-    kubectl delete csr -lopen-cluster-management.io/cluster-name=cluster1 --ignore-not-found
-}
-
-print_mco_operator_log() {
-    echo "========================================================================"
-    echo "multicluster-observability-operator start"
-    echo "========================================================================"
-    kubectl -n ${OCM_DEFAULT_NS} logs deploy/multicluster-observability-operator
-    echo "========================================================================"
-    echo "multicluster-observability-operator end"
-    echo "========================================================================"
+    kubectl delete csr -lopen-cluster-management.io/cluster-name=${MANAGED_CLUSTER} --ignore-not-found
 }
 
 deploy_mco_operator() {
@@ -332,6 +320,12 @@ EOF
 }
 
 delete_mco_operator() {
+    # delete mco CR if it exists
+    kubectl delete multiclusterobservabilities --all
+
+    # delete extra routes if they exist
+    kubectl -n ${OBSERVABILITY_NS} delete route --all
+
     if [[ "${1}" == *"multicluster-observability-operator"* ]]; then
         cd ${ROOTDIR}/../../multicluster-observability-operator
     else
