@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	MCO_OPERATOR_NAMESPACE        = "open-cluster-management"
 	MCO_CR_NAME                   = "observability"
 	MCO_COMPONENT_LABEL           = "observability.open-cluster-management.io/name=" + MCO_CR_NAME
 	OBSERVATORIUM_COMPONENT_LABEL = "app.kubernetes.io/part-of=observatorium"
@@ -566,14 +565,13 @@ func DeleteMCOInstance(opt TestOptions) error {
 	return clientDynamic.Resource(NewMCOGVR()).Delete("observability", &metav1.DeleteOptions{})
 }
 
-func CreatePullSecret(opt TestOptions) error {
+func CreatePullSecret(opt TestOptions, mcoNs string) error {
 	clientKube := NewKubeClient(
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
-	namespace := MCO_OPERATOR_NAMESPACE
 	name := "multiclusterhub-operator-pull-secret"
-	pullSecret, errGet := clientKube.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+	pullSecret, errGet := clientKube.CoreV1().Secrets(mcoNs).Get(name, metav1.GetOptions{})
 	if errGet != nil {
 		return errGet
 	}

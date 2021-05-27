@@ -27,10 +27,12 @@ func installMCO() {
 		testOptions.HubCluster.KubeContext)
 
 	By("Checking MCO operator is existed")
-	podList, err := hubClient.CoreV1().Pods(MCO_OPERATOR_NAMESPACE).List(metav1.ListOptions{LabelSelector: MCO_LABEL})
+	podList, err := hubClient.CoreV1().Pods("").List(metav1.ListOptions{LabelSelector: MCO_LABEL})
 	Expect(len(podList.Items)).To(Equal(1))
 	Expect(err).NotTo(HaveOccurred())
+	mcoNs := ""
 	for _, pod := range podList.Items {
+		mcoNs = pod.GetNamespace()
 		Expect(string(pod.Status.Phase)).To(Equal("Running"))
 	}
 
@@ -45,7 +47,7 @@ func installMCO() {
 	}).Should(Succeed())
 
 	Expect(utils.CreateMCONamespace(testOptions)).NotTo(HaveOccurred())
-	Expect(utils.CreatePullSecret(testOptions)).NotTo(HaveOccurred())
+	Expect(utils.CreatePullSecret(testOptions, mcoNs)).NotTo(HaveOccurred())
 	Expect(utils.CreateObjSecret(testOptions)).NotTo(HaveOccurred())
 	//set resource quota and limit range for canary environment to avoid destruct the node
 	yamlB, err := kustomize.Render(kustomize.Options{KustomizationPath: "../../observability-gitops/policy"})
