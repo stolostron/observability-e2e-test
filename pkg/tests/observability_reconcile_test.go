@@ -131,43 +131,6 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P2][Sev2][Observability][Stable] Customize the replicas for thanos query (reconcile/g0)", func() {
-		Skip("Customize the replicas. Will update it soon...")
-		Eventually(func() error {
-			err := utils.UpdateDeploymentReplicas(testOptions, MCO_CR_NAME+"-thanos-query", "query", 3, 3)
-			if err != nil {
-				return err
-			}
-			return nil
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
-
-		Eventually(func() error {
-			err := utils.UpdateDeploymentReplicas(testOptions, MCO_CR_NAME+"-thanos-query", "query", 0, 3)
-			if err != nil {
-				return err
-			}
-			return nil
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
-
-		Eventually(func() error {
-			err := utils.UpdateDeploymentReplicas(testOptions, MCO_CR_NAME+"-thanos-query", "query", 2, 2)
-			if err != nil {
-				return err
-			}
-			return nil
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
-
-		By("Wait for thanos query pods are ready")
-		Eventually(func() error {
-			err = utils.CheckDeploymentPodReady(testOptions, MCO_CR_NAME+"-thanos-query", 2)
-			if err != nil {
-				return err
-			}
-			return nil
-		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
-
-	})
-
 	It("[P2][Sev2][Observability][Stable] Revert MCO CR changes (reconcile/g0)", func() {
 
 		By("Revert MCO CR changes")
