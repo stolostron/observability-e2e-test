@@ -240,9 +240,6 @@ deploy_mco_operator() {
     # Add mco-imageTagSuffix annotation
     sed -i "/annotations.*/a \ \ \ \ mco-imageTagSuffix: ${LATEST_SNAPSHOT}" ${ROOTDIR}/observability-gitops/mco/e2e/v1beta1/observability.yaml
     sed -i "/annotations.*/a \ \ \ \ mco-imageTagSuffix: ${LATEST_SNAPSHOT}" ${ROOTDIR}/observability-gitops/mco/e2e/v1beta2/observability.yaml
-    # Add mco-thanos-without-resources-requests annotation
-    sed -i "/annotations.*/a \ \ \ \ mco-thanos-without-resources-requests: \"true\"" ${ROOTDIR}/observability-gitops/mco/e2e/v1beta1/observability.yaml
-    sed -i "/annotations.*/a \ \ \ \ mco-thanos-without-resources-requests: \"true\"" ${ROOTDIR}/observability-gitops/mco/e2e/v1beta2/observability.yaml
 
     # create the two CRDs: clustermanagementaddons and managedclusteraddons
     if [ -d "ocm-api" ]; then
