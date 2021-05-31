@@ -380,7 +380,7 @@ func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
 	return nil
 }
 
-func CheckStatefulSetPodReady(opt TestOptions, stsName string, number int32) error {
+func CheckStatefulSetPodReady(opt TestOptions, stsName string) error {
 	client := NewKubeClient(
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
@@ -392,18 +392,18 @@ func CheckStatefulSetPodReady(opt TestOptions, stsName string, number int32) err
 		return err
 	}
 
-	if statefulset.Status.ReadyReplicas != number ||
-		statefulset.Status.UpdatedReplicas != number ||
+	if statefulset.Status.ReadyReplicas != *statefulset.Spec.Replicas ||
+		statefulset.Status.UpdatedReplicas != *statefulset.Spec.Replicas ||
 		statefulset.Status.UpdateRevision != statefulset.Status.CurrentRevision {
 		err = fmt.Errorf("statefulset %s should have %d but got %d ready replicas",
-			stsName, number,
+			stsName, *statefulset.Spec.Replicas,
 			statefulset.Status.ReadyReplicas)
 		return err
 	}
 	return nil
 }
 
-func CheckDeploymentPodReady(opt TestOptions, deployName string, number int32) error {
+func CheckDeploymentPodReady(opt TestOptions, deployName string) error {
 	client := NewKubeClient(
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
@@ -415,11 +415,11 @@ func CheckDeploymentPodReady(opt TestOptions, deployName string, number int32) e
 		return err
 	}
 
-	if deploy.Status.ReadyReplicas != number ||
-		deploy.Status.UpdatedReplicas != number ||
-		deploy.Status.AvailableReplicas != number {
+	if deploy.Status.ReadyReplicas != *deploy.Spec.Replicas ||
+		deploy.Status.UpdatedReplicas != *deploy.Spec.Replicas ||
+		deploy.Status.AvailableReplicas != *deploy.Spec.Replicas {
 		err = fmt.Errorf("deployment %s should have %d but got %d ready replicas",
-			deployName, number,
+			deployName, *deploy.Spec.Replicas,
 			deploy.Status.ReadyReplicas)
 		return err
 	}
