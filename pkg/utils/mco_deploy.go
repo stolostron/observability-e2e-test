@@ -161,6 +161,11 @@ func PrintAllMCOPodsStatus(opt TestOptions) {
 		klog.Errorf("Failed to get all MCO pods")
 	}
 
+	if len(podList) == 0 {
+		klog.V(1).Infof("Failed to get pod in <%s> namespace", MCO_NAMESPACE)
+	}
+
+	klog.V(1).Infof("Get <%v> pods in <%s> namespace", len(podList), MCO_NAMESPACE)
 	for _, pod := range podList {
 		isReady := false
 		for _, cond := range pod.Status.Conditions {
@@ -191,9 +196,19 @@ func PrintMCOObject(opt TestOptions) {
 	klog.V(1).Infof("MCO status: %+v\n", mco.Object["status"])
 }
 
+func PrintManagedClusterOBAObject(opt TestOptions) {
+	clientDynamic := GetKubeClientDynamic(opt, false)
+	oba, getErr := clientDynamic.Resource(NewMCOAddonGVR()).Namespace(MCO_ADDON_NAMESPACE).Get("observability-addon", metav1.GetOptions{})
+	if getErr != nil {
+		klog.V(1).Infof("Failed to get oba object from managedcluster")
+		return
+	}
+	klog.V(1).Infof("OBA spec: %+v\n", oba.Object["spec"])
+	klog.V(1).Infof("OBA status: %+v\n", oba.Object["status"])
+}
+
 func GetAllOBAPods(opt TestOptions) ([]corev1.Pod, error) {
 	clientKube := getKubeClient(opt, false)
-
 	obaPods, err := clientKube.CoreV1().Pods(MCO_ADDON_NAMESPACE).List(metav1.ListOptions{})
 	if err != nil {
 		return []corev1.Pod{}, err
@@ -208,6 +223,12 @@ func PrintAllOBAPodsStatus(opt TestOptions) {
 		klog.Errorf("Failed to get all OBA pods")
 	}
 
+	if len(podList) == 0 {
+		klog.V(1).Infof("Failed to get pod in <%s> namespace from managedcluster", MCO_ADDON_NAMESPACE)
+	}
+
+	klog.V(1).Infof("Get <%v> pods in <%s> namespace from managedcluster", len(podList), MCO_ADDON_NAMESPACE)
+
 	for _, pod := range podList {
 		isReady := false
 		for _, cond := range pod.Status.Conditions {
@@ -216,6 +237,7 @@ func PrintAllOBAPodsStatus(opt TestOptions) {
 				break
 			}
 		}
+
 		// only print not ready pod status
 		if !isReady {
 			klog.V(1).Infof("Pod <%s> is not <Ready> on <%s> status due to %#v\n", pod.Name, pod.Status.Phase, pod.Status)

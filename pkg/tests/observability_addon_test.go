@@ -231,6 +231,7 @@ var _ = Describe("Observability:", func() {
 			utils.PrintMCOObject(testOptions)
 			utils.PrintAllMCOPodsStatus(testOptions)
 			utils.PrintAllOBAPodsStatus(testOptions)
+			utils.PrintManagedClusterOBAObject(testOptions)
 		} else {
 			Expect(utils.IntegrityChecking(testOptions)).NotTo(HaveOccurred())
 		}
