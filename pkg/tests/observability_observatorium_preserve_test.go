@@ -60,7 +60,7 @@ var _ = Describe("Observability:", func() {
 			By("Wait for thanos compact pods are ready")
 			// ensure the thanos rule pods are restarted successfully before processing
 			Eventually(func() error {
-				err = utils.CheckStatefulSetPodReady(testOptions, MCO_CR_NAME+"-thanos-compact", 1)
+				err = utils.CheckStatefulSetPodReady(testOptions, MCO_CR_NAME+"-thanos-compact")
 				if err != nil {
 					return err
 				}

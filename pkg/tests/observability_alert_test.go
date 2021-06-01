@@ -134,7 +134,7 @@ var _ = Describe("Observability:", func() {
 				}
 			}
 
-			err = utils.CheckStatefulSetPodReady(testOptions, MCO_CR_NAME+"-thanos-rule", 3)
+			err = utils.CheckStatefulSetPodReady(testOptions, MCO_CR_NAME+"-thanos-rule")
 			if err != nil {
 				return err
 			}
@@ -206,7 +206,7 @@ var _ = Describe("Observability:", func() {
 				}
 			}
 
-			err = utils.CheckStatefulSetPodReady(testOptions, MCO_CR_NAME+"-thanos-rule", 3)
+			err = utils.CheckStatefulSetPodReady(testOptions, MCO_CR_NAME+"-thanos-rule")
 			if err != nil {
 				return err
 			}
