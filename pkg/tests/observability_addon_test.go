@@ -208,7 +208,7 @@ var _ = Describe("Observability:", func() {
 			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 		})
 
-		It("[Stable] Modifying managedcluster cr to enable observability", func() {
+		It("[Integration] Modifying managedcluster cr to enable observability", func() {
 			Skip("Modifying managedcluster cr to enable observability")
 			Eventually(func() error {
 				return utils.UpdateObservabilityFromManagedCluster(testOptions, true)
