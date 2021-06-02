@@ -27,7 +27,7 @@ var _ = Describe("Observability:", func() {
 			testOptions.HubCluster.KubeContext)
 	})
 
-	It("[P2][Sev2][Observability][Integration] Check compact args: --delete-delay=50h (retention/g0)", func() {
+	It("[P2][Sev2][Observability][Stable] Check compact args: --delete-delay=50h (retention/g0)", func() {
 		Eventually(func() error {
 			name := MCO_CR_NAME + "-thanos-compact"
 			compact, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
@@ -44,7 +44,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P2][Sev2][Observability][Integration] Check store args: --ignore-deletion-marks-delay=25h (retention/g0)", func() {
+	It("[P2][Sev2][Observability][Stable] Check store args: --ignore-deletion-marks-delay=25h (retention/g0)", func() {
 		Eventually(func() error {
 			name := MCO_CR_NAME + "-thanos-store-shard-0"
 			store, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
@@ -61,7 +61,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P2][Sev2][Observability][Integration] Check receive args: --tsdb.retention=5d (retention/g0)", func() {
+	It("[P2][Sev2][Observability][Stable] Check receive args: --tsdb.retention=5d (retention/g0)", func() {
 		Eventually(func() error {
 			name := MCO_CR_NAME + "-thanos-receive-default"
 			receive, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
@@ -78,7 +78,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P2][Sev2][Observability][Integration] Check rule args: --tsdb.retention=5d (retention/g0)", func() {
+	It("[P2][Sev2][Observability][Stable] Check rule args: --tsdb.retention=5d (retention/g0)", func() {
 		Eventually(func() error {
 			name := MCO_CR_NAME + "-thanos-rule"
 			rule, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
@@ -95,7 +95,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P2][Sev2][Observability][Integration] Check rule args: --tsdb.block-duration=3h (retention/g0)", func() {
+	It("[P2][Sev2][Observability][Stable] Check rule args: --tsdb.block-duration=3h (retention/g0)", func() {
 		Eventually(func() error {
 			name := MCO_CR_NAME + "-thanos-rule"
 			rule, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})

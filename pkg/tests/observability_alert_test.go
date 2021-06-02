@@ -88,7 +88,7 @@ var _ = Describe("Observability:", func() {
 		klog.V(3).Infof("Successfully got secret: %s", secret.GetName())
 	})
 
-	It("[P1][Sev1][Observability][Integration] Should have the alertmanager configured in rule (alert/g0)", func() {
+	It("[P1][Sev1][Observability][Stable] Should have the alertmanager configured in rule (alert/g0)", func() {
 		By("Checking if --alertmanagers.url or --alertmanager.config or --alertmanagers.config-file is configured in rule")
 		name := MCO_CR_NAME + "-thanos-rule"
 		rule, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
