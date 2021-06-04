@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	b64 "encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -192,8 +193,11 @@ func PrintMCOObject(opt TestOptions) {
 		klog.V(1).Infof("Failed to get mco object")
 		return
 	}
-	klog.V(1).Infof("MCO spec: %+v\n", mco.Object["spec"])
-	klog.V(1).Infof("MCO status: %+v\n", mco.Object["status"])
+
+	spec, _ := json.MarshalIndent(mco.Object["spec"], "", "  ")
+	status, _ := json.MarshalIndent(mco.Object["status"], "", "  ")
+	klog.V(1).Infof("MCO spec: %+v\n", string(spec))
+	klog.V(1).Infof("MCO status: %+v\n", string(status))
 }
 
 func PrintManagedClusterOBAObject(opt TestOptions) {
@@ -203,8 +207,11 @@ func PrintManagedClusterOBAObject(opt TestOptions) {
 		klog.V(1).Infof("Failed to get oba object from managedcluster")
 		return
 	}
-	klog.V(1).Infof("OBA spec: %+v\n", oba.Object["spec"])
-	klog.V(1).Infof("OBA status: %+v\n", oba.Object["status"])
+
+	spec, _ := json.MarshalIndent(oba.Object["spec"], "", "  ")
+	status, _ := json.MarshalIndent(oba.Object["status"], "", "  ")
+	klog.V(1).Infof("OBA spec: %+v\n", string(spec))
+	klog.V(1).Infof("OBA status: %+v\n", string(status))
 }
 
 func GetAllOBAPods(opt TestOptions) ([]corev1.Pod, error) {
