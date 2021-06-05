@@ -18,8 +18,7 @@ import (
 )
 
 var (
-	ThanosRuleName       = MCO_CR_NAME + "-thanos-rule"
-	ThanosRuleRestarting = false
+	ThanosRuleName = MCO_CR_NAME + "-thanos-rule"
 )
 
 var _ = Describe("Observability:", func() {
@@ -121,12 +120,12 @@ var _ = Describe("Observability:", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(utils.Apply(testOptions.HubCluster.MasterURL, testOptions.KubeConfig, testOptions.HubCluster.KubeContext, yamlB)).NotTo(HaveOccurred())
 
+		ThanosRuleRestarting := false
 		By("Wait for thanos rule pods are restarted and ready")
 		// ensure the thanos rule pods are restarted successfully before processing
 		Eventually(func() error {
 			if !ThanosRuleRestarting {
 				_, newSts := utils.GetStatefulSet(testOptions, true, ThanosRuleName, MCO_NAMESPACE)
-
 				if oldSts.GetResourceVersion() == newSts.GetResourceVersion() {
 					return fmt.Errorf("The %s is not being restarted in 10 minutes", ThanosRuleName)
 				} else {
@@ -192,7 +191,7 @@ var _ = Describe("Observability:", func() {
 			return err
 		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*1).Should(Succeed())
 
-		ThanosRuleRestarting = false
+		ThanosRuleRestarting := false
 		By("Wait for thanos rule pods are restarted and ready")
 		// ensure the thanos rule pods are restarted successfully before processing
 		Eventually(func() error {

@@ -49,8 +49,11 @@ func uninstallMCO() {
 	By("Waiting for delete MCO addon instance")
 	Eventually(func() error {
 		name := MCO_CR_NAME + "-addon"
-		instance, _ := dynClient.Resource(utils.NewMCOAddonGVR()).Namespace("local-cluster").Get(name, metav1.GetOptions{})
+		clientDynamic := utils.GetKubeClientDynamic(testOptions, false)
+		// should check oba instance from managedcluster
+		instance, _ := clientDynamic.Resource(utils.NewMCOAddonGVR()).Namespace(MCO_ADDON_NAMESPACE).Get(name, metav1.GetOptions{})
 		if instance != nil {
+			utils.PrintManagedClusterOBAObject(testOptions)
 			return fmt.Errorf("Failed to delete MCO addon instance")
 		}
 		return nil
