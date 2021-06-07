@@ -83,7 +83,7 @@ var _ = Describe("Observability:", func() {
 			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 		})
 
-		It("[Stable] Should not have the expected MCO addon pods when disable observabilityaddon", func() {
+		It("[Integration] Should not have the expected MCO addon pods when disable observabilityaddon", func() {
 			Eventually(func() error {
 				return utils.ModifyMCOAddonSpecMetrics(testOptions, false)
 			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
@@ -136,7 +136,7 @@ var _ = Describe("Observability:", func() {
 			}, EventuallyTimeoutMinute*2, EventuallyIntervalSecond*5).Should(Succeed())
 		})
 
-		It("[Stable] Modifying MCO cr to enable observabilityaddon", func() {
+		It("[Integration] Modifying MCO cr to enable observabilityaddon", func() {
 			Eventually(func() error {
 				return utils.ModifyMCOAddonSpecMetrics(testOptions, true)
 			}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())

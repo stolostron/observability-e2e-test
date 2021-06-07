@@ -115,7 +115,7 @@ var _ = Describe("Observability:", func() {
 			return false
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 
-		By(fmt.Sprintf("Waiting for old pod <%S> removed and new pod created", collectorPodName))
+		By(fmt.Sprintf("Waiting for old pod <%s> removed and new pod created", collectorPodName))
 		Eventually(func() bool {
 			err, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
 			if err == nil {
