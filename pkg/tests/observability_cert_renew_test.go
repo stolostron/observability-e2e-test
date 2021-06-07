@@ -27,7 +27,7 @@ var _ = Describe("Observability:", func() {
 			testOptions.HubCluster.KubeContext)
 	})
 
-	It("[P1][Sev1][Observability][Stable] Should have metrics collector pod restart if cert secret re-generated (certrenew/g0)", func() {
+	It("[P1][Sev1][Observability][Integration] Should have metrics collector pod restart if cert secret re-generated (certrenew/g0)", func() {
 		By("Waiting for pods ready: observability-observatorium-api, observability-rbac-query-proxy, metrics-collector-deployment")
 		// sleep 30s to wait for installation is ready
 		time.Sleep(30 * time.Second)
@@ -115,13 +115,13 @@ var _ = Describe("Observability:", func() {
 			return false
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 
-		By(fmt.Sprintf("Waiting for old pod removed: %s and new pod created", collectorPodName))
+		By(fmt.Sprintf("Waiting for old pod <%s> removed and new pod created", collectorPodName))
 		Eventually(func() bool {
 			err, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
 			if err == nil {
 				for _, pod := range podList.Items {
-					for key, _ := range pod.ObjectMeta.Labels {
-						klog.V(1).Infof("metrics-collector labels: <%v>", pod.ObjectMeta.Labels)
+					for key := range pod.ObjectMeta.Labels {
+						klog.V(1).Infof("metrics-collector <%v> labels: <%v>", pod.GetName(), pod.ObjectMeta.Labels)
 						if key == "cert/time-restarted" {
 							return true
 						}

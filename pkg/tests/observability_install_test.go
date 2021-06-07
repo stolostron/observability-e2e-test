@@ -176,17 +176,12 @@ func installMCO() {
 			return nil
 		}).Should(Succeed())
 
-		By("Waiting for MCO addon components ready")
-		Eventually(func() bool {
-			err, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
-			if len(podList.Items) == 1 && err == nil {
-				testFailed = false
-				return true
-			}
-			testFailed = true
-			return false
-		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
 	}
+
+	By("Check endpoint-operator and metrics-collector pods are created")
+	Eventually(func() error {
+		return utils.CheckMCOAddon(testOptions)
+	}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 
 	By("Check clustermanagementaddon CR is created")
 	Eventually(func() error {
