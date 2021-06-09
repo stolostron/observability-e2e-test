@@ -120,13 +120,20 @@ var _ = Describe("Observability:", func() {
 			err, podList := utils.GetPodList(testOptions, false, MCO_ADDON_NAMESPACE, "component=metrics-collector")
 			if err == nil {
 				for _, pod := range podList.Items {
-					for key := range pod.ObjectMeta.Labels {
-						klog.V(1).Infof("metrics-collector <%v> labels: <%v>", pod.GetName(), pod.ObjectMeta.Labels)
-						if key == "cert/time-restarted" {
-							return true
+					if pod.Name != collectorPodName {
+						if pod.Status.Phase != "Running" {
+							klog.V(1).Infof("<%s> not in Running status yet", pod.Name)
+							return false
 						}
+						return true
 					}
 				}
+
+			}
+			// debug code to check label "cert/time-restarted"
+			err, deployment := utils.GetDeployment(testOptions, false, "metrics-collector-deployment", MCO_ADDON_NAMESPACE)
+			if err == nil {
+				klog.V(1).Infof("labels: <%v>", deployment.Spec.Template.ObjectMeta.Labels)
 			}
 			return false
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(BeTrue())
