@@ -145,7 +145,7 @@ var _ = Describe("Observability:", func() {
 	})
 
 	AfterEach(func() {
-		if testFailed {
+		if CurrentGinkgoTestDescription().Failed {
 			utils.PrintMCOObject(testOptions)
 			utils.PrintAllMCOPodsStatus(testOptions)
 			utils.PrintAllOBAPodsStatus(testOptions)
