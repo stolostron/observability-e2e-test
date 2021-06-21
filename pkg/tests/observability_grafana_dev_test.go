@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"k8s.io/klog"
 
 	"github.com/open-cluster-management/observability-e2e-test/pkg/utils"
 )
@@ -21,7 +22,11 @@ var _ = Describe("Observability:", func() {
 		cmd := exec.Command("../../cicd-scripts/grafana-dev-test.sh")
 		var out bytes.Buffer
 		cmd.Stdout = &out
-		Expect(cmd.Run()).NotTo(HaveOccurred())
+		err := cmd.Run()
+		if err != nil {
+			klog.V(1).Infof("Failed to run grafana-dev-test.sh: %v", out.String())
+		}
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
