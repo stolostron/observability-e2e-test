@@ -4,7 +4,6 @@ base_dir="$(cd "$(dirname "$0")/.." ; pwd -P)"
 cd "$base_dir"
 
 obs_namespace=open-cluster-management-observability
-test_ok=1
 
 git clone --depth 1 https://github.com/open-cluster-management/multicluster-observability-operator.git grafana-dev-test
 
@@ -16,7 +15,7 @@ cd grafana-dev-test/tools
 ./setup-grafana-dev.sh --deploy
 if [ $? -ne 0 ]; then
     echo "Failed run setup-grafana-dev.sh --deploy"
-    test_ok=0
+    exit 1
 fi
 
 n=0
@@ -30,13 +29,13 @@ done
 
 if [ $n -eq 30 ]; then
     echo "Failed waiting for grafana-dev pod ready in 300s"
-    test_ok=0
+    exit 1
 fi
 
 podName=$(kubectl get pods -n "$obs_namespace" -l app=multicluster-observability-grafana-dev --template '{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}')
 if [ $? -ne 0 ] || [ -z "$podName" ]; then
     echo "Failed to get grafana pod name, please check your grafana-dev deployment"
-    test_ok=0
+    exit 1
 fi
 
 # create a new test user to test
@@ -47,28 +46,23 @@ sleep 30
 ./switch-to-grafana-admin.sh test
 if [ $? -ne 0 ]; then
     echo "Failed run switch-to-grafana-admin.sh test"
-    test_ok=0
+    exit 1
 fi
 
 # test export grafana dashboard
 ./generate-dashboard-configmap-yaml.sh "Sample Dashboard for E2E"
 if [ $? -ne 0 ]; then
     echo "Failed run generate-dashboard-configmap-yaml.sh"
-    test_ok=0
+    exit 1
 fi
 
 # test clean grafan-dev
 ./setup-grafana-dev.sh --clean
 if [ $? -ne 0 ]; then
     echo "Failed run setup-grafana-dev.sh --clean"
-    test_ok=0
+    exit 1
 fi
 
 # clean test env
 rm -rf "$base_dir"/grafana-dev-test
 kubectl delete -n "$obs_namespace" -f "$base_dir"/observability-gitops/dashboards/sample_custom_dashboard/custom-sample-dashboard.yaml
-
-if [ $test_ok -eq 0 ]; then
-    echo "Failed to test grafana-dev"
-    exit 1
-fi
