@@ -45,7 +45,7 @@ var _ = Describe("Observability:", func() {
 	It("[P2][Sev2][Observability][Integration] Should have not metrics which have been marked for deletion in names section (metricslist/g0)", func() {
 		By("Waiting for deleted metrics disappear on grafana console")
 		Eventually(func() error {
-			err, _ := utils.ContainManagedClusterMetric(testOptions, "cluster_version_payload offset 1m", []string{`"__name__":"cluster_version_payload"`})
+			err, _ := utils.ContainManagedClusterMetric(testOptions, "timestamp(cluster_version_payload) - timestamp(cluster_version_payload offset 1m) > 59", []string{})
 			return err
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
 	})
@@ -53,7 +53,7 @@ var _ = Describe("Observability:", func() {
 	It("[P2][Sev2][Observability][Integration] Should have not metrics which have been marked for deletion in matches section (metricslist/g0)", func() {
 		By("Waiting for deleted metrics disappear on grafana console")
 		Eventually(func() error {
-			err, _ := utils.ContainManagedClusterMetric(testOptions, "go_goroutines offset 1m", []string{`"__name__":"go_goroutines"`})
+			err, _ := utils.ContainManagedClusterMetric(testOptions, "timestamp(go_goroutines) - timestamp(go_goroutines offset 1m) > 59", []string{})
 			return err
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
 	})
@@ -67,7 +67,7 @@ var _ = Describe("Observability:", func() {
 
 		By("Waiting for new added metrics disappear on grafana console")
 		Eventually(func() error {
-			err, _ := utils.ContainManagedClusterMetric(testOptions, "node_memory_Active_bytes offset 1m", []string{`"__name__":"node_memory_Active_bytes"`})
+			err, _ := utils.ContainManagedClusterMetric(testOptions, "timestamp() - timestamp(node_memory_Active_bytes offset 1m) > 59", []string{})
 			return err
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
 	})
