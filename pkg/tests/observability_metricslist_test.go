@@ -42,7 +42,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P2][Sev2][Observability][Integration] Should have not metrics which have been marked for deletion in names section (metricslist/g0)", func() {
+	It("[P2][Sev2][Observability][Integration] Should have no metrics which have been marked for deletion in names section (metricslist/g0)", func() {
 		By("Waiting for deleted metrics disappear on grafana console")
 		Eventually(func() error {
 			err, _ := utils.ContainManagedClusterMetric(testOptions, "timestamp(cluster_version_payload) - timestamp(cluster_version_payload offset 1m) > 59", []string{})
@@ -50,7 +50,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
 	})
 
-	It("[P2][Sev2][Observability][Integration] Should have not metrics which have been marked for deletion in matches section (metricslist/g0)", func() {
+	It("[P2][Sev2][Observability][Integration] Should have no metrics which have been marked for deletion in matches section (metricslist/g0)", func() {
 		By("Waiting for deleted metrics disappear on grafana console")
 		Eventually(func() error {
 			err, _ := utils.ContainManagedClusterMetric(testOptions, "timestamp(go_goroutines) - timestamp(go_goroutines offset 1m) > 59", []string{})
@@ -67,7 +67,7 @@ var _ = Describe("Observability:", func() {
 
 		By("Waiting for new added metrics disappear on grafana console")
 		Eventually(func() error {
-			err, _ := utils.ContainManagedClusterMetric(testOptions, "timestamp() - timestamp(node_memory_Active_bytes offset 1m) > 59", []string{})
+			err, _ := utils.ContainManagedClusterMetric(testOptions, "timestamp(node_memory_Active_bytes) - timestamp(node_memory_Active_bytes offset 1m) > 59", []string{})
 			return err
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(MatchError("Failed to find metric name from response"))
 	})
