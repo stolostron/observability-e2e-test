@@ -588,15 +588,23 @@ func HaveDeploymentsInNamespace(c Cluster, kubeconfig string, namespace string, 
 			klog.V(1).Infof("Error while retrieving deployment %s: %s", deploymentName, err.Error())
 			return err
 		}
+
 		if deployment.Status.Replicas != deployment.Status.ReadyReplicas {
-			err = fmt.Errorf("Expect %d but got %d Ready replicas", deployment.Status.Replicas, deployment.Status.ReadyReplicas)
+			err = fmt.Errorf("%s: Expect %d but got %d Ready replicas",
+				deploymentName,
+				deployment.Status.Replicas,
+				deployment.Status.ReadyReplicas)
 			klog.Errorln(err)
 			return err
 		}
+
 		for _, condition := range deployment.Status.Conditions {
 			if condition.Reason == "MinimumReplicasAvailable" {
 				if condition.Status != corev1.ConditionTrue {
-					err = fmt.Errorf("Expect %s but got %s", condition.Status, corev1.ConditionTrue)
+					err = fmt.Errorf("%s: Expect %s but got %s",
+						deploymentName,
+						condition.Status,
+						corev1.ConditionTrue)
 					klog.Errorln(err)
 					return err
 				}
