@@ -169,11 +169,9 @@ func PrintAllMCOPodsStatus(opt TestOptions) {
 	klog.V(1).Infof("Get <%v> pods in <%s> namespace", len(podList), MCO_NAMESPACE)
 	for _, pod := range podList {
 		isReady := false
-		for _, cond := range pod.Status.Conditions {
-			if cond.Type == "Ready" {
-				isReady = true
-				break
-			}
+		if pod.Status.Phase == corev1.PodRunning {
+			isReady = true
+			break
 		}
 
 		// only print not ready pod status
@@ -238,11 +236,9 @@ func PrintAllOBAPodsStatus(opt TestOptions) {
 
 	for _, pod := range podList {
 		isReady := false
-		for _, cond := range pod.Status.Conditions {
-			if cond.Type == "Ready" {
-				isReady = true
-				break
-			}
+		if pod.Status.Phase == corev1.PodRunning {
+			isReady = true
+			break
 		}
 
 		// only print not ready pod status
