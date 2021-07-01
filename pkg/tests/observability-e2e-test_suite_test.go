@@ -100,6 +100,8 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	if !testFailed {
 		uninstallMCO()
+	} else {
+		utils.PrintAllMCOPodsStatus(testOptions)
 	}
 })
 

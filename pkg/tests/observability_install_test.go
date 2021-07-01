@@ -64,14 +64,12 @@ func installMCO() {
 		instance, err := dynClient.Resource(utils.NewMCOGVR()).Get(MCO_CR_NAME, metav1.GetOptions{})
 		if err == nil {
 			allPodsIsReady = utils.StatusContainsTypeEqualTo(instance, "Ready")
-			return allPodsIsReady
 		}
-		return false
+		if !allPodsIsReady {
+			utils.PrintAllMCOPodsStatus(testOptions)
+		}
+		return allPodsIsReady
 	}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(BeTrue())
-
-	if !allPodsIsReady {
-		utils.PrintAllMCOPodsStatus(testOptions)
-	}
 
 	By("Check clustermanagementaddon CR is created")
 	Eventually(func() error {
@@ -81,5 +79,4 @@ func installMCO() {
 		}
 		return nil
 	}).Should(Succeed())
-
 }
