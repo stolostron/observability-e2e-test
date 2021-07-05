@@ -58,8 +58,8 @@ var _ = Describe("Observability:", func() {
 		}
 	})
 
-	It("[P2][Sev2][Observability][Stable] Check compact args:", func() {
-		By("--delete-delay=" + deleteDelay + " (retention/g0)")
+	It("[P2][Sev2][Observability][Stable] Check compact args (retention/g0):", func() {
+		By("--delete-delay=" + deleteDelay)
 		Eventually(func() error {
 			name := MCO_CR_NAME + "-thanos-compact"
 			compact, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
@@ -76,8 +76,8 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P2][Sev2][Observability][Stable] Check store args:", func() {
-		By("--ignore-deletion-marks-delay=" + ignoreDeletionMarksDelay + " (retention/g0)")
+	It("[P2][Sev2][Observability][Stable] Check store args (retention/g0):", func() {
+		By("--ignore-deletion-marks-delay=" + ignoreDeletionMarksDelay)
 		Eventually(func() error {
 			name := MCO_CR_NAME + "-thanos-store-shard-0"
 			store, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
@@ -90,12 +90,12 @@ var _ = Describe("Observability:", func() {
 					return nil
 				}
 			}
-			return fmt.Errorf("Failed to check store args: --ignore-deletion-marks-delay="+ignoreDeletionMarksDelay+". args is %v", argList)
+			return fmt.Errorf("Failed to check store args: --ignore-deletion-marks-delay="+ignoreDeletionMarksDelay+". The args is: %v", argList)
 		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P2][Sev2][Observability][Stable] Check receive args:", func() {
-		By("--tsdb.retention=" + retentionInLocal + " (retention/g0)")
+	It("[P2][Sev2][Observability][Stable] Check receive args (retention/g0):", func() {
+		By("--tsdb.retention=" + retentionInLocal)
 		Eventually(func() error {
 			name := MCO_CR_NAME + "-thanos-receive-default"
 			receive, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
@@ -108,12 +108,12 @@ var _ = Describe("Observability:", func() {
 					return nil
 				}
 			}
-			return fmt.Errorf("Failed to check receive args: --tsdb.retention="+retentionInLocal+". args is %v", argList)
+			return fmt.Errorf("Failed to check receive args: --tsdb.retention="+retentionInLocal+". The args is: %v", argList)
 		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P2][Sev2][Observability][Stable] Check rule args:", func() {
-		By("--tsdb.retention=" + retentionInLocal + " (retention/g0)")
+	It("[P2][Sev2][Observability][Stable] Check rule args (retention/g0):", func() {
+		By("--tsdb.retention=" + retentionInLocal)
 		Eventually(func() error {
 			name := MCO_CR_NAME + "-thanos-rule"
 			rule, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
@@ -126,12 +126,12 @@ var _ = Describe("Observability:", func() {
 					return nil
 				}
 			}
-			return fmt.Errorf("Failed to check rule args: --tsdb.retention="+retentionInLocal+". args is %v", argList)
+			return fmt.Errorf("Failed to check rule args: --tsdb.retention="+retentionInLocal+". The args is: %v", argList)
 		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P2][Sev2][Observability][Stable] Check rule args:", func() {
-		By("--tsdb.block-duration=" + blockDuration + " (retention/g0)")
+	It("[P2][Sev2][Observability][Stable] Check rule args (retention/g0):", func() {
+		By("--tsdb.block-duration=" + blockDuration)
 		Eventually(func() error {
 			name := MCO_CR_NAME + "-thanos-rule"
 			rule, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
@@ -144,7 +144,7 @@ var _ = Describe("Observability:", func() {
 					return nil
 				}
 			}
-			return fmt.Errorf("Failed to check rule args: --tsdb.block-duration="+blockDuration+". args is %v", argList)
+			return fmt.Errorf("Failed to check rule args: --tsdb.block-duration="+blockDuration+". The args is: %v", argList)
 		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
