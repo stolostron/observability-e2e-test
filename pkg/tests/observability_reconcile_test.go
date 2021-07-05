@@ -142,9 +142,17 @@ var _ = Describe("Observability:", func() {
 	})
 
 	It("[P2][Sev2][Observability][Stable] Revert MCO CR changes (reconcile/g0)", func() {
-
+		mcoCR, err := dynClient.Resource(utils.NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		if _, adv := mcoCR.Object["spec"].(map[string]interface{})["advanced"]; !adv {
+			Skip("Skip the case since the MCO CR did not have advanced spec configed")
+		} else {
+			if _, rec := mcoCR.Object["spec"].(map[string]interface{})["advanced"].(map[string]interface{})["retentionConfig"]; !rec {
+				Skip("Skip the case since the MCO CR did not have advanced retentionConfig configed")
+			}
+		}
 		By("Revert MCO CR changes")
-		err := utils.RevertMCOCRModification(testOptions)
+		err = utils.RevertMCOCRModification(testOptions)
 		Expect(err).ToNot(HaveOccurred())
 
 		By("Waiting for MCO retentionResolutionRaw filed to take effect")
