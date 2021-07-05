@@ -5,6 +5,7 @@ package tests
 
 import (
 	"fmt"
+	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -28,6 +29,9 @@ var _ = Describe("Observability:", func() {
 	})
 
 	It("[P1][Sev1][Observability][Stable] Checking metrics default values on managed cluster (config/g0)", func() {
+		if os.Getenv("SKIP_INSTALL_STEP") == "true" {
+			Skip("Skip the case due to MCO CR was created customized")
+		}
 		mcoRes, err := dynClient.Resource(utils.NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
 		if err != nil {
 			panic(err.Error())
@@ -38,13 +42,16 @@ var _ = Describe("Observability:", func() {
 	})
 
 	It("[P1][Sev1][Observability][Stable] Checking default value of PVC and StorageClass (config/g0)", func() {
+		if os.Getenv("SKIP_INSTALL_STEP") == "true" {
+			Skip("Skip the case due to MCO CR was created customized")
+		}
 		mcoSC, err := dynClient.Resource(utils.NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		spec := mcoSC.Object["spec"].(map[string]interface{})
 		scInCR := spec["storageConfig"].(map[string]interface{})["storageClass"].(string)
 
-		scList, err := hubClient.StorageV1().StorageClasses().List(metav1.ListOptions{})
+		scList, _ := hubClient.StorageV1().StorageClasses().List(metav1.ListOptions{})
 		scMatch := false
 		defaultSC := ""
 		for _, sc := range scList.Items {

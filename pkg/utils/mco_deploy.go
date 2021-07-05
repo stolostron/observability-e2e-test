@@ -579,12 +579,18 @@ func ModifyMCOCR(opt TestOptions) error {
 	if getErr != nil {
 		return getErr
 	}
+
 	spec := mco.Object["spec"].(map[string]interface{})
-	advanced := spec["advanced"].(map[string]interface{})
-	retentionConfig := advanced["retentionConfig"].(map[string]interface{})
-	retentionConfig["retentionResolutionRaw"] = "3d"
 	storageConfig := spec["storageConfig"].(map[string]interface{})
 	storageConfig["alertmanagerStorageSize"] = "2Gi"
+
+	if _, adv := spec["advanced"]; adv {
+		advanced := spec["advanced"].(map[string]interface{})
+		if _, rec := advanced["retentionConfig"]; rec {
+			retentionConfig := advanced["retentionConfig"].(map[string]interface{})
+			retentionConfig["retentionResolutionRaw"] = "3d"
+		}
+	}
 
 	_, updateErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Update(mco, metav1.UpdateOptions{})
 	if updateErr != nil {
