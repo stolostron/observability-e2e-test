@@ -584,12 +584,10 @@ func ModifyMCOCR(opt TestOptions) error {
 	storageConfig := spec["storageConfig"].(map[string]interface{})
 	storageConfig["alertmanagerStorageSize"] = "2Gi"
 
-	if _, adv := spec["advanced"]; adv {
-		advanced := spec["advanced"].(map[string]interface{})
-		if _, rec := advanced["retentionConfig"]; rec {
-			retentionConfig := advanced["retentionConfig"].(map[string]interface{})
-			retentionConfig["retentionResolutionRaw"] = "3d"
-		}
+	advRetentionCon, _ := CheckAdvRetentionConfig(opt)
+	if advRetentionCon {
+		retentionConfig := spec["advanced"].(map[string]interface{})["retentionConfig"].(map[string]interface{})
+		retentionConfig["retentionResolutionRaw"] = "3d"
 	}
 
 	_, updateErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Update(mco, metav1.UpdateOptions{})
@@ -597,6 +595,29 @@ func ModifyMCOCR(opt TestOptions) error {
 		return updateErr
 	}
 	return nil
+}
+
+func CheckAdvRetentionConfig(opt TestOptions) (bool, error) {
+	clientDynamic := NewKubeClientDynamic(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+	mco, getErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	if getErr != nil {
+		return false, getErr
+	}
+
+	spec := mco.Object["spec"].(map[string]interface{})
+	if _, adv := spec["advanced"]; !adv {
+		return false, fmt.Errorf("the MCO CR did not have advanced spec configed")
+	} else {
+		advanced := spec["advanced"].(map[string]interface{})
+		if _, rec := advanced["retentionConfig"]; !rec {
+			return false, fmt.Errorf("the MCO CR did not have advanced retentionConfig spec configed")
+		} else {
+			return true, nil
+		}
+	}
 }
 
 // RevertMCOCRModification revert the previous changes
@@ -610,9 +631,11 @@ func RevertMCOCRModification(opt TestOptions) error {
 		return getErr
 	}
 	spec := mco.Object["spec"].(map[string]interface{})
-	advanced := spec["advanced"].(map[string]interface{})
-	retentionConfig := advanced["retentionConfig"].(map[string]interface{})
-	retentionConfig["retentionResolutionRaw"] = "5d"
+	advRetentionCon, _ := CheckAdvRetentionConfig(opt)
+	if advRetentionCon {
+		retentionConfig := spec["advanced"].(map[string]interface{})["retentionConfig"].(map[string]interface{})
+		retentionConfig["retentionResolutionRaw"] = "5d"
+	}
 
 	_, updateErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Update(mco, metav1.UpdateOptions{})
 	if updateErr != nil {
@@ -711,7 +734,11 @@ func ModifyMCORetentionResolutionRaw(opt TestOptions) error {
 	}
 
 	spec := mco.Object["spec"].(map[string]interface{})
-	spec["retentionResolutionRaw"] = "3d"
+	advRetentionCon, _ := CheckAdvRetentionConfig(opt)
+	if advRetentionCon {
+		retentionConfig := spec["advanced"].(map[string]interface{})["retentionConfig"].(map[string]interface{})
+		retentionConfig["retentionResolutionRaw"] = "3d"
+	}
 	_, updateErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Update(mco, metav1.UpdateOptions{})
 	if updateErr != nil {
 		return updateErr
