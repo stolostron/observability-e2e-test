@@ -53,6 +53,11 @@ var _ = Describe("Observability:", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		By("Waiting for MCO retentionResolutionRaw filed to take effect")
+		advRetentionCon, err := utils.CheckAdvRetentionConfig(testOptions)
+		if !advRetentionCon {
+			Skip("Skip the case since " + err.Error())
+		}
+
 		Eventually(func() error {
 			name := MCO_CR_NAME + "-thanos-compact"
 			compact, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
@@ -132,12 +137,17 @@ var _ = Describe("Observability:", func() {
 	})
 
 	It("[P2][Sev2][Observability][Stable] Revert MCO CR changes (reconcile/g0)", func() {
+		advRetentionCon, err := utils.CheckAdvRetentionConfig(testOptions)
+		if !advRetentionCon {
+			Skip("Skip the case since " + err.Error())
+		}
 
 		By("Revert MCO CR changes")
-		err := utils.RevertMCOCRModification(testOptions)
+		err = utils.RevertMCOCRModification(testOptions)
 		Expect(err).ToNot(HaveOccurred())
 
 		By("Waiting for MCO retentionResolutionRaw filed to take effect")
+
 		Eventually(func() error {
 			name := MCO_CR_NAME + "-thanos-compact"
 			compact, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
