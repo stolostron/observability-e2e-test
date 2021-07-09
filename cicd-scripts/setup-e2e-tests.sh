@@ -221,7 +221,7 @@ deploy_mco_operator() {
             if [ -d "multicluster-observability-operator" ]; then
                 rm -rf multicluster-observability-operator
             fi
-            git clone --depth 1 https://github.com/open-cluster-management/multicluster-observability-operator.git
+            git clone -b release-2.3 --depth 1 https://github.com/open-cluster-management/multicluster-observability-operator.git
             cd multicluster-observability-operator/
             # use latest snapshot for mco operator
             cd config/manager && kustomize edit set image quay.io/open-cluster-management/multicluster-observability-operator=${COMPONENT_REPO}/multicluster-observability-operator:${LATEST_SNAPSHOT} && cd ../..
@@ -234,7 +234,7 @@ deploy_mco_operator() {
         if [ -d "multicluster-observability-operator" ]; then
             rm -rf multicluster-observability-operator
         fi
-        git clone --depth 1 https://github.com/open-cluster-management/multicluster-observability-operator.git
+        git clone -b release-2.3 --depth 1 https://github.com/open-cluster-management/multicluster-observability-operator.git
         cd multicluster-observability-operator/
         cd config/manager && kustomize edit set image quay.io/open-cluster-management/multicluster-observability-operator=${COMPONENT_REPO}/multicluster-observability-operator:${LATEST_SNAPSHOT} && cd ../..
     fi
