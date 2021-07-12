@@ -344,61 +344,70 @@ func CheckOBAComponents(opt TestOptions) error {
 	return nil
 }
 
-func CheckMCOComponentsInBaiscMode(opt TestOptions) error {
+func CheckMCOComponents(opt TestOptions) error {
 	client := NewKubeClient(
 		opt.HubCluster.MasterURL,
 		opt.KubeConfig,
 		opt.HubCluster.KubeContext)
 	deployments := client.AppsV1().Deployments(MCO_NAMESPACE)
-	expectedDeploymentNames := []string{
-		MCO_CR_NAME + "-grafana",
-		MCO_CR_NAME + "-observatorium-api",
-		MCO_CR_NAME + "-thanos-query",
-		MCO_CR_NAME + "-thanos-query-frontend",
-		MCO_CR_NAME + "-thanos-receive-controller",
-		MCO_CR_NAME + "-observatorium-operator",
-		MCO_CR_NAME + "-rbac-query-proxy",
+	expectedDeploymentLabels := []string{
+		"app=multicluster-observability-grafana",
+		"app.kubernetes.io/name=observatorium-api",
+		"app.kubernetes.io/name=thanos-query",
+		"app.kubernetes.io/name=thanos-query-frontend",
+		"app.kubernetes.io/name=thanos-receive-controller",
+		"app.kubernetes.io/name=observatorium-operator",
+		"app=rbac-query-proxy",
 	}
 
-	for _, deploymentName := range expectedDeploymentNames {
-		deployment, err := deployments.Get(deploymentName, metav1.GetOptions{})
+	for _, deploymentLabel := range expectedDeploymentLabels {
+		deployList, err := deployments.List(metav1.ListOptions{
+			LabelSelector: deploymentLabel,
+		})
+
 		if err != nil {
-			klog.Errorf("Error while retrieving deployment %s: %s", deploymentName, err.Error())
+			klog.Errorf("Error while listing deployment with label %s due to: %s", deploymentLabel, err.Error())
 			return err
 		}
 
-		if deployment.Status.ReadyReplicas != *deployment.Spec.Replicas {
-			err = fmt.Errorf("deployment %s should have %d but got %d ready replicas",
-				deploymentName,
-				*deployment.Spec.Replicas,
-				deployment.Status.ReadyReplicas)
-			return err
+		for _, deployInfo := range (*deployList).Items {
+			if deployInfo.Status.ReadyReplicas != *deployInfo.Spec.Replicas {
+				err = fmt.Errorf("deployment %s should have %d but got %d ready replicas",
+					deployInfo.Name,
+					*deployInfo.Spec.Replicas,
+					deployInfo.Status.ReadyReplicas)
+				return err
+			}
 		}
 	}
 
 	statefulsets := client.AppsV1().StatefulSets(MCO_NAMESPACE)
-	expectedStatefulSetNames := []string{
-		MCO_CR_NAME + "-alertmanager",
-		MCO_CR_NAME + "-thanos-compact",
-		MCO_CR_NAME + "-thanos-receive-default",
-		MCO_CR_NAME + "-thanos-rule",
-		MCO_CR_NAME + "-thanos-store-memcached",
-		MCO_CR_NAME + "-thanos-store-shard-0",
+	expectedStatefulsetLabels := []string{
+		"app=multicluster-observability-alertmanager",
+		"app.kubernetes.io/name=thanos-compact",
+		"app.kubernetes.io/name=thanos-receive",
+		"app.kubernetes.io/name=thanos-rule",
+		"app.kubernetes.io/name=memcached",
+		"app.kubernetes.io/name=thanos-store",
 	}
 
-	for _, statefulsetName := range expectedStatefulSetNames {
-		statefulset, err := statefulsets.Get(statefulsetName, metav1.GetOptions{})
+	for _, statefulsetLabel := range expectedStatefulsetLabels {
+		statefulsetList, err := statefulsets.List(metav1.ListOptions{
+			LabelSelector: statefulsetLabel,
+		})
 		if err != nil {
-			klog.V(1).Infof("Error while retrieving statefulset %s: %s", statefulsetName, err.Error())
+			klog.V(1).Infof("Error while listing deployment with label %s due to: %s", statefulsetLabel, err.Error())
 			return err
 		}
 
-		if statefulset.Status.ReadyReplicas != *statefulset.Spec.Replicas {
-			err = fmt.Errorf("statefulset %s should have %d but got %d ready replicas",
-				statefulsetName,
-				*statefulset.Spec.Replicas,
-				statefulset.Status.ReadyReplicas)
-			return err
+		for _, statefulsetInfo := range (*statefulsetList).Items {
+			if statefulsetInfo.Status.ReadyReplicas != *statefulsetInfo.Spec.Replicas {
+				err = fmt.Errorf("statefulset %s should have %d but got %d ready replicas",
+					statefulsetInfo.Name,
+					*statefulsetInfo.Spec.Replicas,
+					statefulsetInfo.Status.ReadyReplicas)
+				return err
+			}
 		}
 	}
 
@@ -448,69 +457,6 @@ func CheckDeploymentPodReady(opt TestOptions, deployName string) error {
 			deploy.Status.ReadyReplicas)
 		return err
 	}
-	return nil
-}
-
-func CheckMCOComponentsInHighMode(opt TestOptions) error {
-	client := NewKubeClient(
-		opt.HubCluster.MasterURL,
-		opt.KubeConfig,
-		opt.HubCluster.KubeContext)
-	deployments := client.AppsV1().Deployments(MCO_NAMESPACE)
-	expectedDeploymentNames := []string{
-		MCO_CR_NAME + "-grafana",
-		MCO_CR_NAME + "-observatorium-api",
-		MCO_CR_NAME + "-thanos-query",
-		MCO_CR_NAME + "-thanos-query-frontend",
-		MCO_CR_NAME + "-rbac-query-proxy",
-	}
-
-	for _, deploymentName := range expectedDeploymentNames {
-		deployment, err := deployments.Get(deploymentName, metav1.GetOptions{})
-		if err != nil {
-			klog.Errorf("Error while retrieving deployment %s: %s", deploymentName, err.Error())
-			return err
-		}
-
-		if deployment.Status.ReadyReplicas != *deployment.Spec.Replicas {
-			err = fmt.Errorf("deployment %s should have %d but got %d ready replicas",
-				deploymentName,
-				*deployment.Spec.Replicas,
-				deployment.Status.ReadyReplicas)
-			return err
-		}
-	}
-
-	statefulsets := client.AppsV1().StatefulSets(MCO_NAMESPACE)
-	expectedStatefulSetNames := []string{
-		MCO_CR_NAME + "-alertmanager",
-		MCO_CR_NAME + "-thanos-receive-default",
-		MCO_CR_NAME + "-thanos-rule",
-		MCO_CR_NAME + "-thanos-store-memcached",
-		// TODO: https://github.com/open-cluster-management/backlog/issues/6532
-		// "observability-observatorium-thanos-store-shard-0",
-		MCO_CR_NAME + "-thanos-compact",
-		MCO_CR_NAME + "-thanos-store-shard-0",
-		MCO_CR_NAME + "-thanos-store-shard-1",
-		MCO_CR_NAME + "-thanos-store-shard-2",
-	}
-
-	for _, statefulsetName := range expectedStatefulSetNames {
-		statefulset, err := statefulsets.Get(statefulsetName, metav1.GetOptions{})
-		if err != nil {
-			klog.V(1).Infof("Error while retrieving statefulset %s: %s", statefulsetName, err.Error())
-			return err
-		}
-
-		if statefulset.Status.ReadyReplicas != *statefulset.Spec.Replicas {
-			err = fmt.Errorf("statefulset %s should have %d but got %d ready replicas",
-				statefulsetName,
-				*statefulset.Spec.Replicas,
-				statefulset.Status.ReadyReplicas)
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -579,18 +525,45 @@ func ModifyMCOCR(opt TestOptions) error {
 	if getErr != nil {
 		return getErr
 	}
+
 	spec := mco.Object["spec"].(map[string]interface{})
-	advanced := spec["advanced"].(map[string]interface{})
-	retentionConfig := advanced["retentionConfig"].(map[string]interface{})
-	retentionConfig["retentionResolutionRaw"] = "3d"
 	storageConfig := spec["storageConfig"].(map[string]interface{})
 	storageConfig["alertmanagerStorageSize"] = "2Gi"
+
+	advRetentionCon, _ := CheckAdvRetentionConfig(opt)
+	if advRetentionCon {
+		retentionConfig := spec["advanced"].(map[string]interface{})["retentionConfig"].(map[string]interface{})
+		retentionConfig["retentionResolutionRaw"] = "3d"
+	}
 
 	_, updateErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Update(mco, metav1.UpdateOptions{})
 	if updateErr != nil {
 		return updateErr
 	}
 	return nil
+}
+
+func CheckAdvRetentionConfig(opt TestOptions) (bool, error) {
+	clientDynamic := NewKubeClientDynamic(
+		opt.HubCluster.MasterURL,
+		opt.KubeConfig,
+		opt.HubCluster.KubeContext)
+	mco, getErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
+	if getErr != nil {
+		return false, getErr
+	}
+
+	spec := mco.Object["spec"].(map[string]interface{})
+	if _, adv := spec["advanced"]; !adv {
+		return false, fmt.Errorf("the MCO CR did not have advanced spec configed")
+	} else {
+		advanced := spec["advanced"].(map[string]interface{})
+		if _, rec := advanced["retentionConfig"]; !rec {
+			return false, fmt.Errorf("the MCO CR did not have advanced retentionConfig spec configed")
+		} else {
+			return true, nil
+		}
+	}
 }
 
 // RevertMCOCRModification revert the previous changes
@@ -604,9 +577,11 @@ func RevertMCOCRModification(opt TestOptions) error {
 		return getErr
 	}
 	spec := mco.Object["spec"].(map[string]interface{})
-	advanced := spec["advanced"].(map[string]interface{})
-	retentionConfig := advanced["retentionConfig"].(map[string]interface{})
-	retentionConfig["retentionResolutionRaw"] = "5d"
+	advRetentionCon, _ := CheckAdvRetentionConfig(opt)
+	if advRetentionCon {
+		retentionConfig := spec["advanced"].(map[string]interface{})["retentionConfig"].(map[string]interface{})
+		retentionConfig["retentionResolutionRaw"] = "5d"
+	}
 
 	_, updateErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Update(mco, metav1.UpdateOptions{})
 	if updateErr != nil {
@@ -705,7 +680,11 @@ func ModifyMCORetentionResolutionRaw(opt TestOptions) error {
 	}
 
 	spec := mco.Object["spec"].(map[string]interface{})
-	spec["retentionResolutionRaw"] = "3d"
+	advRetentionCon, _ := CheckAdvRetentionConfig(opt)
+	if advRetentionCon {
+		retentionConfig := spec["advanced"].(map[string]interface{})["retentionConfig"].(map[string]interface{})
+		retentionConfig["retentionResolutionRaw"] = "3d"
+	}
 	_, updateErr := clientDynamic.Resource(NewMCOGVRV1BETA2()).Update(mco, metav1.UpdateOptions{})
 	if updateErr != nil {
 		return updateErr
