@@ -61,12 +61,13 @@ var _ = Describe("Observability:", func() {
 	It("[P2][Sev2][Observability][Stable] Check compact args (retention/g0):", func() {
 		By("--delete-delay=" + deleteDelay)
 		Eventually(func() error {
-			name := MCO_CR_NAME + "-thanos-compact"
-			compact, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
-			argList := compact.Spec.Template.Spec.Containers[0].Args
+			compacts, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).List(metav1.ListOptions{
+				LabelSelector: THANOS_COMPACT_LABEL,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(compacts.Items)).NotTo(Equal(0))
+
+			argList := (*compacts).Items[0].Spec.Template.Spec.Containers[0].Args
 			for _, arg := range argList {
 				if arg == "--delete-delay="+deleteDelay {
 					return nil
@@ -79,12 +80,13 @@ var _ = Describe("Observability:", func() {
 	It("[P2][Sev2][Observability][Stable] Check store args (retention/g0):", func() {
 		By("--ignore-deletion-marks-delay=" + ignoreDeletionMarksDelay)
 		Eventually(func() error {
-			name := MCO_CR_NAME + "-thanos-store-shard-0"
-			store, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
-			argList := store.Spec.Template.Spec.Containers[0].Args
+			stores, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).List(metav1.ListOptions{
+				LabelSelector: THANOS_STORE_LABEL,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(stores.Items)).NotTo(Equal(0))
+
+			argList := (*stores).Items[0].Spec.Template.Spec.Containers[0].Args
 			for _, arg := range argList {
 				if arg == "--ignore-deletion-marks-delay="+ignoreDeletionMarksDelay {
 					return nil
@@ -97,12 +99,13 @@ var _ = Describe("Observability:", func() {
 	It("[P2][Sev2][Observability][Stable] Check receive args (retention/g0):", func() {
 		By("--tsdb.retention=" + retentionInLocal)
 		Eventually(func() error {
-			name := MCO_CR_NAME + "-thanos-receive-default"
-			receive, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
-			argList := receive.Spec.Template.Spec.Containers[0].Args
+			receives, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).List(metav1.ListOptions{
+				LabelSelector: THANOS_RECEIVE_LABEL,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(receives.Items)).NotTo(Equal(0))
+
+			argList := (*receives).Items[0].Spec.Template.Spec.Containers[0].Args
 			for _, arg := range argList {
 				if arg == "--tsdb.retention="+retentionInLocal {
 					return nil
@@ -115,12 +118,13 @@ var _ = Describe("Observability:", func() {
 	It("[P2][Sev2][Observability][Stable] Check rule args (retention/g0):", func() {
 		By("--tsdb.retention=" + retentionInLocal)
 		Eventually(func() error {
-			name := MCO_CR_NAME + "-thanos-rule"
-			rule, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
-			argList := rule.Spec.Template.Spec.Containers[0].Args
+			rules, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).List(metav1.ListOptions{
+				LabelSelector: THANOS_RULE_LABEL,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(rules.Items)).NotTo(Equal(0))
+
+			argList := (*rules).Items[0].Spec.Template.Spec.Containers[0].Args
 			for _, arg := range argList {
 				if arg == "--tsdb.retention="+retentionInLocal {
 					return nil
@@ -133,12 +137,13 @@ var _ = Describe("Observability:", func() {
 	It("[P2][Sev2][Observability][Stable] Check rule args (retention/g0):", func() {
 		By("--tsdb.block-duration=" + blockDuration)
 		Eventually(func() error {
-			name := MCO_CR_NAME + "-thanos-rule"
-			rule, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).Get(name, metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
-			argList := rule.Spec.Template.Spec.Containers[0].Args
+			rules, err := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).List(metav1.ListOptions{
+				LabelSelector: THANOS_RULE_LABEL,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(rules.Items)).NotTo(Equal(0))
+
+			argList := (*rules).Items[0].Spec.Template.Spec.Containers[0].Args
 			for _, arg := range argList {
 				if arg == "--tsdb.block-duration="+blockDuration {
 					return nil

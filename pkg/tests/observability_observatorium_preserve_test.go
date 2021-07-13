@@ -30,6 +30,7 @@ var _ = Describe("Observability:", func() {
 		It("[Stable] Updating observatorium cr (spec.thanos.compact.retentionResolution1h) should be automatically reverted", func() {
 			oldResourceVersion := ""
 			updateRetention := "10d"
+
 			Eventually(func() error {
 				cr, err := dynClient.Resource(utils.NewMCOMObservatoriumGVR()).Namespace(MCO_NAMESPACE).Get(MCO_CR_NAME, metav1.GetOptions{})
 				if err != nil {
@@ -58,9 +59,13 @@ var _ = Describe("Observability:", func() {
 			time.Sleep(10 * time.Second)
 
 			By("Wait for thanos compact pods are ready")
+			sts, err := utils.GetStatefulSetWithLabel(testOptions, true, THANOS_COMPACT_LABEL, MCO_NAMESPACE)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(sts.Items)).NotTo(Equal(0))
+
 			// ensure the thanos rule pods are restarted successfully before processing
 			Eventually(func() error {
-				err = utils.CheckStatefulSetPodReady(testOptions, MCO_CR_NAME+"-thanos-compact")
+				err = utils.CheckStatefulSetPodReady(testOptions, (*sts).Items[0].Name)
 				if err != nil {
 					return err
 				}
