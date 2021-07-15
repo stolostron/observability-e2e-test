@@ -746,6 +746,15 @@ func GetMCOAddonSpecResources(opt TestOptions) (map[string]interface{}, error) {
 		return nil, getErr
 	}
 
+	spec := mco.Object["spec"].(map[string]interface{})
+	if _, addonSpec := spec["observabilityAddonSpec"]; !addonSpec {
+		return nil, fmt.Errorf("the MCO CR did not have observabilityAddonSpec spec configed")
+	}
+
+	if _, resSpec := mco.Object["spec"].(map[string]interface{})["observabilityAddonSpec"].(map[string]interface{})["resources"]; !resSpec {
+		return nil, fmt.Errorf("the MCO CR did not have observabilityAddonSpec.resources spec configed")
+	}
+
 	res := mco.Object["spec"].(map[string]interface{})["observabilityAddonSpec"].(map[string]interface{})["resources"].(map[string]interface{})
 	return res, nil
 }

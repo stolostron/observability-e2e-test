@@ -89,6 +89,12 @@ var _ = Describe("Observability:", func() {
 		if err != nil {
 			panic(err.Error())
 		}
+
+		spec := mcoRes.Object["spec"].(map[string]interface{})
+		if _, adv := spec["advanced"]; !adv {
+			Skip("Skip the case since the MCO CR did not have advanced spec configed")
+		}
+
 		advancedSpec := mcoRes.Object["spec"].(map[string]interface{})["advanced"].(map[string]interface{})
 
 		for key, component := range componentMap {
@@ -118,6 +124,12 @@ var _ = Describe("Observability:", func() {
 		if err != nil {
 			panic(err.Error())
 		}
+
+		spec := mcoRes.Object["spec"].(map[string]interface{})
+		if _, adv := spec["advanced"]; !adv {
+			Skip("Skip the case since the MCO CR did not have advanced spec configed")
+		}
+
 		advancedSpec := mcoRes.Object["spec"].(map[string]interface{})["advanced"].(map[string]interface{})
 
 		for key, component := range componentMap {
