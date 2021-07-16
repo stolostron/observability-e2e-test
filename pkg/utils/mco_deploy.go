@@ -362,6 +362,10 @@ func CheckMCOComponents(opt TestOptions) error {
 			return err
 		}
 
+		if len((*deployList).Items) == 0 {
+			return fmt.Errorf("should have deployment created with label %s", deploymentLabel)
+		}
+
 		for _, deployInfo := range (*deployList).Items {
 			if deployInfo.Status.ReadyReplicas != *deployInfo.Spec.Replicas {
 				err = fmt.Errorf("deployment %s should have %d but got %d ready replicas",
@@ -390,6 +394,10 @@ func CheckMCOComponents(opt TestOptions) error {
 		if err != nil {
 			klog.V(1).Infof("Error while listing deployment with label %s due to: %s", statefulsetLabel, err.Error())
 			return err
+		}
+
+		if len((*statefulsetList).Items) == 0 {
+			return fmt.Errorf("should have statefulset created with label %s", statefulsetLabel)
 		}
 
 		for _, statefulsetInfo := range (*statefulsetList).Items {
