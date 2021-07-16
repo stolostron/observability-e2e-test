@@ -1,3 +1,5 @@
+> This branch is deprecated. It has been moved to https://github.com/open-cluster-management/multicluster-observability-operator as a sub-package `tests`
+
 # observability-e2e-test
 
 [![Build](https://img.shields.io/badge/build-Prow-informational)](https://prow.ci.openshift.org/?repo=open-cluster-management%2F${observability-e2e-test})
