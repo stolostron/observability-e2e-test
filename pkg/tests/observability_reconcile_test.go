@@ -40,7 +40,7 @@ var _ = Describe("Observability:", func() {
 
 	})
 
-	It("[P2][Sev2][Observability][Stable] Modifying MCO CR for reconciling (reconcile/g0)", func() {
+	It("[P2][Sev2][Observability][Stable] Check and tune backup retention settings in MCO CR - tune retention settings in MCO CR (reconcile/g0)", func() {
 		By("Modifying MCO CR for reconciling")
 		err := utils.ModifyMCOCR(testOptions)
 		Expect(err).ToNot(HaveOccurred())
@@ -97,7 +97,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P2][Sev2][Observability][Stable] Checking node selector for all pods (reconcile/g0)", func() {
+	It("[P2][Sev2][Observability][Stable] Verify nodeSelector setting effects for Observability components (reconcile/g0)", func() {
 		By("Checking node selector spec in MCO CR")
 		mcoSC, err := dynClient.Resource(utils.NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -117,7 +117,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P2][Sev2][Observability][Stable] Checking podAntiAffinity for all pods (reconcile/g0)", func() {
+	It("[P2][Sev2][Observability][Stable] Check affinity rule takes effect on Observability components (reconcile/g0)", func() {
 		By("Checking podAntiAffinity for all pods")
 		Eventually(func() error {
 			err := utils.CheckAllPodsAffinity(testOptions)
@@ -128,7 +128,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P2][Sev2][Observability][Stable] Checking alertmanager storage resize (reconcile/g0)", func() {
+	It("[P2][Sev2][Observability][Stable] Customize the Observability components storage size (reconcile/g0)", func() {
 		By("Resizing alertmanager storage")
 		alertmans, _ := hubClient.AppsV1().StatefulSets(MCO_NAMESPACE).List(metav1.ListOptions{
 			LabelSelector: ALERTMANAGER_LABEL,
@@ -144,7 +144,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
-	It("[P2][Sev2][Observability][Stable] Revert MCO CR changes (reconcile/g0)", func() {
+	It("[P2][Sev2][Observability][Stable] Check and tune backup retention settings in MCO CR - Revert MCO CR changes (reconcile/g0)", func() {
 		advRetentionCon, err := utils.CheckAdvRetentionConfig(testOptions)
 		if !advRetentionCon {
 			Skip("Skip the case since " + err.Error())

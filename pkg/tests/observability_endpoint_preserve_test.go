@@ -27,7 +27,7 @@ var _ = Describe("Observability:", func() {
 			testOptions.HubCluster.KubeContext)
 	})
 
-	Context("[P2][Sev2][Observability] Should revert any manual changes on metrics-collector deployment (endpoint_preserve/g0) -", func() {
+	Context("[P2][Sev2][Observability] Verify metrics collector is prevent to be configured manually (endpoint_preserve/g0) -", func() {
 		newDep := &appv1.Deployment{}
 		It("[Stable] Deleting metrics-collector deployment", func() {
 			var (
@@ -79,7 +79,7 @@ var _ = Describe("Observability:", func() {
 		})
 	})
 
-	It("[P2][Sev2][Observability][Stable] Should revert any manual changes on metrics-collector-view clusterolebinding (endpoint_preserve/g0)", func() {
+	It("[P2][Sev2][Observability][Stable] Verify metrics collector is prevent to be configured manually - Should revert any manual changes on metrics-collector-view clusterolebinding (endpoint_preserve/g0)", func() {
 		By("Deleting metrics-collector-view clusterolebinding")
 		err, crb := utils.GetCRB(testOptions, false, "metrics-collector-view")
 		Expect(err).ToNot(HaveOccurred())
@@ -113,7 +113,7 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*1).Should(BeTrue())
 	})
 
-	It("[P2][Sev2][Observability][Stable] Should recreate on metrics-collector-serving-certs-ca-bundle configmap if deleted (endpoint_preserve/g0)", func() {
+	It("[P2][Sev2][Observability][Stable] Verify metrics collector is prevent to be configured manually - Should recreate on metrics-collector-serving-certs-ca-bundle configmap if deleted (endpoint_preserve/g0)", func() {
 		By("Deleting metrics-collector-serving-certs-ca-bundle configmap")
 		var (
 			err error
