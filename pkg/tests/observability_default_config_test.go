@@ -28,7 +28,7 @@ var _ = Describe("Observability:", func() {
 			testOptions.HubCluster.KubeContext)
 	})
 
-	It("[P1][Sev1][Observability][Stable] Checking metrics default values on managed cluster (config/g0)", func() {
+	It("[P1][Sev1][Observability][Stable] Verify metrics data global setting on the managed cluster (config/g0)", func() {
 		if os.Getenv("SKIP_INSTALL_STEP") == "true" {
 			Skip("Skip the case due to MCO CR was created customized")
 		}
@@ -41,7 +41,7 @@ var _ = Describe("Observability:", func() {
 		Expect(observabilityAddonSpec["interval"]).To(Equal(int64(30)))
 	})
 
-	It("[P1][Sev1][Observability][Stable] Checking default value of PVC and StorageClass (config/g0)", func() {
+	It("[P1][Sev1][Observability][Stable] Verify MCO CR storage class and PVC (config/g0)", func() {
 		if os.Getenv("SKIP_INSTALL_STEP") == "true" {
 			Skip("Skip the case due to MCO CR was created customized")
 		}

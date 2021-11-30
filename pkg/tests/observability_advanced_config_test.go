@@ -119,7 +119,7 @@ var _ = Describe("Observability:", func() {
 		}
 	})
 
-	It("[P2][Sev2][Observability][Integration] Checking resources in advanced config (config/g0)", func() {
+	It("[P2][Sev2][Observability][Integration] Persist advance values in MCO CR (config/g0)", func() {
 		mcoRes, err := dynClient.Resource(utils.NewMCOGVRV1BETA2()).Get(MCO_CR_NAME, metav1.GetOptions{})
 		if err != nil {
 			panic(err.Error())
