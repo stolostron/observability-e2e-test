@@ -5,7 +5,6 @@ package utils
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	goversion "github.com/hashicorp/go-version"
@@ -40,35 +39,6 @@ func UpdateObservabilityFromManagedCluster(opt TestOptions, enableObservability 
 	return nil
 }
 
-func ListManagedClusters(opt TestOptions) ([]string, error) {
-	clientDynamic := GetKubeClientDynamic(opt, true)
-	objs, err := clientDynamic.Resource(NewOCMManagedClustersGVR()).List(metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-	clusterNames := []string{}
-	for _, obj := range objs.Items {
-		metadata := obj.Object["metadata"].(map[string]interface{})
-		name := metadata["name"].(string)
-		labels := metadata["labels"].(map[string]interface{})
-		if labels != nil {
-			obsControllerStr := ""
-			if obsController, ok := labels["feature.open-cluster-management.io/addon-observability-controller"]; ok {
-				obsControllerStr = obsController.(string)
-			}
-			if obsControllerStr != "unreachable" {
-				clusterNames = append(clusterNames, name)
-			}
-		}
-	}
-
-	if len(clusterNames) == 0 {
-		return clusterNames, fmt.Errorf("no managedcluster found")
-	}
-
-	return clusterNames, nil
-}
-
 func ListOCPManagedClusterIDs(opt TestOptions, minVersionStr string) ([]string, error) {
 	minVersion, err := goversion.NewVersion(minVersionStr)
 	if err != nil {
@@ -79,9 +49,11 @@ func ListOCPManagedClusterIDs(opt TestOptions, minVersionStr string) ([]string, 
 	if err != nil {
 		return nil, err
 	}
+	klog.V(3).Infof("objs is %s", objs)
 	clusterIDs := []string{}
 	for _, obj := range objs.Items {
 		metadata := obj.Object["metadata"].(map[string]interface{})
+		klog.V(3).Infof("metadata is %s", metadata)
 		labels := metadata["labels"].(map[string]interface{})
 		klog.V(3).Infof("labels is %s", labels)
 		if labels != nil {
@@ -94,13 +66,15 @@ func ListOCPManagedClusterIDs(opt TestOptions, minVersionStr string) ([]string, 
 			if clusterName, ok := labels["name"]; ok {
 				clusterNameStr = clusterName.(string)
 			}
-
+			klog.V(3).Infof("start to get obaAddon")
 			addon, err := clientDynamic.Resource(NewMCOAddonGVR()).Namespace(clusterNameStr).Get("observability-addon", metav1.GetOptions{})
+			klog.V(3).Infof("addon is %s ", addon)
 			if err != nil {
 				return nil, err
 			}
 
 			status, _ := json.MarshalIndent(addon.Object["status"], "", "  ")
+			klog.V(3).Infof("status is %s ", status)
 			obsAddonStatusStr := ""
 			if strings.Contains(string(status), "Cluster metrics sent successfully") {
 				obsAddonStatusStr = "available"
