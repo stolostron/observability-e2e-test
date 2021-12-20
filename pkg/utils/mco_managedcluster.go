@@ -62,10 +62,7 @@ func ListOCPManagedClusterIDs(opt TestOptions, minVersionStr string) ([]string, 
 				vendorStr = vendor.(string)
 			}
 
-			clusterNameStr := ""
-			if clusterName, ok := labels["name"]; ok {
-				clusterNameStr = clusterName.(string)
-			}
+			clusterNameStr := obj.GetName()
 			klog.V(3).Infof("start to get obaAddon")
 			addon, err := clientDynamic.Resource(NewMCOAddonGVR()).Namespace(clusterNameStr).Get("observability-addon", metav1.GetOptions{})
 			klog.V(3).Infof("addon is %s ", addon)
