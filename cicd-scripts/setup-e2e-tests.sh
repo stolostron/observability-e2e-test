@@ -137,8 +137,7 @@ deploy_hub_spoke_core() {
     if [ -d "registration-operator" ]; then
         rm -rf registration-operator
     fi
-    latest_release_branch=$(git ls-remote --heads https://github.com/open-cluster-management/registration-operator.git release\* | tail -1 | cut -f 2 | cut -d '/' -f 3)
-    git clone --depth 1 -b ${latest_release_branch} https://github.com/open-cluster-management/registration-operator.git && cd registration-operator
+    git clone --depth 1 -b release-2.3 https://github.com/open-cluster-management/registration-operator.git && cd registration-operator
 
     export HUB_KUBECONFIG=${KUBECONFIG}
     # deploy hub and spoke via OLM

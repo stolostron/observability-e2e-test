@@ -4,11 +4,21 @@
 package tests
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"os"
+	"reflect"
+	"sort"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/prometheus/alertmanager/api/v2/models"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
@@ -237,6 +247,88 @@ var _ = Describe("Observability:", func() {
 		}, EventuallyTimeoutMinute*10, EventuallyIntervalSecond*5).Should(Succeed())
 
 		klog.V(3).Infof("Successfully deleted CM: thanos-ruler-custom-rules")
+	})
+
+	It("[P2][Sev2][Observability][Integration] Should have alert named Watchdog forwarded to alertmanager (alertforward/g0)", func() {
+		amURL := url.URL{
+			Scheme: "https",
+			Host:   "alertmanager-open-cluster-management-observability.apps." + testOptions.HubCluster.BaseDomain,
+			Path:   "/api/v2/alerts",
+		}
+		q := amURL.Query()
+		q.Set("filter", "alertname=Watchdog")
+		amURL.RawQuery = q.Encode()
+
+		caCrt, err := utils.GetRouterCA(hubClient)
+		Expect(err).NotTo(HaveOccurred())
+		pool := x509.NewCertPool()
+		pool.AppendCertsFromPEM(caCrt)
+
+		client := &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{RootCAs: pool},
+			},
+		}
+
+		alertGetReq, err := http.NewRequest("GET", amURL.String(), nil)
+		Expect(err).NotTo(HaveOccurred())
+
+		if os.Getenv("IS_KIND_ENV") != "true" {
+			token, _ := utils.FetchBearerToken(testOptions)
+			alertGetReq.Header.Set("Authorization", "Bearer "+token)
+		}
+
+		expectedOCPClusterIDs, err := utils.ListOCPManagedClusterIDs(testOptions, "4.8.0")
+		Expect(err).NotTo(HaveOccurred())
+		klog.V(3).Infof("expectedOCPClusterIDs is %s", expectedOCPClusterIDs)
+		expectClusterIdentifiers := append(expectedOCPClusterIDs)
+
+		By("Checking Watchdog alerts are forwarded to the hub")
+		Eventually(func() error {
+			resp, err := client.Do(alertGetReq)
+			if err != nil {
+				klog.Errorf("err: %+v\n", err)
+				return err
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				klog.Errorf("err: %+v\n", resp)
+				return fmt.Errorf("Failed to get alerts via alertmanager route with http reponse: %v", resp)
+			}
+
+			alertResult, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				return err
+			}
+
+			postableAlerts := models.PostableAlerts{}
+			err = json.Unmarshal(alertResult, &postableAlerts)
+			if err != nil {
+				return err
+			}
+
+			clusterIDsInAlerts := []string{}
+			for _, alt := range postableAlerts {
+				if alt.Labels != nil {
+					labelSets := map[string]string(alt.Labels)
+					clusterID := labelSets["cluster"]
+					if clusterID != "" {
+						clusterIDsInAlerts = append(clusterIDsInAlerts, clusterID)
+					}
+				}
+			}
+
+			sort.Strings(clusterIDsInAlerts)
+			sort.Strings(expectClusterIdentifiers)
+			klog.V(3).Infof("clusterIDsInAlerts is %s", clusterIDsInAlerts)
+			klog.V(3).Infof("expectClusterIdentifiers is %s", expectClusterIdentifiers)
+			if !reflect.DeepEqual(clusterIDsInAlerts, expectClusterIdentifiers) {
+				return fmt.Errorf("Not all openshift managedclusters >=4.8.0 forward Watchdog alert to hub cluster")
+			}
+
+			return nil
+		}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 	})
 
 	JustAfterEach(func() {
