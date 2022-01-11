@@ -53,7 +53,7 @@ before_script:
   - make init
   - git config --global credential.helper store
   - echo "https://${GITHUB_TOKEN}:x-oauth-basic@github.com" >> ~/.git-credentials
-  - git config --global url."https://$GITHUB_TOKEN@github.com/open-cluster-management".insteadOf "https://github.com/open-cluster-management"
+  - git config --global url."https://$GITHUB_TOKEN@github.com/stolostron".insteadOf "https://github.com/stolostron"
 
 jobs:
   include:

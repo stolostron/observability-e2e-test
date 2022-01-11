@@ -10,7 +10,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/open-cluster-management/observability-e2e-test/pkg/utils"
+	"github.com/stolostron/observability-e2e-test/pkg/utils"
 )
 
 const (

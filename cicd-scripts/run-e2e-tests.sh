@@ -1,6 +1,6 @@
 WORKDIR=`pwd`
 cd ${WORKDIR}/..
-git clone --depth 1 -b release-2.2 https://github.com/open-cluster-management/observability-kind-cluster.git
+git clone --depth 1 -b release-2.2 https://github.com/stolostron/observability-kind-cluster.git
 cd observability-kind-cluster
 ./setup.sh
 if [ $? -ne 0 ]; then
