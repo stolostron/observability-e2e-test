@@ -3,7 +3,7 @@
 
 # Required KUBECONFIG environment variable to run this script:
 
-set -e
+set -ex
 
 function usage() {
   echo "${0} -a ACTION [-i IMAGE]"
