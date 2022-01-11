@@ -216,7 +216,7 @@ deploy_mco_operator() {
         done
         if [[ ${component_name} == "multicluster-observability-operator" ]]; then
             cd ${ROOTDIR}/../../multicluster-observability-operator/
-            cd config/manager && kustomize edit set image quay.io/stolostron/multicluster-observability-operator=${1} && cd ../..
+            cd config/manager && kustomize edit set image quay.io/open-cluster-management/multicluster-observability-operator=${1} && cd ../..
         else
             if [ -d "multicluster-observability-operator" ]; then
                 rm -rf multicluster-observability-operator
@@ -224,7 +224,7 @@ deploy_mco_operator() {
             git clone -b release-2.3 --depth 1 https://github.com/stolostron/multicluster-observability-operator.git
             cd multicluster-observability-operator/
             # use latest snapshot for mco operator
-            cd config/manager && kustomize edit set image quay.io/stolostron/multicluster-observability-operator=${COMPONENT_REPO}/multicluster-observability-operator:${LATEST_SNAPSHOT} && cd ../..
+            cd config/manager && kustomize edit set image quay.io/open-cluster-management/multicluster-observability-operator=${COMPONENT_REPO}/multicluster-observability-operator:${LATEST_SNAPSHOT} && cd ../..
             # test the concrete component
             component_anno_name=$(echo ${component_name} | sed 's/-/_/g')
             sed -i "/annotations.*/a \ \ \ \ mco-${component_anno_name}-image: ${1}" ${ROOTDIR}/observability-gitops/mco/e2e/v1beta1/observability.yaml
@@ -236,11 +236,13 @@ deploy_mco_operator() {
         fi
         git clone -b release-2.3 --depth 1 https://github.com/stolostron/multicluster-observability-operator.git
         cd multicluster-observability-operator/
-        cd config/manager && kustomize edit set image quay.io/stolostron/multicluster-observability-operator=${COMPONENT_REPO}/multicluster-observability-operator:${LATEST_SNAPSHOT} && cd ../..
+        cd config/manager && kustomize edit set image quay.io/open-cluster-management/multicluster-observability-operator=${COMPONENT_REPO}/multicluster-observability-operator:${LATEST_SNAPSHOT} && cd ../..
     fi
     # Add mco-imageTagSuffix annotation
     sed -i "/annotations.*/a \ \ \ \ mco-imageTagSuffix: ${LATEST_SNAPSHOT}" ${ROOTDIR}/observability-gitops/mco/e2e/v1beta1/observability.yaml
     sed -i "/annotations.*/a \ \ \ \ mco-imageTagSuffix: ${LATEST_SNAPSHOT}" ${ROOTDIR}/observability-gitops/mco/e2e/v1beta2/observability.yaml
+    sed -i "/annotations.*/a \ \ \ \ mco-imageRepository: ${COMPONENT_REPO}" ${ROOTDIR}/observability-gitops/mco/e2e/v1beta1/observability.yaml
+    sed -i "/annotations.*/a \ \ \ \ mco-imageRepository: ${COMPONENT_REPO}" ${ROOTDIR}/observability-gitops/mco/e2e/v1beta2/observability.yaml
 
     # create the two CRDs: clustermanagementaddons and managedclusteraddons
     if [ -d "ocm-api" ]; then
