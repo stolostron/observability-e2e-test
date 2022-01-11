@@ -12,10 +12,10 @@ function usage() {
   echo '  -a: Specifies the ACTION name, required, the value could be "install" or "uninstall".'
   # shellcheck disable=SC2016
   echo '  -i: Specifies the desired IMAGE, optional, the support image includes:
-        quay.io/open-cluster-management/multicluster-observability-operator:<tag>
-        quay.io/open-cluster-management/rbac-query-proxy:<tag>
-        quay.io/open-cluster-management/metrics-collector:<tag>
-        quay.io/open-cluster-management/endpoint-monitoring-operator:<tag>'
+        quay.io/stolostron/multicluster-observability-operator:<tag>
+        quay.io/stolostron/rbac-query-proxy:<tag>
+        quay.io/stolostron/metrics-collector:<tag>
+        quay.io/stolostron/endpoint-monitoring-operator:<tag>'
   echo ''
 }
 
@@ -77,19 +77,19 @@ HUB_NS="open-cluster-management-hub"
 MANAGED_CLUSTER="cluster1"
 
 COMPONENTS="multicluster-observability-operator rbac-query-proxy metrics-collector endpoint-monitoring-operator grafana-dashboard-loader"
-COMPONENT_REPO="quay.io/open-cluster-management"
+COMPONENT_REPO="quay.io/stolostron"
 
 # Use snapshot for target release. Use latest one if no branch info detected, or not a release branch
 BRANCH=""
 LATEST_SNAPSHOT=""
 if [[ "${PULL_BASE_REF}" == "release-"* ]]; then
     BRANCH=${PULL_BASE_REF#"release-"}
-    BRANCH=`curl https://quay.io//api/v1/repository/open-cluster-management/multicluster-observability-operator | jq '.tags|with_entries(select(.key|contains("'${BRANCH}'")))|keys[length-1]' | awk -F '-' '{print $1}'`
+    BRANCH=`curl https://quay.io/api/v1/repository/stolostron/multicluster-observability-operator | jq '.tags|with_entries(select(.key|contains("'${BRANCH}'")))|keys[length-1]' | awk -F '-' '{print $1}'`
     BRANCH="${BRANCH#\"}"
-    LATEST_SNAPSHOT=`curl https://quay.io//api/v1/repository/open-cluster-management/multicluster-observability-operator | jq '.tags|with_entries(select(.key|contains("'${BRANCH}'-SNAPSHOT")))|keys[length-1]'`
+    LATEST_SNAPSHOT=`curl https://quay.io/api/v1/repository/stolostron/multicluster-observability-operator | jq '.tags|with_entries(select(.key|contains("'${BRANCH}'-SNAPSHOT")))|keys[length-1]'`
 fi
 if [[ "${LATEST_SNAPSHOT}" == "null" ]] || [[ "${LATEST_SNAPSHOT}" == "" ]]; then
-    LATEST_SNAPSHOT=$(curl https://quay.io/api/v1/repository/open-cluster-management/multicluster-observability-operator | jq '.tags|with_entries(select(.key|contains("SNAPSHOT")))|keys[length-1]')
+    LATEST_SNAPSHOT=$(curl https://quay.io/api/v1/repository/stolostron/multicluster-observability-operator | jq '.tags|with_entries(select(.key|contains("SNAPSHOT")))|keys[length-1]')
 fi
 
 # trim the leading and tailing quotes
@@ -137,7 +137,7 @@ deploy_hub_spoke_core() {
     if [ -d "registration-operator" ]; then
         rm -rf registration-operator
     fi
-    git clone --depth 1 -b release-2.3 https://github.com/open-cluster-management/registration-operator.git && cd registration-operator
+    git clone --depth 1 -b release-2.3 https://github.com/stolostron/registration-operator.git && cd registration-operator
 
     export HUB_KUBECONFIG=${KUBECONFIG}
     # deploy hub and spoke via OLM
@@ -205,7 +205,7 @@ deploy_mco_operator() {
     if [ -d "observability-gitops" ]; then
         rm -rf observability-gitops
     fi
-    git clone --depth 1 https://github.com/open-cluster-management/observability-gitops.git
+    git clone --depth 1 https://github.com/stolostron/observability-gitops.git
     component_name=""
     if [[ ! -z "${1}" ]]; then
         for comp in ${COMPONENTS}; do
@@ -216,15 +216,15 @@ deploy_mco_operator() {
         done
         if [[ ${component_name} == "multicluster-observability-operator" ]]; then
             cd ${ROOTDIR}/../../multicluster-observability-operator/
-            cd config/manager && kustomize edit set image quay.io/open-cluster-management/multicluster-observability-operator=${1} && cd ../..
+            cd config/manager && kustomize edit set image quay.io/stolostron/multicluster-observability-operator=${1} && cd ../..
         else
             if [ -d "multicluster-observability-operator" ]; then
                 rm -rf multicluster-observability-operator
             fi
-            git clone -b release-2.3 --depth 1 https://github.com/open-cluster-management/multicluster-observability-operator.git
+            git clone -b release-2.3 --depth 1 https://github.com/stolostron/multicluster-observability-operator.git
             cd multicluster-observability-operator/
             # use latest snapshot for mco operator
-            cd config/manager && kustomize edit set image quay.io/open-cluster-management/multicluster-observability-operator=${COMPONENT_REPO}/multicluster-observability-operator:${LATEST_SNAPSHOT} && cd ../..
+            cd config/manager && kustomize edit set image quay.io/stolostron/multicluster-observability-operator=${COMPONENT_REPO}/multicluster-observability-operator:${LATEST_SNAPSHOT} && cd ../..
             # test the concrete component
             component_anno_name=$(echo ${component_name} | sed 's/-/_/g')
             sed -i "/annotations.*/a \ \ \ \ mco-${component_anno_name}-image: ${1}" ${ROOTDIR}/observability-gitops/mco/e2e/v1beta1/observability.yaml
@@ -234,9 +234,9 @@ deploy_mco_operator() {
         if [ -d "multicluster-observability-operator" ]; then
             rm -rf multicluster-observability-operator
         fi
-        git clone -b release-2.3 --depth 1 https://github.com/open-cluster-management/multicluster-observability-operator.git
+        git clone -b release-2.3 --depth 1 https://github.com/stolostron/multicluster-observability-operator.git
         cd multicluster-observability-operator/
-        cd config/manager && kustomize edit set image quay.io/open-cluster-management/multicluster-observability-operator=${COMPONENT_REPO}/multicluster-observability-operator:${LATEST_SNAPSHOT} && cd ../..
+        cd config/manager && kustomize edit set image quay.io/stolostron/multicluster-observability-operator=${COMPONENT_REPO}/multicluster-observability-operator:${LATEST_SNAPSHOT} && cd ../..
     fi
     # Add mco-imageTagSuffix annotation
     sed -i "/annotations.*/a \ \ \ \ mco-imageTagSuffix: ${LATEST_SNAPSHOT}" ${ROOTDIR}/observability-gitops/mco/e2e/v1beta1/observability.yaml
@@ -246,15 +246,15 @@ deploy_mco_operator() {
     if [ -d "ocm-api" ]; then
         rm -rf ocm-api
     fi
-    git clone --depth 1 https://github.com/open-cluster-management/api.git ocm-api
+    git clone --depth 1 https://github.com/stolostron/api.git ocm-api
     kubectl apply -f ocm-api/addon/v1alpha1/
 
     # create the CRDs: placementrules
     if [ -d "multicloud-operators-placementrule" ]; then
         rm -rf multicloud-operators-placementrule
     fi
-    latest_release_branch=$(git ls-remote --heads https://github.com/open-cluster-management/multicloud-operators-placementrule.git release\* | tail -1 | cut -f 2 | cut -d '/' -f 3)
-    git clone --depth 1 -b ${latest_release_branch} https://github.com/open-cluster-management/multicloud-operators-placementrule.git
+    latest_release_branch=$(git ls-remote --heads https://github.com/stolostron/multicloud-operators-placementrule.git release\* | tail -1 | cut -f 2 | cut -d '/' -f 3)
+    git clone --depth 1 -b ${latest_release_branch} https://github.com/stolostron/multicloud-operators-placementrule.git
     kubectl apply -f multicloud-operators-placementrule/deploy/crds/apps.open-cluster-management.io_placementrules_crd.yaml
 
     kubectl create ns ${OCM_DEFAULT_NS} || true

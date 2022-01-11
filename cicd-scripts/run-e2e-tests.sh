@@ -20,7 +20,7 @@ kubeMasterURL=$(kubectl config view -o jsonpath="{.clusters[0].cluster.server}")
 kubecontext=$(kubectl config current-context)
 
 if [ ! -d "observability-gitops" ]; then
-  git clone --depth 1 https://github.com/open-cluster-management/observability-gitops.git
+  git clone --depth 1 https://github.com/stolostron/observability-gitops.git
 fi
 
 # remove the options file if it exists

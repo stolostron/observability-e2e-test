@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/open-cluster-management/observability-e2e-test/pkg/utils"
+	"github.com/stolostron/observability-e2e-test/pkg/utils"
 )
 
 var _ = Describe("Observability:", func() {
