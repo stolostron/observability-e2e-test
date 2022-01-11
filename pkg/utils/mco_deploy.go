@@ -216,7 +216,7 @@ func CheckAllPodNodeSelector(opt TestOptions) error {
 	}
 	//shard-1-0 and shard-2-0 won't be deleted when switch from High to Basic
 	//And cannot apply the nodeSelector to shard-1-0 and shard-2-0
-	//https://github.com/open-cluster-management/backlog/issues/6532
+	//https://github.com/stolostron/backlog/issues/6532
 	ignorePods := MCO_CR_NAME + "-observatorium-thanos-store-shard-1-0," + MCO_CR_NAME + "-observatorium-thanos-store-shard-2-0"
 
 	for _, pod := range podList {
@@ -364,7 +364,7 @@ func CheckMCOComponentsInHighMode(opt TestOptions) error {
 		"observability-observatorium-thanos-receive-default",
 		"observability-observatorium-thanos-rule",
 		"observability-observatorium-thanos-store-memcached",
-		// TODO: https://github.com/open-cluster-management/backlog/issues/6532
+		// TODO: https://github.com/stolostron/backlog/issues/6532
 		// "observability-observatorium-thanos-store-shard-0",
 	}
 

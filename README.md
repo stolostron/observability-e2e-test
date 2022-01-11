@@ -1,6 +1,6 @@
 # observability-e2e-test
 
-This is modeled after: https://github.com/open-cluster-management/open-cluster-management-e2e
+This is modeled after: https://github.com/stolostron/open-cluster-management-e2e
 
 This is a container which will be called from:
 
@@ -20,7 +20,7 @@ The tests in this container will:
 1. clone this repo:
 
 ```
-$ git clone git@github.com:open-cluster-management/observability-e2e-test.git
+$ git clone git@github.com:stolostron/observability-e2e-test.git
 ```
 
 2. copy `resources/options.yaml.template` to `resources/options.yaml`, and update values specific to your environment:
@@ -68,7 +68,7 @@ $ export KUBECONFIG=~/.kube/import-cluster-config
 1. clone this repo:
 
 ```
-$ git clone git@github.com:open-cluster-management/observability-e2e-test.git
+$ git clone git@github.com:stolostron/observability-e2e-test.git
 ```
 
 2. copy `resources/options.yaml.template` to `resources/options.yaml`, and update values specific to your environment:

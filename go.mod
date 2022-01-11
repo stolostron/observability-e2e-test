@@ -1,4 +1,4 @@
-module github.com/open-cluster-management/observability-e2e-test
+module github.com/stolostron/observability-e2e-test
 
 go 1.14
 

@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/open-cluster-management/observability-e2e-test/pkg/kustomize"
-	"github.com/open-cluster-management/observability-e2e-test/pkg/utils"
+	"github.com/stolostron/observability-e2e-test/pkg/kustomize"
+	"github.com/stolostron/observability-e2e-test/pkg/utils"
 )
 
 func installMCO() {

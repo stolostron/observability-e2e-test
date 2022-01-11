@@ -16,7 +16,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"k8s.io/klog"
 
-	"github.com/open-cluster-management/observability-e2e-test/pkg/utils"
+	"github.com/stolostron/observability-e2e-test/pkg/utils"
 )
 
 //var bareBaseDomain string
