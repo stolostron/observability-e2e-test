@@ -5,7 +5,7 @@ cd "$base_dir"
 
 obs_namespace=open-cluster-management-observability
 
-git clone --depth 1 https://github.com/open-cluster-management/multicluster-observability-operator.git grafana-dev-test
+git clone --depth 1 https://github.com/stolostron/multicluster-observability-operator.git grafana-dev-test
 
 # create a dashboard for test export grafana dashboard
 kubectl apply -n "$obs_namespace" -f "$base_dir"/observability-gitops/dashboards/sample_custom_dashboard/custom-sample-dashboard.yaml
