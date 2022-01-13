@@ -1,4 +1,4 @@
-FROM registry.fedoraproject.org/fedora-minimal:32 as build
+FROM registry.fedoraproject.org/fedora-minimal:32 as builder
 
 ENV GOPATH /go
 ENV CGO_ENABLED=0
@@ -45,17 +45,17 @@ ENV SKIP_INTEGRATION_CASES="true"
 ENV IS_CANARY_ENV="true"
 
 # install ginkgo into built image
-COPY --from=build /go/bin/ /usr/local/bin
+COPY --from=builder /go/bin/ /usr/local/bin
 
 # copy oc into built image
-COPY --from=build /usr/local/oc /usr/local/bin/oc
+COPY --from=builder /usr/local/oc /usr/local/bin/oc
 RUN oc version
 
 # copy compiled tests into built image
 RUN mkdir -p /opt/tests
-COPY --from=build /go/src/github.com/stolostron/observability-e2e-test/pkg/tests/tests.test /opt/tests/observability-e2e-test.test
-COPY --from=build /go/src/github.com/stolostron/observability-e2e-test/observability-gitops /observability-gitops
-COPY --from=build /go/src/github.com/stolostron/observability-e2e-test/format-results.sh /opt/tests/
+COPY --from=builder /go/src/github.com/stolostron/observability-e2e-test/pkg/tests/tests.test /opt/tests/observability-e2e-test.test
+COPY --from=builder /go/src/github.com/stolostron/observability-e2e-test/observability-gitops /observability-gitops
+COPY --from=builder /go/src/github.com/stolostron/observability-e2e-test/format-results.sh /opt/tests/
 
 VOLUME /results
 WORKDIR "/opt/tests/"
