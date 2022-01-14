@@ -3,7 +3,6 @@ package utils
 import (
 	"crypto/tls"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -46,7 +45,7 @@ func ContainManagedClusterMetric(opt TestOptions, query string, matchedLabels []
 
 	if resp.StatusCode != http.StatusOK {
 		klog.Errorf("resp.StatusCode: %v\n", resp.StatusCode)
-		bodyBytes, err := io.ReadAll(resp.Body)
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			klog.Error(err)
 		}
