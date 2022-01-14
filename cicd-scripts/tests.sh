@@ -23,8 +23,8 @@ sleep 60
 kubectl --kubeconfig $HOME/.kube/kind-config-hub get po -A 
 kubectl --kubeconfig $HOME/.kube/kind-config-spoke get po -A 
 
-kubectl --kubeconfig $HOME/.kube/kind-config-spoke get po -n open-cluster-management-addon-observability $(oc get po -n open-cluster-management-addon-observability|grep metrics|awk '{split($0, a, " "); print a[1]}') -o yaml
-kubectl --kubeconfig $HOME/.kube/kind-config-spoke logs -n open-cluster-management-addon-observability $(oc get po -n open-cluster-management-addon-observability|grep metrics|awk '{split($0, a, " "); print a[1]}')
+kubectl --kubeconfig $HOME/.kube/kind-config-spoke get po -n open-cluster-management-addon-observability $(kubectl get po -n open-cluster-management-addon-observability|grep metrics|awk '{split($0, a, " "); print a[1]}') -o yaml
+kubectl --kubeconfig $HOME/.kube/kind-config-spoke logs -n open-cluster-management-addon-observability $(kubectl get po -n open-cluster-management-addon-observability|grep metrics|awk '{split($0, a, " "); print a[1]}')
 
 ginkgo -debug -trace -v ./pkg/tests -- -options=../../resources/options.yaml -v=3
 
