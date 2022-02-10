@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 
@@ -77,29 +78,13 @@ var _ = Describe("Observability:", func() {
 			}, EventuallyTimeoutMinute*5, EventuallyIntervalSecond*5).Should(Succeed())
 
 			if clusterName != "" {
-				Eventually(func() string {
-					mco, err := dynClient.Resource(utils.NewMCOAddonGVR()).Namespace(string(clusterName)).Get("observability-addon", metav1.GetOptions{})
-					if err != nil {
-						panic(err.Error())
+				Eventually(func() error {
+					_, err := dynClient.Resource(utils.NewMCOAddonGVR()).Namespace(string(clusterName)).Get("observability-addon", metav1.GetOptions{})
+					if err == nil || !errors.IsNotFound(err) {
+						return fmt.Errorf("observability-addon is not properly deleted for managed cluster %s", clusterName)
 					}
-					if mco.Object["status"] != nil {
-						return mco.Object["status"].(map[string]interface{})["conditions"].([]interface{})[0].(map[string]interface{})["message"].(string)
-					} else {
-						return ""
-					}
+					return nil
 				}, EventuallyTimeoutMinute*3, EventuallyIntervalSecond*5).Should(Equal("enableMetrics is set to False"))
-
-				Eventually(func() string {
-					mco, err := dynClient.Resource(utils.NewMCOManagedClusterAddonsGVR()).Namespace(string(clusterName)).Get("observability-controller", metav1.GetOptions{})
-					Expect(err).ToNot(HaveOccurred())
-					conditions := mco.Object["status"].(map[string]interface{})["conditions"].([]interface{})
-					for _, condition := range conditions {
-						if condition.(map[string]interface{})["message"].(string) == ManagedClusterAddOnMessage {
-							return condition.(map[string]interface{})["status"].(string)
-						}
-					}
-					return ""
-				}, EventuallyTimeoutMinute*1, EventuallyIntervalSecond*5).Should(Equal("True"))
 			}
 		})
 		// it takes Prometheus 5m to notice a metric is not available - https://github.com/prometheus/prometheus/issues/1810
